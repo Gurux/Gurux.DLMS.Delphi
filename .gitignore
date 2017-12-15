@@ -219,3 +219,5 @@ pip-log.txt
 *.stat
 GuruxDLMS.dproj.local
 *.identcache
+*.diff
+*.patch
