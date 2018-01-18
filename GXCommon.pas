@@ -1076,8 +1076,8 @@ begin
     Result := ((buff.GetUInt8() and $FE) Shr 1)
   else if size = 2 then
   begin
-      size := buff.getUInt16();
-      Result := ((size and $FE) shr 1) or ((size and $FE00) shr 2);
+      tmp := buff.getUInt16();
+      Result := ((tmp and $FE) shr 1) or ((tmp and $FE00) shr 2);
   end
   else if size = 4 then
   begin
@@ -1452,21 +1452,22 @@ begin
     // If byte array is added do not add type.
     buff.SetData(value.AsType<TBytes>)
  else
+ begin
     buff.setUInt8(Integer(dataType));
     case dataType of
     dtNONE:
-        Exit;
+      Exit;
     dtBOOLEAN:
       if value.AsType<Boolean> = true then
-          buff.setUInt8(1)
+        buff.setUInt8(1)
       else
-          buff.setUInt8(0);
+        buff.setUInt8(0);
     dtINT8:
-        buff.SetUInt8(value.AsInteger);
+      buff.SetUInt8(value.AsInteger);
     dtUINT8:
-        buff.SetUInt8(value.AsInteger);
+      buff.SetUInt8(value.AsInteger);
     dtENUM:
-        buff.SetUInt8(value.AsInteger);
+      buff.SetUInt8(value.AsInteger);
     dtINT16:
       buff.SetUInt16(value.AsInteger);
     dtUINT16:
@@ -1527,6 +1528,7 @@ begin
     else
       raise Exception.Create('Invalid data type.');
     end;
+ end;
 end;
 
 class function TGXCommon.ChangeType(value: TBytes; tp: TDataType): TValue;

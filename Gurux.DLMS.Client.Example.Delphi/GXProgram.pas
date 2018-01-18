@@ -916,7 +916,7 @@ begin
       Exit;
   try
     stream := TWinSocketStream.Create(socket.Socket, WaitTime);
-    WriteTrace('<- ' + TimeToStr(Time) + '\t' + TGXByteBuffer.ToHexString(data));
+    WriteTrace('<- ' + TimeToStr(Time) + chr(9) + TGXByteBuffer.ToHexString(data));
 
     //Send data.
     stream.Write(data, 0, Length(data));
@@ -942,7 +942,7 @@ begin
           break;
       end;
     Until Length(Result) > 2000;
-    WriteTrace('-> ' + TimeToStr(Time) + '\t' + TGXByteBuffer.ToHexString(Result));
+    WriteTrace('-> ' + TimeToStr(Time) + chr(9) + TGXByteBuffer.ToHexString(Result));
 
     if reply.Error <> 0 Then
       raise TGXDLMSException.Create(reply.Error);

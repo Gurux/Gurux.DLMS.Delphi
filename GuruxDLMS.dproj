@@ -177,7 +177,6 @@
         <DCCReference Include="Gurux.DLMS.GXDLMSSpecialDay.pas"/>
         <DCCReference Include="Gurux.DLMS.GXDLMSSeasonProfile.pas"/>
         <DCCReference Include="Gurux.DLMS.Objects.GXDLMSPushSetup.pas"/>
-        <DCCReference Include="Gurux.DLMS.Objects.GXDLMSPushObject.pas"/>
         <DCCReference Include="Gurux.DLMS.Objects.GXSendDestinationAndMethod.pas"/>
         <DCCReference Include="Gurux.DLMS.Objects.ServiceType.pas"/>
         <DCCReference Include="Gurux.DLMS.Objects.MessageType.pas"/>

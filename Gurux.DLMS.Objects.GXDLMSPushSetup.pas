@@ -37,13 +37,13 @@ interface
 uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
 Gurux.DLMS.GXDateTime,
 Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-Gurux.DLMS.Objects.GXDLMSPushObject,
 Gurux.DLMS.Objects.GXSendDestinationAndMethod,
-Gurux.DLMS.Objects.ServiceType, Gurux.DLMS.Objects.MessageType;
+Gurux.DLMS.Objects.ServiceType, Gurux.DLMS.Objects.MessageType,
+Gurux.DLMS.GXDLMSCaptureObject, GXByteBuffer;
 
 type
 TGXDLMSPushSetup = class(TGXDLMSObject)
-  FPushObjectList : TObjectList<TGXDLMSPushObject>;
+  FPushObjectList: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>;
   FSendDestinationAndMethod : TGXSendDestinationAndMethod;
   FCommunicationWindow : TList<TPair<TGXDateTime, TGXDateTime>>;
   FRandomisationStartInterval : WORD;
@@ -55,7 +55,7 @@ TGXDLMSPushSetup = class(TGXDLMSObject)
   constructor Create(ln: string; sn: System.UInt16); overload;
   destructor Destroy;override;
 
-  property PushObjectList: TObjectList<TGXDLMSPushObject> read FPushObjectList;
+  property PushObjectList: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>> read FPushObjectList;
   property SendDestinationAndMethod: TGXSendDestinationAndMethod read FSendDestinationAndMethod;
   property CommunicationWindow: TList<TPair<TGXDateTime, TGXDateTime>> read FCommunicationWindow;
   property RandomisationStartInterval: WORD read FRandomisationStartInterval write FRandomisationStartInterval;
@@ -88,7 +88,7 @@ end;
 constructor TGXDLMSPushSetup.Create(ln: string; sn: System.UInt16);
 begin
   inherited Create(TObjectType.otPushSetup, ln, 0);
-  FPushObjectList := TObjectList<TGXDLMSPushObject>.Create();
+  FPushObjectList := TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>.Create();
   FSendDestinationAndMethod := TGXSendDestinationAndMethod.Create();
   FCommunicationWindow := TList<TPair<TGXDateTime, TGXDateTime>>.Create();
 end;
@@ -177,15 +177,51 @@ begin
 end;
 
 function TGXDLMSPushSetup.GetValue(e: TValueEventArgs): TValue;
+var
+ buff: TGXByteBuffer;
+ it: TPair<TGXDLMSObject, TGXDLMSCaptureObject>;
+ it2: TPair<TGXDateTime, TGXDateTime>;
 begin
+  buff:= TGXByteBuffer.Create();
   if (e.Index = 1) then
     Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName))
   else if e.Index = 2 Then
-    Result := FPushObjectList
+  begin
+    buff.SetUInt8(Integer(TDataType.dtArray));
+    TGXCommon.SetObjectCount(FPushObjectList.Count, buff);
+    for it in FPushObjectList do
+    begin
+      buff.SetUInt8(Integer(TDataType.dtStructure));
+      buff.SetUInt8(4);
+      TGXCommon.SetData(buff, TDataType.dtUInt16, Integer(it.Key.ObjectType));
+      TGXCommon.SetData(buff, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(it.Key.LogicalName)));
+      TGXCommon.SetData(buff, TDataType.dtInt8, it.Value.AttributeIndex);
+      TGXCommon.SetData(buff, TDataType.dtUInt16, it.Value.DataIndex);
+    end;
+    Result := TValue.From(buff.ToArray());
+  end
   else if e.Index = 3 Then
-    Result := FSendDestinationAndMethod
+  begin
+    buff.SetUInt8(Integer(TDataType.dtStructure));
+    buff.SetUInt8(3);
+    TGXCommon.SetData(buff, TDataType.dtUInt8, Integer(FSendDestinationAndMethod.FService));
+    TGXCommon.SetData(buff, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(FSendDestinationAndMethod.FDestination)));
+    TGXCommon.SetData(buff, TDataType.dtUInt8, Integer(FSendDestinationAndMethod.FMessage));
+    Result := TValue.From(buff.ToArray());
+  end
   else if e.Index = 4 Then
-    Result := FCommunicationWindow
+  begin
+    buff.SetUInt8(Integer(TDataType.dtArray));
+    TGXCommon.SetObjectCount(FCommunicationWindow.Count, buff);
+    for it2 in FCommunicationWindow do
+    begin
+      buff.SetUInt8(Integer(TDataType.dtStructure));
+      buff.SetUInt8(2);
+      TGXCommon.SetData(buff, TDataType.dtOctetString, it2.Key);
+      TGXCommon.SetData(buff, TDataType.dtOctetString, it2.Value);
+    end;
+    Result := TValue.From(buff.ToArray());
+  end
   else if e.Index = 5 Then
     Result := FRandomisationStartInterval
   else if e.Index = 6 Then
@@ -194,14 +230,19 @@ begin
     Result := FRepetitionDelay
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');
+
+  FreeAndNil(buff);
 end;
 
 procedure TGXDLMSPushSetup.SetValue(e: TValueEventArgs);
 var
   it : TValue;
   tmp : TArray<TValue>;
-  obj : TGXDLMSPushObject;
+  obj : TGXDLMSObject;
   starttm, endtm : TGXDateTime;
+  co: TGXDLMSCaptureObject;
+  ln: String;
+  ot: TObjectType;
 begin
   if (e.Index = 1) then
   begin
@@ -215,12 +256,17 @@ begin
           for it in e.Value.AsType<TArray<TValue>> do
           begin
               tmp := it.AsType<TArray<TValue>>();
-              obj := TGXDLMSPushObject.Create();
-              obj.&Type := TObjectType(tmp[0].AsInteger);
-              obj.LogicalName := TGXCommon.ChangeType(tmp[1].AsType<TBytes>, TDataType.dtOctetString).ToString();
-              obj.AttributeIndex := tmp[2].AsInteger;
-              obj.DataIndex := tmp[3].AsInteger;
-              PushObjectList.Add(obj);
+              obj := TGXDLMSObject.Create();
+              ot := TObjectType(tmp[0].AsInteger);
+              ln := TGXCommon.ToLogicalName(tmp[1]);
+              obj := e.Settings.Objects.FindByLN(ot, ln);
+              if obj = Nil then
+              begin
+              //TODO: obj := TGXObjectFactory.CreateObject(ot);
+              //TODO: obj.LogicalName := ln;
+              end;
+              co := TGXDLMSCaptureObject.Create(tmp[2].AsInteger, tmp[3].AsInteger);
+              PushObjectList.Add(TPair<TGXDLMSObject, TGXDLMSCaptureObject>.Create(obj, co));
           end;
       end
   end

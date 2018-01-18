@@ -132,7 +132,6 @@ contains
   Gurux.DLMS.GXDLMSSpecialDay in 'Gurux.DLMS.GXDLMSSpecialDay.pas',
   Gurux.DLMS.GXDLMSSeasonProfile in 'Gurux.DLMS.GXDLMSSeasonProfile.pas',
   Gurux.DLMS.Objects.GXDLMSPushSetup in 'Gurux.DLMS.Objects.GXDLMSPushSetup.pas',
-  Gurux.DLMS.Objects.GXDLMSPushObject in 'Gurux.DLMS.Objects.GXDLMSPushObject.pas',
   Gurux.DLMS.Objects.GXSendDestinationAndMethod in 'Gurux.DLMS.Objects.GXSendDestinationAndMethod.pas',
   Gurux.DLMS.Objects.ServiceType in 'Gurux.DLMS.Objects.ServiceType.pas',
   Gurux.DLMS.Objects.MessageType in 'Gurux.DLMS.Objects.MessageType.pas',
@@ -184,4 +183,5 @@ contains
   Gurux.DLMS.Secure.GXDLMSSecureClient in 'Gurux.DLMS.Secure.GXDLMSSecureClient.pas';
 
 end.
+
 

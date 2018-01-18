@@ -668,6 +668,7 @@ end;
 procedure TGXByteBuffer.SetData( value : TBytes);
 begin
   FData := value;
+  FSize := Length(value);
 end;
 
 function TGXByteBuffer.GetUInt64() : Extended;
