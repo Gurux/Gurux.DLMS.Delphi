@@ -389,7 +389,7 @@ end;
 //Result :  Buffer position.
 function TGXByteBuffer.Position() : Integer;
 begin
-    Result := FPosition;
+  Result := FPosition;
 end;
 
 //Result :  Buffer size.
@@ -487,7 +487,7 @@ begin
   if index >= Capacity() then
     Capacity(index + ARRAY_CAPACITY);
 
-  FData[index] := item;
+  FData[index] := Byte(item);
 end;
 
 procedure TGXByteBuffer.SetUInt16(item : Integer);
@@ -576,7 +576,7 @@ end;
 
 function TGXByteBuffer.GetInt8() : ShortInt;
 begin
-  Result := GetUInt8();
+  Result := ShortInt(GetUInt8());
 end;
 
 function TGXByteBuffer.GetUInt8(index : Integer) : Byte;
@@ -595,7 +595,7 @@ end;
 
 function TGXByteBuffer.GetInt16() : Smallint;
 begin
-  Result := GetUInt16();
+  Result := Smallint(GetUInt16());
 end;
 
 function TGXByteBuffer.GetUInt16(index : Integer) : Word;
@@ -603,19 +603,19 @@ begin
   if index + 2 > size then
     raise EArgumentException.Create('getUInt16');
 
-  Result := ((FData[index] and $FF) Shl 8) or (FData[index + 1] and $FF);
+  Result := Word((FData[index] and $FF) Shl 8) or (FData[index + 1] and $FF);
 end;
 
 function TGXByteBuffer.GetUInt32(): Longword;
 begin
-    Result := GetUInt32(position());
-    FPosition := FPosition + 4;
+  Result := GetUInt32(position());
+  FPosition := FPosition + 4;
 end;
 
 function TGXByteBuffer.GetInt32() : Integer;
 begin
-    Result := GetInt32(position());
-    FPosition := FPosition + 4;
+  Result := GetInt32(position());
+  FPosition := FPosition + 4;
 end;
 
 function TGXByteBuffer.GetInt32( index : Integer) : Integer;
@@ -695,7 +695,7 @@ begin
 
     SetLength(tmp, count);
     System.Move(FData[index], tmp[0], count);
-    Result := TEncoding.UTF8.GetString(tmp);
+    Result := TEncoding.ASCII.GetString(tmp);
   end;
 end;
 

@@ -138,24 +138,14 @@ end;
 
 function TGXDLMSActionSchedule.GetDataType(index: Integer): TDataType;
 begin
-  if (index = 1) then
-  begin
-    Result := TDataType.dtOctetString;
-  end
-  else if index = 2 Then
-  begin
-    Result := TDataType.dtArray;
-  end
-  else if index = 3 Then
-  begin
-    Result := TDataType.dtEnum;
-  end
-  else if index = 4 Then
-  begin
-    Result := TDataType.dtArray;
-  end
+  case index of
+    1: Result := TDataType.dtOctetString;
+    2: Result := TDataType.dtStructure;
+    3: Result := TDataType.dtEnum;
+    4: Result := TDataType.dtArray;
   else
   	raise Exception.Create('GetDataType failed. Invalid attribute index.');
+  end;
 end;
 
 function TGXDLMSActionSchedule.GetValue(e: TValueEventArgs): TValue;
@@ -195,8 +185,8 @@ begin
         begin
           stream.Add(Integer(TDataType.dtStructure));
           stream.Add(2); //Count
-          TGXCommon.SetData(stream, TDataType.dtTime, it.Value); //Time
-          TGXCommon.SetData(stream, TDataType.dtDate, it.Value); //Date
+          TGXCommon.SetData(stream, TDataType.dtOctetString, it.Value); //Time
+          TGXCommon.SetData(stream, TDataType.dtOctetString, it.Value); //Date
         end
     end;
     Result := TValue.From(stream.ToArray());

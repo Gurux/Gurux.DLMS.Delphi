@@ -133,7 +133,7 @@ begin
     }
     len := 16;
     SetLength(Result, len);
-    for pos := 0 to len do
+    for pos := 0 to len - 1 do
     begin
         // Allow printable characters only.
         repeat

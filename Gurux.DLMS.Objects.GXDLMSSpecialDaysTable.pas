@@ -154,11 +154,11 @@ begin
       data.Add(Integer(TDataType.dtStructure));
       data.Add(3); //Count
       TGXCommon.SetData(data, TDataType.dtUInt16, it.Index);
-      TGXCommon.SetData(data, TDataType.dtDateTime, it.Date);
+      TGXCommon.SetData(data, TDataType.dtOctetString, it.Date);
       TGXCommon.SetData(data, TDataType.dtUInt8, it.DayId);
     end;
-    FreeAndNil(data);
     Result := TValue.From(data.ToArray());
+    FreeAndNil(data);
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');

@@ -41,9 +41,10 @@ type
 TGXDLMSSecureClient = class(TGXDLMSClient)
   private
     FCiphering: TGXCiphering;
+    procedure SetCiphering(Ciphering: TGXCiphering);
   public
     // Ciphering settings.
-    property Ciphering: TGXCiphering read FCiphering;
+    property Ciphering: TGXCiphering read FCiphering write SetCiphering;
 
     destructor Destroy; override;
     constructor Create; overload;
@@ -81,6 +82,15 @@ implementation
 destructor TGXDLMSSecureClient.Destroy;
 begin
   inherited;
+end;
+
+procedure TGXDLMSSecureClient.SetCiphering(Ciphering: TGXCiphering);
+begin
+  FSettings.Cipher := nil;
+  FCiphering.Free;
+
+  FCiphering := Ciphering;
+  FSettings.Cipher := FCiphering;
 end;
 
 constructor TGXDLMSSecureClient.Create;

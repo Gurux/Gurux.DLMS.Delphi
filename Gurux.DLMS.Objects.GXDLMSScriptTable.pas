@@ -38,20 +38,20 @@ uses GXCommon, SysUtils, Rtti,
 System.Generics.Collections,
 Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
 Gurux.DLMS.GXDLMSScriptAction, Gurux.DLMS.GXDLMSScriptActionType,
-GXByteBuffer;
+GXByteBuffer, Gurux.DLMS.Objects.GXDLMSScript;
 
 type
   TGXDLMSScriptTable = class(TGXDLMSObject)
   private
-  FScripts: TList<TPair<Integer, TGXDLMSScriptAction>>;
+  FScripts: TObjectList<TGXDLMSScript>;
 
   public
-  destructor Destroy; override;
   constructor Create; overload;
   constructor Create(ln: string); overload;
   constructor Create(ln: string; sn: System.UInt16); overload;
+  destructor Destroy;override;
 
-  property Scripts: TList<TPair<Integer, TGXDLMSScriptAction>> read FScripts;
+  property Scripts: TObjectList<TGXDLMSScript> read FScripts;
 
   function GetValues() : TArray<TValue>;override;
 
@@ -79,30 +79,18 @@ end;
 constructor TGXDLMSScriptTable.Create(ln: string; sn: System.UInt16);
 begin
   inherited Create(TObjectType.otClock, ln, 0);
-  FScripts := TList<TPair<Integer, TGXDLMSScriptAction>>.Create();
+  FScripts := TObjectList<TGXDLMSScript>.Create();
 end;
 
 destructor TGXDLMSScriptTable.Destroy;
-var
-  it: TPair<Integer, TGXDLMSScriptAction>;
 begin
   inherited;
-  if FScripts <> Nil then
-  begin
-    while FScripts.Count <> 0 do
-    begin
-      it := FScripts[0];
-      FScripts.Remove(it);
-      FreeAndNil(it.Value);
-    end;
-    FreeAndNil(FScripts);
-  end;
-
+  FreeAndNil(FScripts);
 end;
 
 function TGXDLMSScriptTable.GetValues() : TArray<TValue>;
 begin
-  Result := TArray<TValue>.Create(FLogicalName, FScripts);
+  Result := TArray<TValue>.Create(FLogicalName, TValue.From(FScripts.ToArray()));
 end;
 
 function TGXDLMSScriptTable.GetAttributeIndexToRead: TArray<Integer>;
@@ -150,7 +138,8 @@ function TGXDLMSScriptTable.GetValue(e: TValueEventArgs): TValue;
 var
   cnt : Integer;
   data : TGXByteBuffer;
-  it : TPair<Integer, TGXDLMSScriptAction>;
+  a : TGXDLMSScriptAction;
+  s : TGXDLMSScript;
 begin
   if e.Index = 1 then
   begin
@@ -165,18 +154,23 @@ begin
     TGXCommon.SetObjectCount(cnt, data);
     if cnt <> 0 Then
     begin
-      for it in Scripts do
+      for s in Scripts do
       begin
-          data.Add(Integer(TDataType.dtStructure));
-          data.Add(2); //Count
-          TGXCommon.SetData(data, TDataType.dtUInt16, it.Key); //Script_identifier:
+        data.Add(Integer(TDataType.dtStructure));
+        data.Add(2); //Count
+        TGXCommon.SetData(data, TDataType.dtUInt16, s.ID); //Script_identifier:
+        data.Add(Integer(TDataType.dtArray));
+        data.SetUInt8(s.Actions.Count); //Count
+        for a in s.Actions do
+        begin
           data.Add(Integer(TDataType.dtArray));
           data.Add(5); //Count
-          TGXCommon.SetData(data, TDataType.dtEnum, Integer(it.Value.&Type)); //service_id
-          TGXCommon.SetData(data, TDataType.dtUInt16, Integer(it.Value.ObjectType)); //class_id
-          TGXCommon.SetData(data, TDataType.dtOctetString, it.Value.LogicalName); //logical_name
-          TGXCommon.SetData(data, TDataType.dtInt8, it.Value.Index); //index
-          TGXCommon.SetData(data, it.Value.ParameterType, it.Value.Parameter); //parameter
+          TGXCommon.SetData(data, TDataType.dtEnum, Integer(a.&Type)); //service_id
+          TGXCommon.SetData(data, TDataType.dtUInt16, Integer(a.ObjectType)); //class_id
+          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(a.LogicalName))); //logical_name
+          TGXCommon.SetData(data, TDataType.dtInt8, a.Index); //index
+          TGXCommon.SetData(data, TGXCommon.GetDLMSDataType(a.Parameter), a.Parameter); //parameter
+        end;
       end
     end;
     Result := TValue.From(data.ToArray());
@@ -187,9 +181,9 @@ end;
 
 procedure TGXDLMSScriptTable.SetValue(e: TValueEventArgs);
 var
-  it : TGXDLMSScriptAction;
-  item, item2 : TValue;
-  script_identifier : Integer;
+  it: TGXDLMSScriptAction;
+  item, item2: TValue;
+  s: TGXDLMSScript;
 begin
   if (e.Index = 1) then
   begin
@@ -199,37 +193,28 @@ begin
   begin
     FScripts.Clear();
     //xemex do not return values as table as it should be.
-    if e.Value.IsType<TArray<TValue>> and (e.Value.GetArrayLength() <> 0) Then
+    if e.Value.IsArray Then
     begin
       if e.Value.GetArrayElement(0).AsType<TValue>.IsType<TArray<TValue>> then
       begin
         for item in e.Value.AsType<TArray<TValue>> do
         begin
-          script_identifier := item.GetArrayElement(0).AsType<TValue>.AsInteger;
-          for item2 in item.GetArrayElement(1).AsType<TValue>.AsType<TArray<TValue>> do
-          begin
-            it := TGXDLMSScriptAction.Create();
-            it.&Type := TGXDLMSScriptActionType(item2.GetArrayElement(0).AsType<TValue>.AsInteger);
-            it.ObjectType := TObjectType(item2.GetArrayElement(1).AsType<TValue>.AsInteger);
-            it.LogicalName := TGXCommon.ChangeType(item2.GetArrayElement(2).AsType<TValue>.AsType<TBytes>, TDataType.dtOctetString).ToString();
-            it.Index := item2.AsType<TValue>.GetArrayElement(3).AsType<TValue>.AsInteger;
-            it.Parameter := item2.GetArrayElement(4).AsType<TValue>;
-            FScripts.Add(TPair<Integer,TGXDLMSScriptAction>.Create(script_identifier, it));
-          end;
+          s := TGXDLMSScript.Create();
+          s.ID := item.GetArrayElement(0).AsType<TValue>.AsInteger;
+          if item.GetArrayLength = 2 Then
+            for item2 in item.GetArrayElement(1).AsType<TValue>.AsType<TArray<TValue>> do
+            begin
+              it := TGXDLMSScriptAction.Create();
+              it.&Type := TGXDLMSScriptActionType(item2.GetArrayElement(0).AsType<TValue>.AsInteger);
+              it.ObjectType := TObjectType(item2.GetArrayElement(1).AsType<TValue>.AsInteger);
+              it.LogicalName := TGXCommon.ToLogicalName(item2.GetArrayElement(2));
+              it.Index := item2.AsType<TValue>.GetArrayElement(3).AsType<TValue>.AsInteger;
+              it.Parameter := item2.GetArrayElement(4).AsType<TValue>;
+              s.Actions.Add(it);
+            end;
+          FScripts.Add(s);
         end;
       end;
-    end
-    else
-    begin
-      e.Value := e.Value.GetArrayElement(1).AsType<TValue>;
-      it := TGXDLMSScriptAction.Create();
-      it.&Type := TGXDLMSScriptActionType(e.Value.GetArrayElement(0).AsType<TValue>.AsInteger);
-      it.ObjectType := TObjectType(e.Value.GetArrayElement(1).AsType<TValue>.AsInteger);
-      it.LogicalName := TGXCommon.ChangeType(e.Value.GetArrayElement(2).AsType<TValue>.AsType<TBytes>, TDataType.dtOctetString).ToString();
-      it.Index := e.Value.AsType<TValue>.GetArrayElement(3).AsType<TValue>.AsInteger;
-      it.Parameter := e.Value.GetArrayElement(4).AsType<TValue>;
-      script_identifier := e.Value.GetArrayElement(0).AsType<TValue>.AsInteger;
-      FScripts.Add(TPair<Integer,TGXDLMSScriptAction>.Create(script_identifier, it));
     end;
   end
   else

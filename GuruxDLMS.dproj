@@ -226,6 +226,9 @@
         <DCCReference Include="Gurux.GXSha256.pas"/>
         <DCCReference Include="GXCmdParameter.pas"/>
         <DCCReference Include="Gurux.DLMS.Secure.GXDLMSSecureClient.pas"/>
+        <DCCReference Include="Gurux.DLMS.Objects.GXDLMSScript.pas"/>
+        <DCCReference Include="Gurux.DLMS.SerialnumberCounter.pas"/>
+        <DCCReference Include="Gurux.DLMS.IGXDLMSClient.pas"/>
         <RcItem Include="OBISCodes.txt">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>Text</ResourceType>
@@ -682,7 +685,6 @@
                 <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
             </Deployment>
             <Platforms>
-                <Platform value="Linux64">False</Platform>
                 <Platform value="Win32">True</Platform>
             </Platforms>
             <UnitTesting>

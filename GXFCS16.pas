@@ -94,6 +94,6 @@ begin
   end;
   FCS16 := not FCS16;
   FCS16 := (FCS16 Shr 8 and $FF) or (FCS16 Shl 8);
-  Result := FCS16;
+  Result := Word(FCS16);
 end;
 end.

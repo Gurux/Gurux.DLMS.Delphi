@@ -65,7 +65,7 @@ begin
   Result[8] := FrameCounter shr 24;
   Result[9] := FrameCounter shr 16;
   Result[10] := FrameCounter shr 8;
-  Result[11] := FrameCounter;
+  Result[11] := Byte(FrameCounter);
 end;
 
 class function TGXDLMSChippering.EncryptAesGcm(param: TAesGcmParameter; plainText: TBytes): TBytes;
@@ -85,7 +85,11 @@ begin
   tmp[0] := ((param.InvocationCounter shr 24) and $FF);
   tmp[1] := ((param.InvocationCounter shr 16) and $FF);
   tmp[2] := ((param.InvocationCounter shr 8) and $FF);
-  tmp[3] := (param.InvocationCounter);
+  tmp[3] := Byte(param.InvocationCounter);
+
+{$IFDEF DEBUG}
+  WriteLn('Encrypted data:' + TGXByteBuffer.ToHexString(plainText));
+{$ENDIF}
 
   aad := GetAuthenticatedData(param.Security, param.AuthenticationKey, plainText);
   gcm := TGXDLMSChipperingStream.Create(param.Security, True, param.BlockCipherKey, aad, GetNonse(param.InvocationCounter,

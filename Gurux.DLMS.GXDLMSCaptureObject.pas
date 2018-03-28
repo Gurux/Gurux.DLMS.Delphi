@@ -34,20 +34,27 @@ unit Gurux.DLMS.GXDLMSCaptureObject;
 
 interface
 
+uses Gurux.DLMS.GXDLMSObject;
+
 type
   TGXDLMSCaptureObject = class
 private
-    //Attribute Index of DLMS object in the profile generic table.
-    FAttributeIndex: Byte;
-    // Data index of DLMS object in the profile generic table.
-    FDataIndex: Byte;
+  //Target object.
+  FTarget: TGXDLMSObject;
+  //Attribute Index of DLMS object in the profile generic table.
+  FAttributeIndex: Byte;
+  // Data index of DLMS object in the profile generic table.
+  FDataIndex: Byte;
 public
+    //Attribute Index of DLMS object in the profile generic table.
+    property Target: TGXDLMSObject read FTarget write FTarget;
+
     //Attribute Index of DLMS object in the profile generic table.
     property AttributeIndex: Byte read FAttributeIndex write FAttributeIndex;
     // Data index of DLMS object in the profile generic table.
     property DataIndex: Byte read FDataIndex write FDataIndex;
     constructor Create();overload;
-    constructor Create(AAttributeIndex: Byte; ADataIndex: Byte);overload;
+    constructor Create(ATarget: TGXDLMSObject; AAttributeIndex: Byte; ADataIndex: Byte);overload;
 end;
 
 implementation
@@ -56,8 +63,9 @@ constructor TGXDLMSCaptureObject.Create();
 begin
 end;
 
-constructor TGXDLMSCaptureObject.Create(AAttributeIndex: Byte; ADataIndex: Byte);
+constructor TGXDLMSCaptureObject.Create(ATarget: TGXDLMSObject; AAttributeIndex: Byte; ADataIndex: Byte);
 begin
+  FTarget := ATarget;
   FAttributeIndex := AAttributeIndex;
   FDataIndex := ADataIndex;
 end;

@@ -40,26 +40,26 @@ type
 
 TGXApplicationContextName = class
   FLogicalName : string;
-  FJointIsoCttElement, FCountryElement, FIdentifiedOrganizationElement : byte;
-  FDlmsUAElement, FApplicationContextElement, FContextIdElement : byte;
-  FCountryNameElement : Word;
+  FJointIsoCtt, FCountry, FIdentifiedOrganization : byte;
+  FDlmsUA, FApplicationContext, FContextId : byte;
+  FCountryName : Word;
 
  public
   property LogicalName: string read FLogicalName write FLogicalName;
 
-  property JointIsoCttElement: byte read FJointIsoCttElement write FJointIsoCttElement;
+  property JointIsoCtt: byte read FJointIsoCtt write FJointIsoCtt;
 
-  property CountryElement: byte read FCountryElement write FCountryElement;
+  property Country: byte read FCountry write FCountry;
 
-  property IdentifiedOrganizationElement: byte read FIdentifiedOrganizationElement write FIdentifiedOrganizationElement;
+  property IdentifiedOrganization: byte read FIdentifiedOrganization write FIdentifiedOrganization;
 
-  property DlmsUAElement: byte read FDlmsUAElement write FDlmsUAElement;
+  property DlmsUA: byte read FDlmsUA write FDlmsUA;
 
-  property ApplicationContextElement: byte read FApplicationContextElement write FApplicationContextElement;
+  property ApplicationContext: byte read FApplicationContext write FApplicationContext;
 
-  property ContextIdElement: byte read FContextIdElement write FContextIdElement;
+  property ContextId: byte read FContextId write FContextId;
 
-  property CountryNameElement: Word read FCountryNameElement write FCountryNameElement;
+  property CountryName: Word read FCountryName write FCountryName;
   function ToString: string; override;
 end;
 
@@ -67,10 +67,10 @@ implementation
 
 function TGXApplicationContextName.ToString: string;
 begin
-  Result := FLogicalName + ' ' + IntToStr(FJointIsoCttElement) + ' ' +
-      IntToStr(FCountryElement) + ' ' + IntToStr(FCountryNameElement) + ' ' +
-      IntToStr(FIdentifiedOrganizationElement) + ' ' + IntToStr(FDlmsUAElement) + ' ' +
-      IntToStr(FApplicationContextElement) + ' ' + IntToStr(FContextIdElement);
+  Result := FLogicalName + ' ' + IntToStr(FJointIsoCtt) + ' ' +
+      IntToStr(FCountry) + ' ' + IntToStr(FCountryName) + ' ' +
+      IntToStr(FIdentifiedOrganization) + ' ' + IntToStr(FDlmsUA) + ' ' +
+      IntToStr(FApplicationContext) + ' ' + IntToStr(FContextId);
 end;
 
 end.

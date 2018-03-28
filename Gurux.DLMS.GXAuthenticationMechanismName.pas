@@ -5,24 +5,24 @@ interface
 type
 
 TGXAuthenticationMechanismName = class
-  FJointIsoCttElement, FCountryElement, FIdentifiedOrganizationElement : byte;
-  FDlmsUAElement, FAuthenticationMechanismNameElement : byte;
+  FJointIsoCtt, FCountry, FIdentifiedOrganization : byte;
+  FDlmsUA, FAuthenticationMechanismName : byte;
 
-  FCountryNameElement : Word;
+  FCountryName : Word;
   FMechanismId: TAuthentication;
 
   public
-  property JointIsoCttElement: byte read FJointIsoCttElement write FJointIsoCttElement;
+  property JointIsoCtt: byte read FJointIsoCtt write FJointIsoCtt;
 
-  property CountryElement: byte read FCountryElement write FCountryElement;
+  property Country: byte read FCountry write FCountry;
 
-  property CountryNameElement: Word read FCountryNameElement write FCountryNameElement;
+  property CountryName: Word read FCountryName write FCountryName;
 
-  property IdentifiedOrganizationElement: byte read FIdentifiedOrganizationElement write FIdentifiedOrganizationElement;
+  property IdentifiedOrganization: byte read FIdentifiedOrganization write FIdentifiedOrganization;
 
-  property DlmsUAElement: byte read FDlmsUAElement write FDlmsUAElement;
+  property DlmsUA: byte read FDlmsUA write FDlmsUA;
 
-  property AuthenticationMechanismNameElement: byte read FAuthenticationMechanismNameElement write FAuthenticationMechanismNameElement;
+  property AuthenticationMechanismName: byte read FAuthenticationMechanismName write FAuthenticationMechanismName;
 
   property MechanismId: TAuthentication read FMechanismId write FMechanismId;
 

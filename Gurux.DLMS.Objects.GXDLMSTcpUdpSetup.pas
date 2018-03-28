@@ -197,7 +197,7 @@ begin
   end
   else if e.Index = 3 Then
   begin
-    Result := FIPReference;
+    Result := TValue.From(TGXDLMSObject.GetLogicalName(FIPReference));
   end
   else if e.Index = 4 Then
   begin
@@ -227,7 +227,7 @@ begin
   end
   else if e.Index = 3 Then
   begin
-    FIPReference := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtOctetString).ToString();
+    FIPReference := TGXCommon.ToLogicalName(e.Value);
   end
   else if e.Index = 4 Then
   begin

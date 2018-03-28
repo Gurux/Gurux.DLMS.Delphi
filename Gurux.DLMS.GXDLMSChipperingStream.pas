@@ -653,10 +653,10 @@ end;
 
 class procedure TGXDLMSChipperingStream.UInt32_To_BE(value : LongWord; buff : TBytes; offset : Integer);
 begin
-    buff[offset] := (value Shr 24);
-    buff[offset + 1] := (value Shr 16);
-    buff[offset + 2] := (value Shr 8);
-    buff[offset + 3] := (value);
+  buff[offset] := Byte(value Shr 24);
+  buff[offset + 1] := Byte(value Shr 16);
+  buff[offset + 2] := Byte(value Shr 8);
+  buff[offset + 3] := Byte(value);
 end;
 
 procedure TGXDLMSChipperingStream.MultiplyH(value : TBytes);
@@ -771,7 +771,8 @@ begin
     ProcessBlock(Fcounter, 0, tmp, 0);
     if FEncrypt then
     begin
-        Move(FZeroes[bufCount], tmp[bufCount], FBlockSize - bufCount);
+        if FBlockSize <> bufCount then
+          Move(FZeroes[bufCount], tmp[bufCount], FBlockSize - bufCount);
         hashBytes := tmp;
     end
     else

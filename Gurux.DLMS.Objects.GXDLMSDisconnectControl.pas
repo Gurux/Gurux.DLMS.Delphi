@@ -99,12 +99,12 @@ end;
 
 function TGXDLMSDisconnectControl.RemoteDisconnect(client: IGXDLMSClient) : TArray<TBytes>;
 begin
-  Result := client.Method(Self, 1, ShortInt(0));
+  Result := client.Method(Self, 1, 0, TDataType.dtInt8);
 end;
 
 function TGXDLMSDisconnectControl.RemoteReconnect(client: IGXDLMSClient) : TArray<TBytes>;
 begin
-  Result := client.Method(Self, 2, ShortInt(0));
+  Result := client.Method(Self, 2, 0, TDataType.dtInt8);
 end;
 
 function TGXDLMSDisconnectControl.GetValues() : TArray<TValue>;

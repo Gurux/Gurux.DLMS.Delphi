@@ -63,7 +63,10 @@ Gurux.DLMS.Objects.GXDLMSSecuritySetup,
 Gurux.DLMS.Objects.GXDLMSRegisterActivation,
 Gurux.DLMS.Objects.GXDLMSMBusMasterPortSetup,
 Gurux.DLMS.Objects.GXDLMSPushSetup,
-Gurux.DLMS.Objects.GXDLMSMessageHandler;
+Gurux.DLMS.Objects.GXDLMSMessageHandler,
+Gurux.DLMS.Objects.GXDLMSAssociationLogicalName,
+Gurux.DLMS.Objects.GXDLMSAssociationShortName,
+Gurux.DLMS.Objects.GXDLMSProfileGeneric;
 
 type
 TGXObjectFactory = class
@@ -79,9 +82,9 @@ begin
   else if tp = TObjectType.otActivityCalendar Then
     Result := TGXDLMSActivityCalendar.Create()
   else if tp = TObjectType.otAssociationLogicalName Then
-      raise Exception.Create('Logical Name Association is special case.')
+    Result := TGXDLMSAssociationLogicalName.Create()
   else if tp = TObjectType.otAssociationShortName Then
-    raise Exception.Create('Short Name Association is special case.')
+    Result := TGXDLMSAssociationShortName.Create()
   else if tp = TObjectType.otAutoAnswer Then
       Result := TGXDLMSAutoAnswer.Create()
   else if tp = TObjectType.otAutoConnect Then
@@ -125,7 +128,7 @@ begin
   else if tp = TObjectType.otPppSetup Then
       Result := TGXDLMSPppSetup.Create()
   else if tp = TObjectType.otProfileGeneric Then
-    raise Exception.Create('Profile Generic is special case.')
+    Result := TGXDLMSProfileGeneric.Create()
   else if tp = TObjectType.otRegister Then
       Result := TGXDLMSRegister.Create()
   else if tp = TObjectType.otRegisterActivation Then

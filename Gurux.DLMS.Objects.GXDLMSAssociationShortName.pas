@@ -34,7 +34,7 @@ unit Gurux.DLMS.Objects.GXDLMSAssociationShortName;
 
 interface
 
-uses GXCommon, SysUtils, Rtti, GXObjectFactory, System.Generics.Collections,
+uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
 Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
 Gurux.DLMS.GXAttributeCollection,
 Gurux.DLMS.AccessMode, Gurux.DLMS.MethodAccessMode, GXByteBuffer;
@@ -69,6 +69,8 @@ TGXDLMSAssociationShortName = class(TGXDLMSObject)
 end;
 
 implementation
+
+uses GXObjectFactory;
 
 constructor TGXDLMSAssociationShortName.Create;
 begin

@@ -103,6 +103,8 @@ TObjectType =
   //allow a more general use.
   otMacAddressSetup = 43,
 
+  otGSMDiagnostic = 47,
+
   //When a certain occasion should cause a certain action, use an object of
   //type Event, which the client system can enable. When enabled, and when the
   //specified occasion occures, the event is sent the soonest possible.

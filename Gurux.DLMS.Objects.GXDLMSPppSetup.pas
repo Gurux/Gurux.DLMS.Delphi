@@ -281,7 +281,7 @@ begin
   end
   else if e.Index = 2 Then
   begin
-    Result := FPHYReference;
+    Result := TValue.From(TGXDLMSObject.GetLogicalName(FPHYReference));
   end
   else if e.Index = 3 Then
   begin
@@ -316,16 +316,10 @@ begin
   else if e.Index = 5 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtArray));
-    data.Add(IPCPOptions.Count);
-    for icp in FIPCPOptions do
-    begin
-      data.Add(Integer(TDataType.dtStructure));
-      data.Add(3);
-      TGXCommon.SetData(data, TDataType.dtUInt8, Integer(icp.&Type));
-      TGXCommon.SetData(data, TDataType.dtUInt8, icp.Length);
-      TGXCommon.SetData(data, TGXDLMSConverter.GetDLMSDataType(icp.Data), icp.Data);
-    end;
+    data.Add(Integer(TDataType.dtStructure));
+    data.SetUInt8(2);
+    TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(FUserName));
+    TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(FPassword));
     Result := TValue.From(data.ToArray());
   end
   else
@@ -345,10 +339,7 @@ begin
   end
   else if e.Index = 2 Then
   begin
-    if e.Value.IsType<string> Then
-      PHYReference := e.Value.ToString()
-    else
-      PHYReference := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtOctetString).ToString();
+    PHYReference := TGXCommon.ToLogicalName(e.Value);
   end
   else if e.Index = 3 Then
   begin

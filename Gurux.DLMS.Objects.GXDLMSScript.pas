@@ -30,28 +30,41 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.GXDLMSImageActivateInfo;
+unit Gurux.DLMS.Objects.GXDLMSScript;
 
 interface
 
+uses System.Generics.Collections, Gurux.DLMS.GXDLMSScriptAction, SysUtils;
+
 type
+  TGXDLMSScript = class
+  private
+    FID: Integer;
+    FActions: TObjectList<TGXDLMSScriptAction>;
+  public
+  //Constructor.
+  constructor Create();
 
-TGXDLMSImageActivateInfo = class
-  FSize : LongWord;
-  FIdentification, FSignature : string;
+  //Script identifier.
+  property ID: Integer read FID write FID;
+  //Script actions.
+  property Actions: TObjectList<TGXDLMSScriptAction> read FActions Write FActions;
 
-  // Image size is the size of the Image(s) to be activated. Expressed in octets;
-  property Size: LongWord read FSize write FSize;
+  destructor Destroy;override;
 
-  /// Image identification is the identification of the Image(s)
-  /// to be activated, and may contain information like
-  /// manufacturer, device type, version information, etc.
-  property Identification: string read FIdentification write FIdentification;
+  end;
 
-  // Image signature is the signature of the Image(s) to be activated.
-  property Signature: string read FSignature write FSignature;
-
-end;
 implementation
+
+constructor TGXDLMSScript.Create();
+begin
+  FActions := TObjectList<TGXDLMSScriptAction>.Create();
+end;
+
+destructor TGXDLMSScript.Destroy;
+begin
+  inherited;
+  FreeAndNil(FActions);
+end;
 
 end.

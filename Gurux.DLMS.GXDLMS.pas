@@ -1370,6 +1370,7 @@ var
   first: Boolean;
   tp: TSingleReadResponse;
 begin
+  values := nil;
   try
   {
     cnt := TGXCommon.GetObjectCount(reply.Data);
@@ -2144,10 +2145,9 @@ begin
   if (reply.Command <> TCommand.DataNotification) and info.Complete
           and (reply.MoreData = TRequestTypes.rtNone) Then
   begin
-      // If all blocks are read.
-      if settings <> Nil Then
-        settings.ResetBlockIndex();
-      reply.Data.Position(0);
+    // If all blocks are read.
+    settings.ResetBlockIndex();
+    reply.Data.Position(0);
   end;
   FreeAndNil(info);
 end;

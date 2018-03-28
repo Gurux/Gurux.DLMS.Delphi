@@ -573,6 +573,7 @@ begin
   end;
   startIndex := index;
   arr := TList<TValue>.Create();
+  pos := 0;
   // Position where last row was found. Cache uses this info.
   for pos := info.Index to info.Count - 1 do
   begin
@@ -588,7 +589,7 @@ begin
       else if info2.Count = info2.Index then
       begin
         startIndex := buff.Position;
-        arr.add(tmp);
+        arr.add(tmp.AsType<TValue>);
       end;
     finally
       FreeAndNil(info2);
@@ -1106,16 +1107,16 @@ class procedure TGXCommon.SetBitString(buff : TGXByteBuffer; value: TValue);
 var
   val, index, pos : Integer;
   arr : TBytes;
-  str : String;
+  str : TArray<Char>;
   it : Char;
 begin
     if value.IsType<String> then
     begin
       val := 0;
-      str := value.AsType<String>;
+      str := value.AsType<String>.ToCharArray();
       SetObjectCount(Length(str), buff);
       index := 7;
-      for pos := 0 to Length(str) do
+      for pos := 0 to Length(str) - 1 do
       begin
         it := str[pos];
         if it = '1' then
@@ -1446,7 +1447,6 @@ end;
 
 // Reserved for internal use.
 class procedure TGXCommon.SetData(buff : TGXByteBuffer; dataType : TDataType; value : TValue);
-//var
 begin
   if ((dataType = TDataType.dtArray) or (dataType = TDataType.dtSTRUCTURE)) and value.IsType<TBytes> then
     // If byte array is added do not add type.
@@ -1471,11 +1471,11 @@ begin
     dtINT16:
       buff.SetUInt16(value.AsInteger);
     dtUINT16:
-      buff.SetUInt16(value.AsInteger);
+      buff.SetUInt16(value.AsType<WORD>);
     dtINT32:
       buff.SetUInt32(value.AsInteger);
     dtUINT32:
-      buff.SetUInt32(value.AsInteger);
+      buff.SetUInt32(value.Cast(TypeInfo(Longword)).AsType<Longword>);
     dtINT64:
       buff.SetUInt64(value.AsUInt64);
     dtUINT64:

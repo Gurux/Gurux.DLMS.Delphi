@@ -892,7 +892,7 @@ end;
 // Increase receiver sequence.
 function TGXDLMSSettings.IncreaseReceiverSequence(value : Byte): Byte;
 begin
-    Result := ((value + $20) or $10 or value and $E);
+    Result := Byte((value + $20) or $10 or value and $E);
 end;
 
 ///Increase sender sequence.

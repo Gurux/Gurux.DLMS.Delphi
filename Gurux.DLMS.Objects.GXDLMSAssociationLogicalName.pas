@@ -41,8 +41,9 @@ Gurux.DLMS.AccessMode, Gurux.DLMS.MethodAccessMode,
 Gurux.DLMS.GXAuthenticationMechanismName,
 Gurux.DLMS.GXApplicationContextName,
 Gurux.DLMS.TGXxDLMSContextType,
-GXObjectFactory, GXByteBuffer,
-Gurux.DLMS.IGXDLMSClient, Gurux.DLMS.Authentication;
+GXByteBuffer,
+Gurux.DLMS.IGXDLMSClient, Gurux.DLMS.Authentication,
+Gurux.DLMS.Conformance;
 
 type
 TGXDLMSAssociationLogicalName = class(TGXDLMSObject)
@@ -101,6 +102,8 @@ end;
 
 implementation
 
+uses GXObjectFactory;
+
 constructor TGXDLMSAssociationLogicalName.Create;
 begin
   Create('0.0.40.0.0.255', 0);
@@ -141,7 +144,7 @@ begin
     Result := client.Write(Self, 7)
   else
     //Action is used to update High authentication password.
-    Result := client.Method(Self, 2, TValue.From(FSecret));
+    Result := client.Method(Self, 2, TValue.From(FSecret), TDataType.dtArray);
 end;
 
 function TGXDLMSAssociationLogicalName.GetValues() : TArray<TValue>;
@@ -215,18 +218,13 @@ end;
 function TGXDLMSAssociationLogicalName.GetObjects() : TBytes;
 var
   stream : TGXByteBuffer;
-  lnExists : Boolean;
   cnt : Integer;
   it : TGXDLMSObject;
 begin
   stream := TGXByteBuffer.Create;
   stream.Add(Integer(TDataType.dtArray));
-  lnExists := FObjectList.FindByLN(TObjectType.otAssociationLogicalName, FLogicalName) <> Nil;
   //Add count
   cnt := FObjectList.Count;
-  if Not lnExists Then
-    cnt := cnt + 1;
-
   TGXCommon.SetObjectCount(cnt, stream);
   for it in FObjectList do
   begin
@@ -234,18 +232,8 @@ begin
     stream.Add(4); //Count
     TGXCommon.SetData(stream, TDataType.dtUInt16, Integer(it.ObjectType)); //ClassID
     TGXCommon.SetData(stream, TDataType.dtUInt8, it.Version); //Version
-    TGXCommon.SetData(stream, TDataType.dtOctetString, it.LogicalName); //LN
+    TGXCommon.SetData(stream, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(it.LogicalName))); //LN
     GetAccessRights(it, stream); //Access rights.
-  end;
-
-  if Not lnExists Then
-  begin
-      stream.Add(Integer(TDataType.dtStructure));
-      stream.Add(4); //Count
-      TGXCommon.SetData(stream, TDataType.dtUInt16, Integer(FObjectType)); //ClassID
-      TGXCommon.SetData(stream, TDataType.dtUInt8, FVersion); //Version
-      TGXCommon.SetData(stream, TDataType.dtOctetString, FLogicalName); //LN
-      GetAccessRights(Self, stream); //Access rights.
   end;
   Result := stream.ToArray();
 end;
@@ -338,7 +326,7 @@ end;
 
 function TGXDLMSAssociationLogicalName.GetValue(e: TValueEventArgs): TValue;
 var
-  data : TGXByteBuffer;
+  data, bb : TGXByteBuffer;
 begin
   if e.Index = 1 then
   begin
@@ -359,18 +347,56 @@ begin
     data.SetUInt8(Integer(TDataType.dtUInt16));
     data.SetUInt16(FServerSAP);
     Result := TValue.From(data.ToArray());
+    FreeAndNil(data);
   end
-  else if e.Index = 4 Then
+  else if (e.Index = 4) Then
   begin
-    Result := ApplicationContextName;
+    data := TGXByteBuffer.Create;
+    data.Add(Integer(TDataType.dtStructure));
+    //Add count
+    data.SetUInt8(7);
+    TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.JointIsoCtt);
+    TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.Country);
+    TGXCommon.SetData(data, TDataType.dtUInt16, ApplicationContextName.CountryName);
+    TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.IdentifiedOrganization);
+    TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.DlmsUA);
+    TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.ApplicationContext);
+    TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.ContextId);
+    Result := TValue.From(data.ToArray());
+    FreeAndNil(data);
   end
-  else if e.Index = 5 Then
+  else if (e.Index = 5) Then
   begin
-    Result := XDLMSContextInfo;
+    data := TGXByteBuffer.Create;
+    data.Add(Integer(TDataType.dtStructure));
+    data.SetUInt8(6);
+    bb := TGXByteBuffer.Create();
+    bb.SetUInt32(Integer(XDLMSContextInfo.Conformance));
+    TGXCommon.SetData(data, TDataType.dtBitString, TValue.From(bb.SubArray(1, 3)));
+    TGXCommon.SetData(data, TDataType.dtUInt16, XDLMSContextInfo.MaxReceivePduSize);
+    TGXCommon.SetData(data, TDataType.dtUInt16, XDLMSContextInfo.MaxSendPduSize);
+    TGXCommon.SetData(data, TDataType.dtUInt8, XDLMSContextInfo.DlmsVersionNumber);
+    TGXCommon.SetData(data, TDataType.dtInt8, XDLMSContextInfo.QualityOfService);
+    TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(XDLMSContextInfo.CypheringInfo));
+    Result := TValue.From(data.ToArray());
+    FreeAndNil(bb);
+    FreeAndNil(data);
   end
-  else if e.Index = 6 Then
+  else if (e.Index = 6) Then
   begin
-    Result := FAuthenticationMechanismName;
+    data := TGXByteBuffer.Create;
+    data.Add(Integer(TDataType.dtStructure));
+    //Add count
+    data.SetUInt8(7);
+    TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.JointIsoCtt);
+    TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.Country);
+    TGXCommon.SetData(data, TDataType.dtUInt16, FAuthenticationMechanismName.CountryName);
+    TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.IdentifiedOrganization);
+    TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.DlmsUA);
+    TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.AuthenticationMechanismName);
+    TGXCommon.SetData(data, TDataType.dtUInt8, Integer(FAuthenticationMechanismName.MechanismId));
+    Result := TValue.From(data.ToArray());
+    FreeAndNil(data);
   end
   else if e.Index = 7 Then
   begin
@@ -378,14 +404,10 @@ begin
   end
   else if e.Index = 8 Then
   begin
-    Result := TValue.From(AssociationStatus);
+    Result := Integer(AssociationStatus);
   end
   else if e.Index = 9 Then
-  begin
-    if SecuritySetupReference.IsEmpty Then
-      Result := Nil;
-    Result := TValue.From(TGXCommon.GetBytes(SecuritySetupReference));
-  end
+    Result := TValue.From(TGXDLMSObject.GetLogicalName(FSecuritySetupReference))
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');
 end;
@@ -426,6 +448,7 @@ var
   tp : TObjectType;
   ln : string;
   obj : TGXDLMSObject;
+  bb: TGXByteBuffer;
 begin
   if (e.Index = 1) then
   begin
@@ -440,7 +463,7 @@ begin
       for item in e.Value.AsType<TArray<TValue>> do
       begin
         tp := TObjectType(item.GetArrayElement(0).AsType<TValue>.AsInteger);
-        //Skip version := item.GetArrayElement(1).AsType<TValue>.AsInteger;
+        version := item.GetArrayElement(1).AsType<TValue>.AsInteger;
         ln := TGXDLMSObject.toLogicalName(item.GetArrayElement(2).AsType<TValue>.AsType<TBytes>);
         obj := e.Settings.Objects.FindByLN(tp, ln);
         if obj <> Nil Then
@@ -449,6 +472,7 @@ begin
           UpdateAccessRights(obj, tmp.AsType<TArray<TValue>>);
           ObjectList.Add(obj);
         end;
+        obj.Version := version;
       end
     end;
   end
@@ -459,32 +483,35 @@ begin
   end
   else if e.Index = 4 Then
   begin
-    FApplicationContextName.JointIsoCttElement := e.Value.GetArrayElement(0).AsType<TValue>.AsInteger;
-    FApplicationContextName.CountryElement := e.Value.GetArrayElement(1).AsType<TValue>.AsInteger;
-    FApplicationContextName.CountryNameElement := e.Value.GetArrayElement(2).AsType<TValue>.AsInteger;
-    FApplicationContextName.IdentifiedOrganizationElement := e.Value.GetArrayElement(3).AsType<TValue>.AsInteger;
-    FApplicationContextName.DlmsUAElement := e.Value.GetArrayElement(4).AsType<TValue>.AsInteger;
-    FApplicationContextName.ApplicationContextElement := e.Value.GetArrayElement(5).AsType<TValue>.AsInteger;
-    FApplicationContextName.ContextIdElement := e.Value.GetArrayElement(6).AsType<TValue>.AsInteger;
+    FApplicationContextName.JointIsoCtt := e.Value.GetArrayElement(0).AsType<TValue>.AsInteger;
+    FApplicationContextName.Country := e.Value.GetArrayElement(1).AsType<TValue>.AsInteger;
+    FApplicationContextName.CountryName := e.Value.GetArrayElement(2).AsType<TValue>.AsInteger;
+    FApplicationContextName.IdentifiedOrganization := e.Value.GetArrayElement(3).AsType<TValue>.AsInteger;
+    FApplicationContextName.DlmsUA := e.Value.GetArrayElement(4).AsType<TValue>.AsInteger;
+    FApplicationContextName.ApplicationContext := e.Value.GetArrayElement(5).AsType<TValue>.AsInteger;
+    FApplicationContextName.ContextId := e.Value.GetArrayElement(6).AsType<TValue>.AsInteger;
   end
   else if e.Index = 5 Then
   begin
-    FXDLMSContextInfo.Conformance := e.Value.GetArrayElement(0).AsType<TValue>.ToString;
-    tmp := e.Value.GetArrayElement(1).AsType<TValue>;
+    bb := TGXByteBuffer.Create(4);
+    TGXCommon.SetBitString(bb, e.Value.GetArrayElement(0).AsType<TValue>.ToString);
+    bb.SetUInt8(0, 0);
+    FXDLMSContextInfo.Conformance := TConformance(bb.GetUInt32());
+    FreeAndNil(bb);
     FXDLMSContextInfo.MaxReceivePduSize := e.Value.GetArrayElement(1).AsType<TValue>.AsInteger;
-    FXDLMSContextInfo.MaxSendPpuSize := e.Value.GetArrayElement(2).AsType<TValue>.AsInteger;
+    FXDLMSContextInfo.MaxSendPduSize := e.Value.GetArrayElement(2).AsType<TValue>.AsInteger;
     FXDLMSContextInfo.DlmsVersionNumber := e.Value.GetArrayElement(3).AsType<TValue>.AsInteger;
     FXDLMSContextInfo.QualityOfService := e.Value.GetArrayElement(4).AsType<TValue>.AsInteger;
     FXDLMSContextInfo.CypheringInfo := e.Value.GetArrayElement(5).AsType<TValue>.AsType<TBytes>;
   end
   else if e.Index = 6 Then
   begin
-    FAuthenticationMechanismName.JointIsoCttElement := e.Value.GetArrayElement(0).AsType<TValue>.AsInteger;
-    FAuthenticationMechanismName.CountryElement := e.Value.GetArrayElement(1).AsType<TValue>.AsInteger;
-    FAuthenticationMechanismName.CountryNameElement := e.Value.GetArrayElement(2).AsType<TValue>.AsInteger;
-    FAuthenticationMechanismName.IdentifiedOrganizationElement := e.Value.GetArrayElement(3).AsType<TValue>.AsInteger;
-    FAuthenticationMechanismName.DlmsUAElement := e.Value.GetArrayElement(4).AsType<TValue>.AsInteger;
-    FAuthenticationMechanismName.AuthenticationMechanismNameElement := e.Value.GetArrayElement(5).AsType<TValue>.AsInteger;
+    FAuthenticationMechanismName.JointIsoCtt := e.Value.GetArrayElement(0).AsType<TValue>.AsInteger;
+    FAuthenticationMechanismName.Country := e.Value.GetArrayElement(1).AsType<TValue>.AsInteger;
+    FAuthenticationMechanismName.CountryName := e.Value.GetArrayElement(2).AsType<TValue>.AsInteger;
+    FAuthenticationMechanismName.IdentifiedOrganization := e.Value.GetArrayElement(3).AsType<TValue>.AsInteger;
+    FAuthenticationMechanismName.DlmsUA := e.Value.GetArrayElement(4).AsType<TValue>.AsInteger;
+    FAuthenticationMechanismName.AuthenticationMechanismName := e.Value.GetArrayElement(5).AsType<TValue>.AsInteger;
     FAuthenticationMechanismName.MechanismId := TAuthentication(e.Value.GetArrayElement(6).AsType<TValue>.AsInteger);
   end
   else if e.Index = 7 Then
@@ -499,13 +526,7 @@ begin
       FAssociationStatus := TAssociationStatus(e.Value.AsInteger);
   end
   else if e.Index = 9 Then
-  begin
-    if e.Value.IsType<TBytes> then
-    begin
-      e.Value := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtOctetString).ToString();;
-    end;
-    FSecuritySetupReference := e.Value.AsString;
-end
+    FSecuritySetupReference := TGXCommon.ToLogicalName(e.Value)
   else
     raise Exception.Create('SetValue failed. Invalid attribute index.');
 end;

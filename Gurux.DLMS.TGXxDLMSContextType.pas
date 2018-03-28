@@ -2,24 +2,24 @@ unit Gurux.DLMS.TGXxDLMSContextType;
 
 interface
 
-uses SysUtils;
+uses SysUtils, Gurux.DLMS.Conformance;
 
 type
 
 TGXxDLMSContextType = class
-  FConformance : string;
-    FMaxReceivePduSize, FMaxSendPpuSize : Word;
+  FConformance : TConformance;
+  FMaxReceivePduSize, FMaxSendPduSize : Word;
 
-    FDlmsVersionNumber : byte;
-    FQualityOfService : ShortInt;
-    FCypheringInfo : TBytes;
+  FDlmsVersionNumber : byte;
+  FQualityOfService : ShortInt;
+  FCypheringInfo : TBytes;
 
  public
-  property Conformance: string read FConformance write FConformance;
+  property Conformance: TConformance read FConformance write FConformance;
 
   property MaxReceivePduSize: Word read FMaxReceivePduSize write FMaxReceivePduSize;
 
-  property MaxSendPpuSize: Word read FMaxSendPpuSize write FMaxSendPpuSize;
+  property MaxSendPduSize: Word read FMaxSendPduSize write FMaxSendPduSize;
 
   property DlmsVersionNumber: byte read FDlmsVersionNumber write FDlmsVersionNumber;
 

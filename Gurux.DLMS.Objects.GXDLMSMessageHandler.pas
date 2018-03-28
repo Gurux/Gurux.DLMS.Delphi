@@ -67,16 +67,12 @@ implementation
 
 constructor TGXDLMSMessageHandler.Create;
 begin
-  inherited Create(TObjectType.otMessageHandler);
-  FListeningWindow := TList<TPair<TGXDateTime, TGXDateTime>>.Create();
-  FSendersAndActions := TList<TPair<String, TPair<Integer, TGXDLMSScriptAction>>>.Create();
+  Create('', 0);
 end;
 
 constructor TGXDLMSMessageHandler.Create(ln: string);
 begin
-  inherited Create(TObjectType.otMessageHandler, ln, 0);
-  FListeningWindow := TList<TPair<TGXDateTime, TGXDateTime>>.Create();
-  FSendersAndActions := TList<TPair<String, TPair<Integer, TGXDLMSScriptAction>>>.Create();
+  Create(ln, 0);
 end;
 
 constructor TGXDLMSMessageHandler.Create(ln: string; sn: System.UInt16);

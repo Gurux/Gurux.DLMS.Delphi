@@ -37,7 +37,9 @@ interface
 uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
 Gurux.DLMS.ObjectType, Gurux.DLMS.GXDLMSImageActivateInfo,
 Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-Gurux.DLMS.ImageTransferStatus;
+Gurux.DLMS.ImageTransferStatus, GXByteBuffer,
+Gurux.DLMS.ErrorCode, Gurux.DLMS.IGXDLMSClient,
+System.Math;
 
 type
 TGXDLMSImageTransfer = class(TGXDLMSObject)
@@ -47,6 +49,7 @@ TGXDLMSImageTransfer = class(TGXDLMSObject)
   FImageTransferEnabled : Boolean;
   FImageTransferStatus : TImageTransferStatus;
   FImageActivateInfo : TObjectList<TGXDLMSImageActivateInfo>;
+  function GetImageActivateInfo(): TValue;
 
   public
   destructor Destroy;override;
@@ -83,6 +86,16 @@ TGXDLMSImageTransfer = class(TGXDLMSObject)
   function GetValue(e: TValueEventArgs): TValue;override;
   procedure SetValue(e: TValueEventArgs);override;
   function Invoke(e: TValueEventArgs): TBytes;override;
+
+  function ImageTransferInitiate(client: IGXDLMSClient; imageIdentifier: String; imageSize: Integer) : TArray<TBytes>;
+
+  function ImageBlockTransfer(client: IGXDLMSClient; imageBlockValue: TBytes; ImageBlockCount : PInteger) : TArray<TBytes>;
+
+  //Verifies the image.
+  function ImageVerify(client: IGXDLMSClient) : TArray<TBytes>;
+
+  //Activates the image.
+  function ImageActivate(client: IGXDLMSClient) : TArray<TBytes>;
 end;
 
 implementation
@@ -111,6 +124,74 @@ begin
   FreeAndNil(FImageActivateInfo);
 end;
 
+function TGXDLMSImageTransfer.ImageTransferInitiate(client: IGXDLMSClient; imageIdentifier: String; imageSize: Integer) : TArray<TBytes>;
+var
+  data: TGXByteBuffer;
+begin
+  if ImageBlockSize = 0 Then
+    raise Exception.Create('Invalid image block size.');
+
+  data := TGXByteBuffer.Create();
+  data.SetUInt8(Integer(TDataType.dtStructure));
+  data.SetUInt8(2);
+  TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(imageIdentifier)));
+  TGXCommon.SetData(data, TDataType.dtUInt32, imageSize);
+  Result := client.Method(Self, 1, TValue.From(data.ToArray()), TDataType.dtArray);
+  FreeAndNil(data);
+end;
+
+function TGXDLMSImageTransfer.ImageBlockTransfer(client: IGXDLMSClient; imageBlockValue: TBytes; ImageBlockCount : PInteger) : TArray<TBytes>;
+var
+  packets: TList<TBytes>;
+  bytes, pos: Integer;
+  data: TGXByteBuffer;
+  tmp: TBytes;
+begin
+  ImageBlockCount^ := Floor(Length(imageBlockValue) / FImageBlockSize);
+  if (Length(imageBlockValue) Mod FImageBlockSize) <> 0 Then
+    ImageBlockCount^ := ImageBlockCount^ + 1;
+
+  packets := TList<TBytes>.Create();
+  for pos := 0 to ImageBlockCount^ - 1 do
+  begin
+    data := TGXByteBuffer.Create();
+    data.SetUInt8(Integer(TDataType.dtStructure));
+    data.SetUInt8(2);
+    TGXCommon.SetData(data, TDataType.dtUInt32, pos);
+    bytes := (Length(imageBlockValue) - ((pos + 1) * FImageBlockSize));
+    tmp := TBytes.Create();
+    //If last packet
+    if bytes < 0 Then
+    begin
+      bytes := (Length(imageBlockValue) - (pos * FImageBlockSize));
+      SetLength(tmp, bytes);
+      System.Move(imageBlockValue[pos * FImageBlockSize], tmp[0], bytes);
+    end
+    else
+    begin
+      SetLength(tmp, FImageBlockSize);
+      System.Move(imageBlockValue[pos * FImageBlockSize], tmp[0], FImageBlockSize);
+    end;
+    TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(tmp));
+    FreeAndNil(tmp);
+    packets.AddRange(client.Method(Self, 2, TValue.From(data.ToArray()), TDataType.dtArray));
+    FreeAndNil(data);
+  end;
+  Result := packets.ToArray();
+  FreeAndNil(packets);
+end;
+
+//Verifies the image.
+function TGXDLMSImageTransfer.ImageVerify(client: IGXDLMSClient) : TArray<TBytes>;
+begin
+  Result := client.Method(Self, 3, 0, TDataType.dtInt8);
+end;
+
+//Activates the image.
+function TGXDLMSImageTransfer.ImageActivate(client: IGXDLMSClient) : TArray<TBytes>;
+begin
+  Result := client.Method(Self, 4, 0, TDataType.dtInt8);
+end;
 
 function TGXDLMSImageTransfer.GetValues() : TArray<TValue>;
 begin
@@ -200,14 +281,44 @@ begin
   	raise Exception.Create('GetDataType failed. Invalid attribute index.');
 end;
 
+function TGXDLMSImageTransfer.GetImageActivateInfo(): TValue;
+var
+  data: TGXByteBuffer;
+  it: TGXDLMSImageActivateInfo;
+begin
+  data := TGXByteBuffer.Create();
+  data.SetUInt8(Integer(TDataType.dtArray));
+  if FImageActivateInfo = Nil Then
+      TGXCommon.SetObjectCount(0, data)
+  else
+  begin
+    TGXCommon.SetObjectCount(FImageActivateInfo.Count, data);
+    for it in FImageActivateInfo do
+    begin
+      data.SetUInt8(Integer(TDataType.dtStructure));
+      data.SetUInt8(3);
+      TGXCommon.SetData(data, TDataType.dtUInt32, it.Size);
+      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(it.Identification)));
+      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(it.Signature)));
+    end;
+  end;
+   Result := TValue.From(data.ToArray());
+  FreeAndNil(data);
+end;
+
 function TGXDLMSImageTransfer.GetValue(e: TValueEventArgs): TValue;
 begin
-  if (e.Index = 1) then
-  begin
-    Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
-  end
+  case e.Index of
+  1: Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
+  2: Result := FImageBlockSize;
+  3: Result := FImageTransferredBlocksStatus;
+  4: Result := FImageFirstNotTransferredBlockNumber;
+  5: Result := FImageTransferEnabled;
+  6: Result := Integer(FImageTransferStatus);
+  7: Result := GetImageActivateInfo();
   else
-    raise Exception.Create('GetValue failed. Invalid attribute index.');
+    e.Error := TErrorCode.ecReadWriteDenied;
+  end;
 end;
 
 procedure TGXDLMSImageTransfer.SetValue(e: TValueEventArgs);

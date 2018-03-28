@@ -189,7 +189,6 @@ begin
   Client.Ciphering.Security := ASecurity;
   socket.Host := AHost;
   socket.Port := APort;
-
   ///////////////////////////////////////////////////////
   socket.Socket.ClientType := TClientType.ctBlocking;
   socket.Open;
@@ -663,10 +662,9 @@ begin
             obj2.LogicalName := ln;
           end;
           obj2.Version := StrToInt(cn.Attributes['Version']);
-          (obj as TGXDLMSProfileGeneric).CaptureObjects.add(
-          TPair<TGXDLMSObject, TGXDLMSCaptureObject>.Create(obj2,
-          TGXDLMSCaptureObject.Create(StrToInt(cn.Attributes['AttributeIndex']),
-              StrToInt(cn.Attributes['DataIndex']))));
+          (obj as TGXDLMSProfileGeneric).CaptureObjects.Add(
+          TGXDLMSCaptureObject.Create(obj2, StrToInt(cn.Attributes['AttributeIndex']),
+              StrToInt(cn.Attributes['DataIndex'])));
         end;
       end;
     end;
@@ -697,7 +695,7 @@ var
   FRootNode: IXMLNode;
   access, Auth, Node, Node2: IXMLNode;
   it: TGXDLMSObject;
-  it2: TPair<TGXDLMSObject, TGXDLMSCaptureObject>;
+  it2: TGXDLMSCaptureObject;
   pos, tp : Integer;
 begin
   try
@@ -731,12 +729,12 @@ begin
         Node := Node.AddChild('Objects');
         for it2 in (it as TGXDLMSProfileGeneric).CaptureObjects do
         begin
-          Node2 := Node.AddChild(it2.Key.ClassName);
-          Node2.Attributes['LN'] := it2.Key.LogicalName;
-          Node2.Attributes['Type'] := Integer(it2.Key.ObjectType).ToString;
-          Node2.Attributes['Version'] := it2.Key.Version.ToString;
-          Node2.Attributes['AttributeIndex'] := it2.Value.AttributeIndex.ToString;
-          Node2.Attributes['DataIndex'] := it2.Value.DataIndex.ToString;
+          Node2 := Node.AddChild(it2.Target.ClassName);
+          Node2.Attributes['LN'] := it2.Target.LogicalName;
+          Node2.Attributes['Type'] := Integer(it2.Target.ObjectType).ToString;
+          Node2.Attributes['Version'] := it2.Target.Version.ToString;
+          Node2.Attributes['AttributeIndex'] := it2.AttributeIndex.ToString;
+          Node2.Attributes['DataIndex'] := it2.DataIndex.ToString;
         end;
       end;
     end;
@@ -916,7 +914,8 @@ begin
       Exit;
   try
     stream := TWinSocketStream.Create(socket.Socket, WaitTime);
-    WriteTrace('<- ' + TimeToStr(Time) + chr(9) + TGXByteBuffer.ToHexString(data));
+    if FTrace = tlVerbose then
+      WriteTrace('<- ' + TimeToStr(Time) + chr(9) + TGXByteBuffer.ToHexString(data));
 
     //Send data.
     stream.Write(data, 0, Length(data));
@@ -942,7 +941,8 @@ begin
           break;
       end;
     Until Length(Result) > 2000;
-    WriteTrace('-> ' + TimeToStr(Time) + chr(9) + TGXByteBuffer.ToHexString(Result));
+    if FTrace = tlVerbose then
+      WriteTrace('-> ' + TimeToStr(Time) + chr(9) + TGXByteBuffer.ToHexString(Result));
 
     if reply.Error <> 0 Then
       raise TGXDLMSException.Create(reply.Error);

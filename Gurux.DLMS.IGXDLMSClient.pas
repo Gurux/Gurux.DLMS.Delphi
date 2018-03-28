@@ -37,7 +37,7 @@ uses SysUtils, Rtti, Gurux.DLMS.GXDLMSObject, Gurux.DLMS.DataType;
 
 type
 IGXDLMSClient = Interface(IInterface)
-    function Method(item: TGXDLMSObject; index: Integer; data: TValue): TArray<TBytes>;
+    function Method(item: TGXDLMSObject; index: Integer; data: TValue; dt: TDataType): TArray<TBytes>;
     function Write(item : TGXDLMSObject; index : Integer): TArray<TBytes>;
 end;
 

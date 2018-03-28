@@ -181,7 +181,7 @@ begin
           data.Add(byte(TDataType.dtStructure));
           data.Add(2);
           TGXCommon.SetData(data, TDataType.dtUInt16, Integer(it.ClassId));
-          TGXCommon.SetData(data, TDataType.dtOctetString, it.LogicalName);
+          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(it.LogicalName)));
         end
     end;
     Result := TValue.From(data.ToArray());
@@ -232,7 +232,7 @@ begin
       begin
         item := TGXDLMSObjectDefinition.Create;
         item.ClassId := TObjectType(it.GetArrayElement(0).AsType<TValue>.AsInteger);
-        item.LogicalName := TGXDLMSObject.toLogicalName(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>);
+        item.LogicalName := TGXDLMSObject.ToLogicalName(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>);
         FRegisterAssignment.Add(item);
       end
     end;

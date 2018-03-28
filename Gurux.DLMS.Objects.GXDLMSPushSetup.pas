@@ -43,7 +43,7 @@ Gurux.DLMS.GXDLMSCaptureObject, GXByteBuffer;
 
 type
 TGXDLMSPushSetup = class(TGXDLMSObject)
-  FPushObjectList: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>;
+  FPushObjectList: TObjectList<TGXDLMSCaptureObject>;
   FSendDestinationAndMethod : TGXSendDestinationAndMethod;
   FCommunicationWindow : TList<TPair<TGXDateTime, TGXDateTime>>;
   FRandomisationStartInterval : WORD;
@@ -55,7 +55,7 @@ TGXDLMSPushSetup = class(TGXDLMSObject)
   constructor Create(ln: string; sn: System.UInt16); overload;
   destructor Destroy;override;
 
-  property PushObjectList: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>> read FPushObjectList;
+  property PushObjectList: TObjectList<TGXDLMSCaptureObject> read FPushObjectList;
   property SendDestinationAndMethod: TGXSendDestinationAndMethod read FSendDestinationAndMethod;
   property CommunicationWindow: TList<TPair<TGXDateTime, TGXDateTime>> read FCommunicationWindow;
   property RandomisationStartInterval: WORD read FRandomisationStartInterval write FRandomisationStartInterval;
@@ -74,6 +74,7 @@ TGXDLMSPushSetup = class(TGXDLMSObject)
 end;
 
 implementation
+uses GXObjectFactory;
 
 constructor TGXDLMSPushSetup.Create;
 begin
@@ -88,7 +89,7 @@ end;
 constructor TGXDLMSPushSetup.Create(ln: string; sn: System.UInt16);
 begin
   inherited Create(TObjectType.otPushSetup, ln, 0);
-  FPushObjectList := TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>.Create();
+  FPushObjectList := TObjectList<TGXDLMSCaptureObject>.Create();
   FSendDestinationAndMethod := TGXSendDestinationAndMethod.Create();
   FCommunicationWindow := TList<TPair<TGXDateTime, TGXDateTime>>.Create();
 end;
@@ -103,8 +104,8 @@ end;
 
 function TGXDLMSPushSetup.GetValues() : TArray<TValue>;
 begin
-  Result := TArray<TValue>.Create(FLogicalName, FPushObjectList,
-            FSendDestinationAndMethod, FCommunicationWindow,
+  Result := TArray<TValue>.Create(FLogicalName, TValue.From(FPushObjectList.ToArray()),
+            FSendDestinationAndMethod, TValue.From(FCommunicationWindow.ToArray()),
             FRandomisationStartInterval, FNumberOfRetries, FRepetitionDelay);
 end;
 
@@ -179,7 +180,7 @@ end;
 function TGXDLMSPushSetup.GetValue(e: TValueEventArgs): TValue;
 var
  buff: TGXByteBuffer;
- it: TPair<TGXDLMSObject, TGXDLMSCaptureObject>;
+ it: TGXDLMSCaptureObject;
  it2: TPair<TGXDateTime, TGXDateTime>;
 begin
   buff:= TGXByteBuffer.Create();
@@ -193,10 +194,10 @@ begin
     begin
       buff.SetUInt8(Integer(TDataType.dtStructure));
       buff.SetUInt8(4);
-      TGXCommon.SetData(buff, TDataType.dtUInt16, Integer(it.Key.ObjectType));
-      TGXCommon.SetData(buff, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(it.Key.LogicalName)));
-      TGXCommon.SetData(buff, TDataType.dtInt8, it.Value.AttributeIndex);
-      TGXCommon.SetData(buff, TDataType.dtUInt16, it.Value.DataIndex);
+      TGXCommon.SetData(buff, TDataType.dtUInt16, Integer(it.Target.ObjectType));
+      TGXCommon.SetData(buff, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(it.Target.LogicalName)));
+      TGXCommon.SetData(buff, TDataType.dtInt8, it.AttributeIndex);
+      TGXCommon.SetData(buff, TDataType.dtUInt16, it.DataIndex);
     end;
     Result := TValue.From(buff.ToArray());
   end
@@ -204,9 +205,9 @@ begin
   begin
     buff.SetUInt8(Integer(TDataType.dtStructure));
     buff.SetUInt8(3);
-    TGXCommon.SetData(buff, TDataType.dtUInt8, Integer(FSendDestinationAndMethod.FService));
+    TGXCommon.SetData(buff, TDataType.dtEnum, Integer(FSendDestinationAndMethod.FService));
     TGXCommon.SetData(buff, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(FSendDestinationAndMethod.FDestination)));
-    TGXCommon.SetData(buff, TDataType.dtUInt8, Integer(FSendDestinationAndMethod.FMessage));
+    TGXCommon.SetData(buff, TDataType.dtEnum, Integer(FSendDestinationAndMethod.FMessage));
     Result := TValue.From(buff.ToArray());
   end
   else if e.Index = 4 Then
@@ -250,35 +251,43 @@ begin
   end
   else if e.Index = 2 Then
   begin
-      PushObjectList.Clear();
-      if e.Value.IsType<TArray<TValue>> Then
+    PushObjectList.Clear();
+    if e.Value.IsType<TArray<TValue>> Then
+    begin
+      for it in e.Value.AsType<TArray<TValue>> do
       begin
-          for it in e.Value.AsType<TArray<TValue>> do
-          begin
-              tmp := it.AsType<TArray<TValue>>();
-              obj := TGXDLMSObject.Create();
-              ot := TObjectType(tmp[0].AsInteger);
-              ln := TGXCommon.ToLogicalName(tmp[1]);
-              obj := e.Settings.Objects.FindByLN(ot, ln);
-              if obj = Nil then
-              begin
-              //TODO: obj := TGXObjectFactory.CreateObject(ot);
-              //TODO: obj.LogicalName := ln;
-              end;
-              co := TGXDLMSCaptureObject.Create(tmp[2].AsInteger, tmp[3].AsInteger);
-              PushObjectList.Add(TPair<TGXDLMSObject, TGXDLMSCaptureObject>.Create(obj, co));
-          end;
-      end
+        tmp := it.AsType<TArray<TValue>>();
+        ot := TObjectType(tmp[0].AsInteger);
+        ln := TGXCommon.ToLogicalName(tmp[1]);
+        obj := e.Settings.Objects.FindByLN(ot, ln);
+        if obj = Nil then
+        begin
+          obj := TGXObjectFactory.CreateObject(ot);
+          obj.LogicalName := ln;
+        end;
+        co := TGXDLMSCaptureObject.Create(obj, tmp[2].AsInteger, tmp[3].AsInteger);
+        PushObjectList.Add(co);
+      end;
+    end
   end
   else if e.Index = 3 Then
   begin
-      if e.Value.IsType<TArray<TValue>>() Then
+    if e.Value.IsType<TArray<TValue>>() Then
+    begin
+      tmp := e.Value.AsType<TArray<TValue>>();
+      if Length(tmp) = 0 Then
       begin
-        tmp := e.Value.AsType<TArray<TValue>>();
+        SendDestinationAndMethod.Service := TServiceType.stTCP;
+        SendDestinationAndMethod.Destination := '';
+        SendDestinationAndMethod.Message := TMessageType.mtCosemApdu;
+      end
+      else
+      begin
         SendDestinationAndMethod.Service := TServiceType(tmp[0].AsInteger);
         SendDestinationAndMethod.Destination := TEncoding.ASCII.GetString(tmp[1].AsType<TBytes>);
         SendDestinationAndMethod.Message := TMessageType(tmp[2].AsInteger);
       end;
+    end;
   end
   else if e.Index = 4 Then
   begin
@@ -287,10 +296,10 @@ begin
     begin
       for it in e.Value.AsType<TArray<TValue>> do
       begin
-          tmp := it.AsType<TArray<TValue>>();
-          starttm := TGXCommon.ChangeType(tmp[0].AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
-          endtm := TGXCommon.ChangeType(tmp[1].AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
-          CommunicationWindow.Add(TPair<TGXDateTime, TGXDateTime>.Create(starttm, endtm));
+        tmp := it.AsType<TArray<TValue>>();
+        starttm := TGXCommon.ChangeType(tmp[0].AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
+        endtm := TGXCommon.ChangeType(tmp[1].AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
+        CommunicationWindow.Add(TPair<TGXDateTime, TGXDateTime>.Create(starttm, endtm));
       end;
     end;
   end

@@ -35,7 +35,8 @@ unit Gurux.DLMS.Objects.GXDLMSMacAddressSetup;
 interface
 
 uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject;
+Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
+GXByteBuffer;
 
 type
 TGXDLMSMacAddressSetup = class(TGXDLMSObject)
@@ -143,7 +144,7 @@ begin
   end
   else if (e.Index = 2) then
   begin
-    FMacAddress := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtOctetString).ToString();
+    FMacAddress := TGXByteBuffer.ToHexString(e.Value.AsType<TBytes>);
     FMacAddress := FMacAddress.Replace('.', ':');
   end
   else

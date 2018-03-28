@@ -175,44 +175,18 @@ end;
 
 function TGXDLMSClock.GetDataType(index: Integer): TDataType;
 begin
-  if (index = 1) then
-  begin
-    Result := TDataType.dtOctetString;
-  end
-    else if index = 2 Then
-  begin
-    Result := TDataType.dtDateTime;
-  end
-  else if index = 3 Then
-  begin
-    Result := TDataType.dtInt16;
-  end
-  else if index = 4 Then
-  begin
-    Result := TDataType.dtUInt8;
-  end
-  else if index = 5 Then
-  begin
-    Result := TDataType.dtDateTime;
-  end
-  else if index = 6 Then
-  begin
-    Result := TDataType.dtDateTime;
-  end
-  else if index = 7 Then
-  begin
-    Result := TDataType.dtInt8;
-  end
-  else if index = 8 Then
-  begin
-    Result := TDataType.dtBoolean;
-  end
-  else if index = 9 Then
-  begin
-    Result := TDataType.dtEnum;
-  end
-  else
-  	raise Exception.Create('GetDataType failed. Invalid attribute index.');
+ case index of
+    1: Result := TDataType.dtOctetString;
+    2: Result := TDataType.dtOctetString;
+    3: Result := TDataType.dtInt16;
+    4: Result := TDataType.dtUInt8;
+    5: Result := TDataType.dtDateTime;
+    6: Result := TDataType.dtDateTime;
+    7: Result := TDataType.dtInt8;
+    8: Result := TDataType.dtBoolean;
+    9: Result := TDataType.dtEnum;
+    else raise Exception.Create('GetDataType failed. Invalid attribute index.');
+  end;
 end;
 
 function TGXDLMSClock.GetValue(e: TValueEventArgs): TValue;
@@ -231,7 +205,7 @@ begin
   end
   else if e.Index = 4 Then
   begin
-    Result := TValue.From(FStatus);
+    Result := Integer(FStatus);
   end
   else if e.Index = 5 Then
   begin

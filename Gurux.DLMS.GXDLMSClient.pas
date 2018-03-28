@@ -58,7 +58,7 @@ Gurux.DLMS.GXReplyData, Gurux.DLMS.IGXDLMSClient,
 Gurux.DLMS.SerialnumberCounter;
 
 type
-  CaptureObject = TPair<TGXDLMSObject, TGXDLMSCaptureObject>;
+  CaptureObject = TGXDLMSCaptureObject;
 
 TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
   protected
@@ -109,7 +109,7 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
    class procedure UpdateObjectData(obj : TGXDLMSObject; objectType : TObjectType;
               version : Word; baseName : TValue; logicalName : TValue;
               accessRights : TValue); static;
-    function ReadRowsByRange(pg: TGXDLMSProfileGeneric; startTime: TValue; endTime : TValue; columns: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>) : TArray<TBytes>;overload;
+    function ReadRowsByRange(pg: TGXDLMSProfileGeneric; startTime: TValue; endTime : TValue; columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;overload;
   public
     destructor Destroy; override;
 
@@ -171,6 +171,9 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
     function Method(item: TGXDLMSObject; index: Integer; data: TValue): TArray<TBytes>;overload;
 
     // Generate Method (Action) request.
+    function Method(item: TGXDLMSObject; index: Integer; data: TValue; dt : TDataType): TArray<TBytes>;overload;
+
+    // Generate Method (Action) request.
     function Method(name : Variant; ot : TObjectType; index : Integer; value : TValue; dt : TDataType) : TArray<TBytes>;overload;
     property Objects : TGXDLMSObjectCollection read Get_Objects;
     property MaxReceivePDUSize: System.UInt16 read get_MaxReceivePDUSize write set_MaxReceivePDUSize default $FFFF;
@@ -190,18 +193,18 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
     function GetData(reply: TBytes; data: TGXReplyData): Boolean;
 
     function ReceiverReady(tp : TRequestTypes) : TBytes;
-    function ReadRowsByEntry(pg: TGXDLMSProfileGeneric; Index : Integer; Count : Integer;columns: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>) : TArray<TBytes>;
-    function ReadRowsByRange(pg: TGXDLMSProfileGeneric; startTime: TDateTime; endTime : TDateTime; columns: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>) : TArray<TBytes>;overload;
-    function ReadRowsByRange(pg: TGXDLMSProfileGeneric; startTime: TGXDateTime; endTime : TGXDateTime; columns: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>) : TArray<TBytes>;overload;
+    function ReadRowsByEntry(pg: TGXDLMSProfileGeneric; Index : Integer; Count : Integer;columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;
+    function ReadRowsByRange(pg: TGXDLMSProfileGeneric; startTime: TDateTime; endTime : TDateTime; columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;overload;
+    function ReadRowsByRange(pg: TGXDLMSProfileGeneric; startTime: TGXDateTime; endTime : TGXDateTime; columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;overload;
 
     // Get Value from byte array received from the meter.
     function UpdateValue(target: TGXDLMSObject; attributeIndex: Integer; value: TValue) : TValue;overload;
     // Get Value from byte array received from the meter.
-    function UpdateValue(target: TGXDLMSObject; attributeIndex: Integer; value: TValue; columns: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>) : TValue;overload;
+    function UpdateValue(target: TGXDLMSObject; attributeIndex: Integer; value: TValue; columns: TList<TGXDLMSCaptureObject>) : TValue;overload;
 
     function GetValue(data: TGXByteBuffer; dt: TDataType): TValue; overload;
   
-    function CreateObject(ObjectType : TObjectType): TGXDLMSObject;
+    function CreateObject(ot : TObjectType): TGXDLMSObject;
 
     class function ChangeType(value: TBytes; tp: TDataType): TValue;static;
     class function ObjectTypeToString(AObjectType : TObjectType) : String;
@@ -666,6 +669,11 @@ begin
   Result := Method(item.Name, item.ObjectType, index, data, TDataType.dtNone);
 end;
 
+function TGXDLMSClient.Method(item: TGXDLMSObject; index: Integer; data: TValue; dt: TDataType): TArray<TBytes>;
+begin
+  Result := Method(item.Name, item.ObjectType, index, data, dt);
+end;
+
 function TGXDLMSClient.Method(name: Variant; ot: TObjectType; index: Integer;
       value: TValue; dt: TDataType) : TArray<TBytes>;
 var
@@ -993,15 +1001,9 @@ begin
   FreeAndNil(c);
 end;
 
-function TGXDLMSClient.CreateObject(ObjectType : TObjectType): TGXDLMSObject;
-begin
-  Result := CreateDLMSObject(Word(ObjectType), 0, 0, '', Nil);
-end;
-
 // Reserved for internal use.
 class function TGXDLMSClient.CreateDLMSObject(ClassID : Word; Version : Word; BaseName : Word;
           LN : TValue; AccessRights : TValue) : TGXDLMSObject;
-
 var
   tp : TObjectType;
 begin
@@ -1016,6 +1018,11 @@ begin
     Result := TGXObjectFactory.CreateObject(tp);
   UpdateObjectData(Result, tp, Version, BaseName, LN,
           AccessRights);
+end;
+
+function TGXDLMSClient.CreateObject(ot: TObjectType) : TGXDLMSObject;
+begin
+  Result := TGXObjectFactory.CreateObject(ot);
 end;
 
 // Reserved for internal use.
@@ -1186,7 +1193,7 @@ function TGXDLMSClient.ReadRowsByRange(
   pg: TGXDLMSProfileGeneric;
   startTime: TGXDateTime;
   endTime : TGXDateTime;
-  columns: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>) : TArray<TBytes>;
+  columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;
 begin
   Result := ReadRowsByRange(pg, TValue.From(startTime), TValue.From(endTime), columns);
 end;
@@ -1195,7 +1202,7 @@ function TGXDLMSClient.ReadRowsByRange(
   pg: TGXDLMSProfileGeneric;
   startTime: TDateTime;
   endTime : TDateTime;
-  columns: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>) : TArray<TBytes>;
+  columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;
 begin
   Result := ReadRowsByRange(pg, TValue.From(startTime), TValue.From(endTime), columns);
 end;
@@ -1204,11 +1211,11 @@ function TGXDLMSClient.ReadRowsByRange(
   pg: TGXDLMSProfileGeneric;
   startTime: TValue;
   endTime : TValue;
-  columns: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>) : TArray<TBytes>;
+  columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;
 var
   ln: LogicalName;
   buff : TGXByteBuffer;
-  it: TPair<TGXDLMSObject, TGXDLMSCaptureObject>;
+  it: TGXDLMSCaptureObject;
 begin
   pg.Reset();
   FSettings.ResetBlockIndex();
@@ -1252,14 +1259,14 @@ begin
         // Add items count.
         buff.SetUInt8(4);
         // CI
-        TGXCommon.SetData(buff, TDataType.dtUInt16, WORD(it.Key.ObjectType));
+        TGXCommon.SetData(buff, TDataType.dtUInt16, WORD(it.Target.ObjectType));
         // LN
-        ln := TGXCommon.LogicalNameToBytes(it.Key.LogicalName);
+        ln := TGXCommon.LogicalNameToBytes(it.Target.LogicalName);
         TGXCommon.SetData(buff, TDataType.dtOctetString, TValue.From(ln));
         // Add attribute index.
-        TGXCommon.SetData(buff, TDataType.dtInt8, it.Value.AttributeIndex);
+        TGXCommon.SetData(buff, TDataType.dtInt8, it.AttributeIndex);
         // Add data index.
-        TGXCommon.SetData(buff, TDataType.dtInt16, it.Value.DataIndex);
+        TGXCommon.SetData(buff, TDataType.dtInt16, it.DataIndex);
       end;
     end;
     Result := Read(pg.Name, TObjectType.otProfileGeneric, 2, buff);
@@ -1272,13 +1279,13 @@ function TGXDLMSClient.ReadRowsByEntry(
   pg: TGXDLMSProfileGeneric;
   Index : Integer;
   Count : Integer;
-  columns: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>) : TArray<TBytes>;
+  columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;
 var
   buff : TGXByteBuffer;
   pos, columnIndex, columnCount: Integer;
   found: Boolean;
-  c: TPair<TGXDLMSObject, TGXDLMSCaptureObject>;
-  it: TPair<TGXDLMSObject, TGXDLMSCaptureObject>;
+  c: TGXDLMSCaptureObject;
+  it: TGXDLMSCaptureObject;
 begin
 try
   pg.Reset();
@@ -1293,7 +1300,11 @@ try
   // Add start index
   TGXCommon.SetData(buff, TDataType.dtUInt32, index);
   // Add Count
-  TGXCommon.SetData(buff, TDataType.dtUInt32, count);
+  if count = 0 then
+    TGXCommon.SetData(buff, TDataType.dtUInt32, count)
+  else
+    TGXCommon.SetData(buff, TDataType.dtUInt32, index + count);
+
   columnIndex := 1;
   columnCount := 0;
   // If columns are given find indexes.
@@ -1311,10 +1322,10 @@ try
       for it in pg.CaptureObjects do
       begin
           pos := pos + 1;
-          if (it.Key.ObjectType = c.Key.ObjectType)
-                  and (it.Key.LogicalName.CompareTo(c.Key.LogicalName) = 0)
-                  and (it.Value.AttributeIndex = c.Value.AttributeIndex)
-                  and (it.Value.DataIndex = c.Value.DataIndex) Then
+          if (it.Target.ObjectType = c.Target.ObjectType)
+                  and (it.Target.LogicalName.CompareTo(c.Target.LogicalName) = 0)
+                  and (it.AttributeIndex = c.AttributeIndex)
+                  and (it.DataIndex = c.DataIndex) Then
           begin
             found := true;
             if pos < columnIndex Then
@@ -1325,7 +1336,7 @@ try
           end;
       end;
       if Not found Then
-        raise Exception.Create('Invalid column: ' + c.Key.LogicalName);
+        raise Exception.Create('Invalid column: ' + c.Target.LogicalName);
     end;
   end;
   // Select columns to read.
@@ -1342,7 +1353,7 @@ begin
   Result := UpdateValue(target, attributeIndex, value, Nil);
 end;
 
-function TGXDLMSClient.UpdateValue(target: TGXDLMSObject; attributeIndex: Integer; value: TValue; columns: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>) : TValue;
+function TGXDLMSClient.UpdateValue(target: TGXDLMSObject; attributeIndex: Integer; value: TValue; columns: TList<TGXDLMSCaptureObject>) : TValue;
 var
   tmp: TBytes;
   dt: TDataType;

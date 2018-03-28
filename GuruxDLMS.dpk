@@ -180,8 +180,12 @@ contains
   Gurux.GXSha1 in 'Gurux.GXSha1.pas',
   Gurux.GXSha256 in 'Gurux.GXSha256.pas',
   GXCmdParameter in 'GXCmdParameter.pas',
-  Gurux.DLMS.Secure.GXDLMSSecureClient in 'Gurux.DLMS.Secure.GXDLMSSecureClient.pas';
+  Gurux.DLMS.Secure.GXDLMSSecureClient in 'Gurux.DLMS.Secure.GXDLMSSecureClient.pas',
+  Gurux.DLMS.Objects.GXDLMSScript in 'Gurux.DLMS.Objects.GXDLMSScript.pas',
+  Gurux.DLMS.SerialnumberCounter in 'Gurux.DLMS.SerialnumberCounter.pas',
+  Gurux.DLMS.IGXDLMSClient in 'Gurux.DLMS.IGXDLMSClient.pas';
 
 end.
+
 
 

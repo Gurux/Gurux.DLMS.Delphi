@@ -38,7 +38,9 @@ uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
 Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
 Gurux.DLMS.GXDateTime,
 Gurux.DLMS.GXDLMSActionItem,
-Gurux.DLMS.GXDLMSEmergencyProfile;
+Gurux.DLMS.GXDLMSEmergencyProfile,
+GXByteBuffer,
+Gurux.DLMS.ErrorCode;
 
 type
 TGXDLMSLimiter = class(TGXDLMSObject)
@@ -114,20 +116,12 @@ implementation
 
 constructor TGXDLMSLimiter.Create;
 begin
-  inherited Create(TObjectType.otLimiter);
-  FEmergencyProfileGroupIDs := TList<UInt16>.Create();
-  FActionOverThreshold := TGXDLMSActionItem.Create();
-  FActionUnderThreshold := TGXDLMSActionItem.Create();
-  FEmergencyProfile := TGXDLMSEmergencyProfile.Create();
+  Create('', 0);
 end;
 
 constructor TGXDLMSLimiter.Create(ln: string);
 begin
-  inherited Create(TObjectType.otLimiter, ln, 0);
-  FEmergencyProfileGroupIDs := TList<UInt16>.Create();
-  FActionOverThreshold := TGXDLMSActionItem.Create();
-  FActionUnderThreshold := TGXDLMSActionItem.Create();
-  FEmergencyProfile := TGXDLMSEmergencyProfile.Create();
+  Create(ln, 0);
 end;
 
 constructor TGXDLMSLimiter.Create(ln: string; sn: System.UInt16);
@@ -271,13 +265,88 @@ begin
 end;
 
 function TGXDLMSLimiter.GetValue(e: TValueEventArgs): TValue;
+var
+  data: TGXByteBuffer;
+  it: UInt16;
 begin
   if (e.Index = 1) then
+    Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName))
+  else if (e.Index = 2) Then
   begin
-    Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
+    data := TGXByteBuffer.Create();
+    data.SetUInt8(Integer(TDataType.dtStructure));
+    data.SetUInt8(3);
+    if (MonitoredValue = Nil) Then
+    begin
+      TGXCommon.SetData(data, TDataType.dtInt16, 0);
+      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes('')));
+      TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+    end
+    else
+    begin
+      TGXCommon.SetData(data, TDataType.dtInt16, TValue.From(FMonitoredValue.ObjectType));
+      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(FMonitoredValue.LogicalName)));
+      TGXCommon.SetData(data, TDataType.dtUInt8, FMonitoredAttributeIndex);
+    end;
+    Result := TValue.From(data.ToArray());
+    FreeAndNil(data);
   end
-  else   //TODO:
-    raise Exception.Create('GetValue failed. Invalid attribute index.');
+  else if (e.Index = 3) Then
+    Result := FThresholdActive
+  else if (e.Index = 4) Then
+    Result := FThresholdNormal
+  else if (e.Index = 5) Then
+    Result := FThresholdEmergency
+  else if (e.Index = 6) Then
+    Result := FMinOverThresholdDuration
+  else if (e.Index = 7) Then
+    Result := FMinUnderThresholdDuration
+  else if (e.Index = 8) Then
+  begin
+    data := TGXByteBuffer.Create();
+    data.SetUInt8(Integer(TDataType.dtStructure));
+    data.SetUInt8(3);
+    TGXCommon.SetData(data, TDataType.dtUInt16, EmergencyProfile.ID);
+    TGXCommon.SetData(data, TDataType.dtOctetString, EmergencyProfile.ActivationTime);
+    TGXCommon.SetData(data, TDataType.dtUInt32, EmergencyProfile.Duration);
+    Result := TValue.From(data.ToArray());
+    FreeAndNil(data);
+  end
+  else if (e.Index = 9) Then
+  begin
+    data := TGXByteBuffer.Create();
+    data.SetUInt8(Integer(TDataType.dtArray));
+    if (EmergencyProfileGroupIDs = Nil) Then
+      data.SetUInt8(0)
+    else
+    begin
+      data.SetUInt8(FEmergencyProfileGroupIDs.Count);
+      for it in FEmergencyProfileGroupIDs do
+        TGXCommon.SetData(data, TDataType.dtUInt16, it);
+    end;
+    Result := TValue.From(data.ToArray());
+    FreeAndNil(data);
+  end
+  else if (e.Index = 10) Then
+    Result := FEmergencyProfileActive
+  else if (e.Index = 11) Then
+  begin
+    data := TGXByteBuffer.Create();
+    data.SetUInt8(Integer(TDataType.dtStructure));
+    data.SetUInt8(2);
+    data.SetUInt8(Integer(TDataType.dtStructure));
+    data.SetUInt8(2);
+    TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(ActionOverThreshold.LogicalName)));
+    TGXCommon.SetData(data, TDataType.dtUInt16, ActionOverThreshold.ScriptSelector);
+    data.SetUInt8(Integer(TDataType.dtStructure));
+    data.SetUInt8(2);
+    TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(ActionUnderThreshold.LogicalName)));
+    TGXCommon.SetData(data, TDataType.dtUInt16, ActionUnderThreshold.ScriptSelector);
+    Result := TValue.From(data.ToArray());
+    FreeAndNil(data);
+  end
+  else
+    e.Error := TErrorCode.ecReadWriteDenied;
 end;
 
 procedure TGXDLMSLimiter.SetValue(e: TValueEventArgs);
@@ -293,7 +362,7 @@ begin
   else if e.Index = 2 Then
   begin
     ot := TObjectType(e.Value.GetArrayElement(0).AsType<TValue>.AsInteger);
-    ln := TGXCommon.ChangeType(e.Value.GetArrayElement(1).AsType<TValue>.AsType<TBytes>, TDataType.dtOctetString).ToString();
+    ln := TGXCommon.ToLogicalName(e.Value.GetArrayElement(1));
     FMonitoredValue := e.Settings.Objects.FindByLN(ot, ln);
     FMonitoredAttributeIndex := e.Value.GetArrayElement(2).AsType<TValue>.AsInteger;
   end
@@ -337,10 +406,10 @@ begin
   else if e.Index = 11 Then
   begin
     tmp := e.Value.GetArrayElement(0).AsType<TValue>;
-    FActionOverThreshold.LogicalName := TGXCommon.ChangeType(tmp.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtOctetString).ToString();
+    FActionOverThreshold.LogicalName := TGXCommon.ToLogicalName(tmp.GetArrayElement(0));
     FActionOverThreshold.ScriptSelector := tmp.GetArrayElement(1).AsType<TValue>.AsInteger;
     tmp := e.Value.GetArrayElement(1).AsType<TValue>;
-    FActionUnderThreshold.LogicalName := TGXCommon.ChangeType(tmp.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtOctetString).ToString();
+    FActionUnderThreshold.LogicalName := TGXCommon.ToLogicalName(tmp.GetArrayElement(0));
     FActionUnderThreshold.ScriptSelector := tmp.GetArrayElement(1).AsType<TValue>.AsInteger;
   end
   else

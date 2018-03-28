@@ -44,6 +44,12 @@ TGXCiphering = class
   FAuthenticationKey: TBytes;
   FSystemTitle: TBytes;
   FBlockCipherKey: TBytes;
+  function get_SystemTitle: TBytes;
+  function get_BlockCipherKey: TBytes;
+  function get_AuthenticationKey: TBytes;
+  procedure set_SystemTitle(Value: TBytes);
+  procedure set_BlockCipherKey(Value: TBytes);
+  procedure set_AuthenticationKey(Value: TBytes);
   public
     FrameCounter: UInt32;
   public
@@ -52,12 +58,6 @@ TGXCiphering = class
       authenticationKey: TBytes); overload;
     destructor Destroy;override;
 
-    function get_SystemTitle: TBytes;
-    function get_BlockCipherKey: TBytes;
-    function get_AuthenticationKey: TBytes;
-    procedure set_SystemTitle(Value: TBytes);
-    procedure set_BlockCipherKey(Value: TBytes);
-    procedure set_AuthenticationKey(Value: TBytes);
     property Security: TSecurity read FSecurity write FSecurity;
     property InvocationCounter: LongWord read FInvocationCounter write FInvocationCounter;
 

@@ -37,7 +37,7 @@ interface
 uses GXCommon, SysUtils, Rtti, System.Math, GXByteBuffer,
 System.Generics.Collections,
 Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-Gurux.DLMS.TUnit;
+Gurux.DLMS.TUnit, System.TypInfo;
 
 type
 TGXDLMSRegister = class(TGXDLMSObject)
@@ -186,6 +186,7 @@ function TGXDLMSRegister.GetValue(e: TValueEventArgs): TValue;
 var
   data : TGXByteBuffer;
   tmp: TBytes;
+  tp: PTypeInfo;
 begin
   if e.Index = 1 then
   begin
@@ -193,7 +194,14 @@ begin
   end
   else if e.Index = 2 then
   begin
-    Result := TValue.From(FValue);
+    //If client set new value.
+    if FScaler <> 0 Then
+    begin
+      tp := TGXCommon.GetDataType(GetDataType(e.Index));
+      Result := TValue.From(FValue.AsCurrency / Scaler);
+    end
+    else
+      Result := TValue.From(FValue);
   end
   else if e.Index = 3 then
   begin
@@ -221,7 +229,7 @@ begin
   else if e.Index = 2 then
   begin
     try
-      if (FScaler <> 1) Then
+      if (FScaler <> 0) Then
         FValue := e.Value.AsCurrency * Self.Scaler
       else
         FValue := e.Value;

@@ -37,7 +37,7 @@ interface
 uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
 Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
 Gurux.DLMS.Objects.GXDLMSRegister, DateUtils,
-GXObjectFactory, GXByteBuffer,
+GXByteBuffer,
 Gurux.DLMS.GXDLMSCaptureObject, Gurux.DLMS.GXDateTime;
 
 type
@@ -56,7 +56,7 @@ TGXDLMSProfileGeneric = class(TGXDLMSObject)
   protected
   FFreeObjects : TObjectList<TObject>;
   FBuffer: TList<TValue>;
-  FCaptureObjects : TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>;
+  FCaptureObjects : TObjectList<TGXDLMSCaptureObject>;
   FCapturePeriod : Integer;
   FSortMethod : TSortMethod;
   FSortObject : TGXDLMSObject;
@@ -78,7 +78,7 @@ TGXDLMSProfileGeneric = class(TGXDLMSObject)
   property Buffer: TList<TValue> read FBuffer;
 
   //Captured Objects.
-  property CaptureObjects: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>> read FCaptureObjects;
+  property CaptureObjects: TObjectList<TGXDLMSCaptureObject> read FCaptureObjects write FCaptureObjects;
 
   // How often values are captured.
   property CapturePeriod: Integer read FCapturePeriod;
@@ -112,6 +112,7 @@ TGXDLMSProfileGeneric = class(TGXDLMSObject)
 end;
 
 implementation
+uses GXObjectFactory;
 
 constructor TGXDLMSProfileGeneric.Create;
 begin
@@ -126,7 +127,7 @@ end;
 constructor TGXDLMSProfileGeneric.Create(ln: string; sn: System.UInt16);
 begin
   inherited Create(TObjectType.otProfileGeneric, ln, 0);
-  FCaptureObjects := TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>.Create();
+  FCaptureObjects := TObjectList<TGXDLMSCaptureObject>.Create();
   FBuffer := TList<TValue>.Create();
   FFreeObjects := TObjectList<TObject>.Create();
 end;
@@ -135,13 +136,13 @@ end;
 function TGXDLMSProfileGeneric.GetCaptureObject(): TArray<TGXDLMSObject>;
 var
   list: TList<TGXDLMSObject>;
-  it: TPair<TGXDLMSObject, TGXDLMSCaptureObject>;
+  it: TGXDLMSCaptureObject;
 begin
-    list := TList<TGXDLMSObject>.Create();
-    for it in FCaptureObjects do
-      list.Add(it.Key);
-    Result := list.ToArray;
-    FreeAndNil(list);
+  list := TList<TGXDLMSObject>.Create();
+  for it in FCaptureObjects do
+    list.Add(it.Target);
+  Result := list.ToArray;
+  FreeAndNil(list);
 end;
 
 procedure TGXDLMSProfileGeneric.Reset();
@@ -152,17 +153,8 @@ end;
 
 //Release added objects.
 destructor TGXDLMSProfileGeneric.Destroy;
-var
-  it: TPair<TGXDLMSObject, TGXDLMSCaptureObject>;
-  tmp: TGXDLMSCaptureObject;
 begin
   inherited;
-  for it in FCaptureObjects do
-  begin
-    tmp := it.Value;
-    FreeAndNil(tmp);
-  end;
-
   FreeAndNil(FFreeObjects);
   FreeAndNil(FBuffer);
   FreeAndNil(FCaptureObjects);
@@ -226,7 +218,7 @@ end;
 function TGXDLMSProfileGeneric.GetColumns() : TBytes;
 var
   data : TGXByteBuffer;
-  it : TPair<TGXDLMSObject, TGXDLMSCaptureObject>;
+  it : TGXDLMSCaptureObject;
 begin
   data := TGXByteBuffer.Create;
   data.Add(Integer(TDataType.dtArray));
@@ -235,11 +227,16 @@ begin
   for it in FCaptureObjects do
   begin
       data.Add(Integer(TDataType.dtStructure));
-      data.Add(4);//Count
-      TGXCommon.SetData(data, TDataType.dtUInt16, Integer(it.Key.ObjectType));//ClassID
-      TGXCommon.SetData(data, TDataType.dtOctetString, it.Key.LogicalName);//LN
-      TGXCommon.SetData(data, TDataType.dtInt8, it.Value.AttributeIndex); //Selected Attribute Index
-      TGXCommon.SetData(data, TDataType.dtUInt16, it.Value.DataIndex); //Selected Data Index
+      //Count
+      data.Add(4);
+      //ClassID
+      TGXCommon.SetData(data, TDataType.dtUInt16, Integer(it.Target.ObjectType));
+      //LN
+      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(it.Target.LogicalName)));
+      //Selected Attribute Index
+      TGXCommon.SetData(data, TDataType.dtInt8, it.AttributeIndex);
+      //Selected Data Index
+      TGXCommon.SetData(data, TDataType.dtUInt16, it.DataIndex);
   end;
   Result := data.ToArray();
 end;
@@ -350,7 +347,7 @@ var
   tmp : TArray<TValue>;
   tp : TDataType;
   scaler, d : double;
-  cols: TList<TPair<TGXDLMSObject, TGXDLMSCaptureObject>>;
+  cols: TList<TGXDLMSCaptureObject>;
   lastDate: TDateTime;
   tmp2: TGXDateTime;
 begin
@@ -371,11 +368,11 @@ begin
         if (cols = Nil) or (cols.Count = 0) Then
           index2 := 0
         else
-          index2 := cols[pos].Value.AttributeIndex;
+          index2 := cols[pos].AttributeIndex;
 
         //Actaris SL 7000 and ACE 6000 returns 0.
         if index2 <> 0 Then
-          tp := cols[pos].Key.GetUIDataType(index2)
+          tp := cols[pos].Target.GetUIDataType(index2)
         else
           tp := TDataType.dtNone;
 
@@ -407,10 +404,10 @@ begin
             FFreeObjects.Add(tmp2);
           end
         end;
-        if (FCaptureObjects[pos].Key is TGXDLMSRegister) and
-            (CaptureObjects[pos].Value.AttributeIndex = 2) then
+        if (FCaptureObjects[pos].Target is TGXDLMSRegister) and
+            (CaptureObjects[pos].AttributeIndex = 2) then
         begin
-          scaler := (CaptureObjects[pos].Key as TGXDLMSRegister).Scaler;
+          scaler := (CaptureObjects[pos].Target as TGXDLMSRegister).Scaler;
           if scaler <> 1 then
           begin
             try
@@ -439,7 +436,7 @@ var
   ln : string;
   attributeIndex, dataIndex : Integer;
   obj : TGXDLMSObject;
-  item: TPair<TGXDLMSObject, TGXDLMSCaptureObject>;
+  item: TGXDLMSCaptureObject;
 begin
   if (e.Index = 1) then
   begin
@@ -467,7 +464,7 @@ begin
         obj := TGXObjectFactory.CreateObject(ot);
         obj.LogicalName := ln;
       end;
-      item := TPair<TGXDLMSObject, TGXDLMSCaptureObject>.Create(obj, TGXDLMSCaptureObject.Create(attributeIndex, dataIndex));
+      item := TGXDLMSCaptureObject.Create(obj, attributeIndex, dataIndex);
       FCaptureObjects.Add(item);
     end;
   end
@@ -491,9 +488,9 @@ begin
     FSortObject := Nil;
     for item in FCaptureObjects do
     begin
-        if (item.Key.ObjectType = ot) and (item.Key.LogicalName = ln) Then
+        if (item.Target.ObjectType = ot) and (item.Target.LogicalName = ln) Then
         begin
-          FSortObject := item.Key;
+          FSortObject := item.Target;
           break;
         end;
     end;

@@ -182,7 +182,7 @@ begin
   end
   else if e.Index = 2 then
   begin
-    Result := FAPN;
+    Result := TValue.From(TEncoding.ASCII.GetBytes(FAPN));
   end
   else if e.Index = 3 then
   begin
@@ -212,6 +212,8 @@ begin
       TGXCommon.SetData(data, TDataType.dtUInt8, 0);
       TGXCommon.SetData(data, TDataType.dtUInt8, 0);
     end;
+    data.Add(Integer(TDataType.dtStructure));
+    data.Add(5);
     if FRequestedQualityOfService <> Nil Then
     begin
       TGXCommon.SetData(data, TDataType.dtUInt8, RequestedQualityOfService.Precedence);
@@ -245,8 +247,7 @@ begin
     if e.Value.IsType<string> Then
       FAPN := e.Value.ToString()
     else
-      FAPN := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtString).ToString();
-
+      FAPN := TEncoding.ASCII.GetString(e.Value.AsType<TBytes>);
   end
   else if e.Index = 3 Then
   begin
