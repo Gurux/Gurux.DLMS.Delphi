@@ -97,28 +97,31 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //SecurityPolicy
-  if CanRead(2) Then
-    items.Add(2);
+    //SecurityPolicy
+    if CanRead(2) Then
+      items.Add(2);
 
-  //SecuritySuite
-  if CanRead(3) Then
-    items.Add(3);
+    //SecuritySuite
+    if CanRead(3) Then
+      items.Add(3);
 
-  //ClientSystemTitle
-  if CanRead(4) Then
-    items.Add(4);
+    //ClientSystemTitle
+    if CanRead(4) Then
+      items.Add(4);
 
-  //ServerSystemTitle
-  if CanRead(5) Then
-    items.Add(5);
+    //ServerSystemTitle
+    if CanRead(5) Then
+      items.Add(5);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSSecuritySetup.GetAttributeCount: Integer;

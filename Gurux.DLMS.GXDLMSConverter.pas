@@ -143,23 +143,35 @@ begin
     ReadStandardObisInfo(codes);
 
   Result := TList<String>.Create;
-  all := Length(logicalName) = 0;
-  tmp := codes.Find(logicalName, ot);
-  for it in tmp do
-  begin
-      if Not description.IsEmpty and Not it.Description.ToLower().Contains(description.ToLower()) Then
-        continue;
-      if all Then
+  try
+
+    all := Length(logicalName) = 0;
+
+    tmp := codes.Find(logicalName, ot);
+    try
+      for it in tmp do
       begin
-          Result.Add('A=' + it.OBIS[0] + ', B=' + it.OBIS[1]
-                  + ', C=' + it.OBIS[2] + ', D=' + it.OBIS[3]
-                  + ', E=' + it.OBIS[4] + ', F=' + it.OBIS[5]
-                  + '\r\n' + it.Description);
-      end
-      else
-        Result.Add(it.Description);
+          if Not description.IsEmpty and Not it.Description.ToLower().Contains(description.ToLower()) Then
+            continue;
+          if all Then
+          begin
+              Result.Add('A=' + it.OBIS[0] + ', B=' + it.OBIS[1]
+                      + ', C=' + it.OBIS[2] + ', D=' + it.OBIS[3]
+                      + ', E=' + it.OBIS[4] + ', F=' + it.OBIS[5]
+                      + '\r\n' + it.Description);
+          end
+          else
+            Result.Add(it.Description);
+      end;
+    finally
+      FreeAndNil(tmp);
+    end;
+
+  except
+    Result.Free;
+    raise;
   end;
-  FreeAndNil(tmp);
+
 end;
 
 function TGXDLMSConverter.GetCode(value: String): String;
@@ -220,8 +232,8 @@ var
 begin
   if Not it.Description.IsEmpty Then
     Exit;
+  list := codes.Find(it.LogicalName, it.ObjectType);
   try
-    list := codes.Find(it.LogicalName, it.ObjectType);
     code := list[0];
     it.Description := code.Description;
     //If string is used
@@ -291,7 +303,7 @@ begin
       end;
     end;
   finally
-   FreeAndNil(list);
+    FreeAndNil(list);
   end;
 end;
 
@@ -305,4 +317,5 @@ class function TGXDLMSConverter.GetDLMSDataType(AValue : TValue) : TDataType;
 begin
   Result := TGXCommon.GetDLMSDataType(AValue);
 end;
+
 end.

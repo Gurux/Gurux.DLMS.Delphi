@@ -149,48 +149,51 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //CalendarNameActive
-  if CanRead(2) Then
-    items.Add(2);
+    //CalendarNameActive
+    if CanRead(2) Then
+      items.Add(2);
 
-  //SeasonProfileActive
-  if CanRead(3) Then
-    items.Add(3);
+    //SeasonProfileActive
+    if CanRead(3) Then
+      items.Add(3);
 
-  //WeekProfileTableActive
-  if CanRead(4) Then
-    items.Add(4);
+    //WeekProfileTableActive
+    if CanRead(4) Then
+      items.Add(4);
 
-  //DayProfileTableActive
-  if CanRead(5) Then
-    items.Add(5);
+    //DayProfileTableActive
+    if CanRead(5) Then
+      items.Add(5);
 
-  //CalendarNamePassive
-  if CanRead(6) Then
-    items.Add(6);
+    //CalendarNamePassive
+    if CanRead(6) Then
+      items.Add(6);
 
-  //SeasonProfileActive
-  if CanRead(7) Then
-    items.Add(7);
+    //SeasonProfileActive
+    if CanRead(7) Then
+      items.Add(7);
 
-  //WeekProfileTableActive
-  if CanRead(8) Then
-    items.Add(8);
+    //WeekProfileTableActive
+    if CanRead(8) Then
+      items.Add(8);
 
-  //DayProfileTableActive
-  if CanRead(9) Then
-    items.Add(9);
+    //DayProfileTableActive
+    if CanRead(9) Then
+      items.Add(9);
 
-  //Time.
-  if CanRead(10) Then
-    items.Add(10);
+    //Time.
+    if CanRead(10) Then
+      items.Add(10);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSActivityCalendar.GetAttributeCount: Integer;
@@ -256,27 +259,30 @@ var
   it : TGXDLMSSeasonProfile;
 begin
   data := TGXByteBuffer.Create();
-  data.Add(Integer(TDataType.dtArray));
-  if profile = Nil Then
-  begin
-    //Add count
-    TGXCommon.SetObjectCount(0, data);
-  end
-  else
-  begin
-    //Add count
-    TGXCommon.SetObjectCount(profile.Count, data);
-    for it in profile do
+  try
+    data.Add(Integer(TDataType.dtArray));
+    if profile = Nil Then
     begin
-      data.Add(Integer(TDataType.dtStructure));
-      data.Add(3);
-      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(it.Name)));
-      TGXCommon.SetData(data, TDataType.dtOctetString, it.Start);
-      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(it.WeekName)));
+      //Add count
+      TGXCommon.SetObjectCount(0, data);
     end
+    else
+    begin
+      //Add count
+      TGXCommon.SetObjectCount(profile.Count, data);
+      for it in profile do
+      begin
+        data.Add(Integer(TDataType.dtStructure));
+        data.Add(3);
+        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(it.Name)));
+        TGXCommon.SetData(data, TDataType.dtOctetString, it.Start);
+        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(it.WeekName)));
+      end
+    end;
+    Result := TValue.From(data.ToArray());
+  finally
+    FreeAndNil(data);
   end;
-  Result := TValue.From(data.ToArray());
-  FreeAndNil(data);
 end;
 
 function TGXDLMSActivityCalendar.GetWeekProfile(profile: TObjectList<TGXDLMSWeekProfile>): TValue;
@@ -285,32 +291,35 @@ var
   wp : TGXDLMSWeekProfile;
 begin
   data := TGXByteBuffer.Create;
-  data.Add(Integer(TDataType.dtArray));
-  if profile = Nil Then
-  begin
-    //Add count
-    TGXCommon.SetObjectCount(0, data);
-  end
-  else
-  begin
-    //Add count
-    TGXCommon.SetObjectCount(profile.Count, data);
-    for wp in profile do
+  try
+    data.Add(Integer(TDataType.dtArray));
+    if profile = Nil Then
     begin
-      data.Add(Integer(TDataType.dtStructure));
-      data.Add(8);
-      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(wp.Name)));
-      TGXCommon.SetData(data, TDataType.dtUInt8, wp.Monday);
-      TGXCommon.SetData(data, TDataType.dtUInt8, wp.Tuesday);
-      TGXCommon.SetData(data, TDataType.dtUInt8, wp.Wednesday);
-      TGXCommon.SetData(data, TDataType.dtUInt8, wp.Thursday);
-      TGXCommon.SetData(data, TDataType.dtUInt8, wp.Friday);
-      TGXCommon.SetData(data, TDataType.dtUInt8, wp.Saturday);
-      TGXCommon.SetData(data, TDataType.dtUInt8, wp.Sunday);
+      //Add count
+      TGXCommon.SetObjectCount(0, data);
     end
+    else
+    begin
+      //Add count
+      TGXCommon.SetObjectCount(profile.Count, data);
+      for wp in profile do
+      begin
+        data.Add(Integer(TDataType.dtStructure));
+        data.Add(8);
+        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(wp.Name)));
+        TGXCommon.SetData(data, TDataType.dtUInt8, wp.Monday);
+        TGXCommon.SetData(data, TDataType.dtUInt8, wp.Tuesday);
+        TGXCommon.SetData(data, TDataType.dtUInt8, wp.Wednesday);
+        TGXCommon.SetData(data, TDataType.dtUInt8, wp.Thursday);
+        TGXCommon.SetData(data, TDataType.dtUInt8, wp.Friday);
+        TGXCommon.SetData(data, TDataType.dtUInt8, wp.Saturday);
+        TGXCommon.SetData(data, TDataType.dtUInt8, wp.Sunday);
+      end
+    end;
+    Result := TValue.From(data.ToArray());
+  finally
+    FreeAndNil(data);
   end;
-  Result := TValue.From(data.ToArray());
-  FreeAndNil(data);
 end;
 
 function TGXDLMSActivityCalendar.GetDayProfile(profile: TObjectList<TGXDLMSDayProfile>): TValue;
@@ -320,37 +329,40 @@ var
   action : TGXDLMSDayProfileAction;
 begin
   data := TGXByteBuffer.Create;
-  data.Add(Integer(TDataType.dtArray));
-  if DayProfileTableActive = Nil Then
-  begin
-    //Add count
-    TGXCommon.SetObjectCount(0, data);
-  end
-  else
-  begin
-    //Add count
-    TGXCommon.SetObjectCount(DayProfileTableActive.Count, data);
-    for dp in FDayProfileTableActive do
+  try
+    data.Add(Integer(TDataType.dtArray));
+    if DayProfileTableActive = Nil Then
     begin
-      data.Add(Integer(TDataType.dtStructure));
-      data.Add(2);
-      TGXCommon.SetData(data, TDataType.dtUInt8, dp.DayId);
-      data.Add(Integer(TDataType.dtArray));
       //Add count
-      TGXCommon.SetObjectCount(dp.DaySchedules.Count, data);
-      for action in dp.DaySchedules do
+      TGXCommon.SetObjectCount(0, data);
+    end
+    else
+    begin
+      //Add count
+      TGXCommon.SetObjectCount(DayProfileTableActive.Count, data);
+      for dp in FDayProfileTableActive do
       begin
         data.Add(Integer(TDataType.dtStructure));
-        data.Add(3);
-        TGXCommon.SetData(data, TDataType.dtTime, action.StartTime);
-        TGXCommon.SetData(data, TDataType.dtOctetString,
-                  TValue.From(TGXCommon.LogicalNameToBytes(action.ScriptLogicalName)));
-        TGXCommon.SetData(data, TDataType.dtUInt16, action.ScriptSelector);
+        data.Add(2);
+        TGXCommon.SetData(data, TDataType.dtUInt8, dp.DayId);
+        data.Add(Integer(TDataType.dtArray));
+        //Add count
+        TGXCommon.SetObjectCount(dp.DaySchedules.Count, data);
+        for action in dp.DaySchedules do
+        begin
+          data.Add(Integer(TDataType.dtStructure));
+          data.Add(3);
+          TGXCommon.SetData(data, TDataType.dtTime, action.StartTime);
+          TGXCommon.SetData(data, TDataType.dtOctetString,
+                    TValue.From(TGXCommon.LogicalNameToBytes(action.ScriptLogicalName)));
+          TGXCommon.SetData(data, TDataType.dtUInt16, action.ScriptSelector);
+        end
       end
-    end
+    end;
+    Result := TValue.From(data.ToArray());
+  finally
+    FreeAndNil(data);
   end;
-  Result := TValue.From(data.ToArray());
-  FreeAndNil(data);
 end;
 
 function TGXDLMSActivityCalendar.GetValue(e: TValueEventArgs): TValue;

@@ -134,20 +134,23 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //ScalerUnit
-  if Not IsRead(3) then
-    items.Add(3);
+    //ScalerUnit
+    if Not IsRead(3) then
+      items.Add(3);
 
-  //Value
-  if CanRead(2) then
-    items.Add(2);
+    //Value
+    if CanRead(2) then
+      items.Add(2);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSRegister.GetAttributeCount: Integer;
@@ -186,7 +189,6 @@ function TGXDLMSRegister.GetValue(e: TValueEventArgs): TValue;
 var
   data : TGXByteBuffer;
   tmp: TBytes;
-  tp: PTypeInfo;
 begin
   if e.Index = 1 then
   begin
@@ -197,7 +199,6 @@ begin
     //If client set new value.
     if FScaler <> 0 Then
     begin
-      tp := TGXCommon.GetDataType(GetDataType(e.Index));
       Result := TValue.From(FValue.AsCurrency / Scaler);
     end
     else
@@ -206,13 +207,16 @@ begin
   else if e.Index = 3 then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtStructure));
-    data.Add(2);
-    TGXCommon.SetData(data, TDataType.dtInt8, FScaler);
-    TGXCommon.SetData(data, TDataType.dtEnum, Integer(FUnit));
-    tmp := data.ToArray();
+    try
+      data.Add(Integer(TDataType.dtStructure));
+      data.Add(2);
+      TGXCommon.SetData(data, TDataType.dtInt8, FScaler);
+      TGXCommon.SetData(data, TDataType.dtEnum, Integer(FUnit));
+      tmp := data.ToArray();
+    finally
+      data.Free;
+    end;
     Result := TValue.From(tmp);
-    FreeAndNil(tmp);
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');

@@ -156,48 +156,51 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //DataLinkLayerReference
-  if Not IsRead(2) Then
-    items.Add(2);
+    //DataLinkLayerReference
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //IPAddress
-  if CanRead(3) Then
-    items.Add(3);
+    //IPAddress
+    if CanRead(3) Then
+      items.Add(3);
 
-  //MulticastIPAddress
-  if CanRead(4) Then
-    items.Add(4);
+    //MulticastIPAddress
+    if CanRead(4) Then
+      items.Add(4);
 
-  //IPOptions
-  if CanRead(5) Then
-    items.Add(5);
+    //IPOptions
+    if CanRead(5) Then
+      items.Add(5);
 
-  //SubnetMask
-  if CanRead(6) Then
-    items.Add(6);
+    //SubnetMask
+    if CanRead(6) Then
+      items.Add(6);
 
-  //GatewayIPAddress
-  if CanRead(7) Then
-    items.Add(7);
+    //GatewayIPAddress
+    if CanRead(7) Then
+      items.Add(7);
 
-  //UseDHCP
-  if Not IsRead(8) Then
-    items.Add(8);
+    //UseDHCP
+    if Not IsRead(8) Then
+      items.Add(8);
 
-  //PrimaryDNSAddress
-  if CanRead(9) Then
-    items.Add(9);
+    //PrimaryDNSAddress
+    if CanRead(9) Then
+      items.Add(9);
 
-  //SecondaryDNSAddress
-  if CanRead(10) Then
-    items.Add(10);
+    //SecondaryDNSAddress
+    if CanRead(10) Then
+      items.Add(10);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSIp4Setup.GetAttributeCount: Integer;
@@ -277,43 +280,51 @@ begin
   else if e.Index = 4 then
   begin
     data := TGXByteBuffer.Create;
-    data.SetUInt8(Integer(TDataType.dtArray));
-    if FMulticastIPAddress = Nil Then
-    begin
-      //Object count is zero.
-      data.SetUInt8(0);
-    end
-    else
-    begin
-      TGXCommon.SetObjectCount(Length(FMulticastIPAddress), data);
-      for s in FMulticastIPAddress do
+    try
+      data.SetUInt8(Integer(TDataType.dtArray));
+      if FMulticastIPAddress = Nil Then
       begin
-        TGXCommon.SetData(data, TDataType.dtUInt32, FromAddressString(s));
+        //Object count is zero.
+        data.SetUInt8(0);
+      end
+      else
+      begin
+        TGXCommon.SetObjectCount(Length(FMulticastIPAddress), data);
+        for s in FMulticastIPAddress do
+        begin
+          TGXCommon.SetData(data, TDataType.dtUInt32, FromAddressString(s));
+        end;
       end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else if e.Index = 5 then
   begin
     data := TGXByteBuffer.Create;
-    data.SetUInt8(Integer(TDataType.dtArray));
-    if FIPOptions = Nil Then
-    begin
-        data.Add(1);
-    end
-    else
-    begin
-      TGXCommon.SetObjectCount(Length(FIPOptions), data);
-      for it in IPOptions do
+    try
+      data.SetUInt8(Integer(TDataType.dtArray));
+      if FIPOptions = Nil Then
       begin
-          data.Add(Integer(TDataType.dtStructure));
-          data.Add(3);
-          TGXCommon.SetData(data, TDataType.dtUInt8, Integer(it.&Type));
-          TGXCommon.SetData(data, TDataType.dtUInt8, it.Length);
-          TGXCommon.SetData(data, TDataType.dtOctetString, Tvalue.From(it.Data));
+          data.Add(1);
       end
+      else
+      begin
+        TGXCommon.SetObjectCount(Length(FIPOptions), data);
+        for it in IPOptions do
+        begin
+            data.Add(Integer(TDataType.dtStructure));
+            data.Add(3);
+            TGXCommon.SetData(data, TDataType.dtUInt8, Integer(it.&Type));
+            TGXCommon.SetData(data, TDataType.dtUInt8, it.Length);
+            TGXCommon.SetData(data, TDataType.dtOctetString, Tvalue.From(it.Data));
+        end
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else if e.Index = 6 then
   begin
@@ -384,32 +395,38 @@ begin
   else if e.Index = 4 then
   begin
     data1 := TList<String>.Create;
-    if Not e.Value.IsEmpty Then
-    begin
-      for it in e.Value.AsType<TArray<TValue>> do
+    try
+      if Not e.Value.IsEmpty Then
       begin
-        data1.Add(ToAddressString(it));
-      end
+        for it in e.Value.AsType<TArray<TValue>> do
+        begin
+          data1.Add(ToAddressString(it));
+        end
+      end;
+      FMulticastIPAddress := data1.ToArray();
+    finally
+      FreeAndNil(data1);
     end;
-    FMulticastIPAddress := data1.ToArray();
-    FreeAndNil(data1);
   end
   else if e.Index = 5 then
   begin
     data2 := TList<TGXDLMSIp4SetupIpOption>.Create;
-    if Not e.Value.IsEmpty Then
-    begin
-      for it in e.Value.AsType<TArray<TValue>> do
+    try
+      if Not e.Value.IsEmpty Then
       begin
-        item := TGXDLMSIp4SetupIpOption.Create;
-        item.&Type := TGXDLMSIp4SetupIpOptionType(it.GetArrayElement(0).AsType<TValue>.AsInteger);
-        item.Length := it.GetArrayElement(1).AsType<TValue>.AsInteger;
-        item.Data := it.GetArrayElement(2).AsType<TValue>.AsType<TBytes>;
-        data2.Add(item);
-      end
+        for it in e.Value.AsType<TArray<TValue>> do
+        begin
+          item := TGXDLMSIp4SetupIpOption.Create;
+          item.&Type := TGXDLMSIp4SetupIpOptionType(it.GetArrayElement(0).AsType<TValue>.AsInteger);
+          item.Length := it.GetArrayElement(1).AsType<TValue>.AsInteger;
+          item.Data := it.GetArrayElement(2).AsType<TValue>.AsType<TBytes>;
+          data2.Add(item);
+        end
+      end;
+      FIPOptions := data2.ToArray();
+    finally
+      FreeAndNil(data2);
     end;
-    FIPOptions := data2.ToArray();
-    FreeAndNil(data2);
   end
   else if e.Index = 6 then
   begin

@@ -209,26 +209,36 @@ begin
   end;
   // Get next block.
   bb := TGXByteBuffer.Create(6);
-  if settings.UseLogicalNameReferencing Then
-    bb.SetUInt32(settings.BlockIndex)
-  else
-    bb.SetUInt16(settings.BlockIndex);
+  try
+    if settings.UseLogicalNameReferencing Then
+      bb.SetUInt32(settings.BlockIndex)
+    else
+      bb.SetUInt16(settings.BlockIndex);
 
-  settings.IncreaseBlockIndex();
-  if settings.UseLogicalNameReferencing Then
-  begin
-    p := TGXDLMSLNParameters.Create(settings, 0, cmd,
-      Byte(TGetCommandType.ctNextDataBlock), bb, Nil, $ff);
-    Result := GetLnMessages(TGXDLMSLNParameters(p))[0];
-  end
-  else
-  begin
-    p := TGXDLMSSNParameters.Create(settings, cmd, 1,
-      Byte(TVariableAccessSpecification.vaBlockNumberAccess), bb, Nil);
-    Result := GetSnMessages(TGXDLMSSNParameters(p))[0];
+    settings.IncreaseBlockIndex();
+    if settings.UseLogicalNameReferencing Then
+    begin
+      p := TGXDLMSLNParameters.Create(settings, 0, cmd,
+        Byte(TGetCommandType.ctNextDataBlock), bb, Nil, $ff);
+      try
+        Result := GetLnMessages(TGXDLMSLNParameters(p))[0];
+      finally
+        p.Free;
+      end;
+    end
+    else
+    begin
+      p := TGXDLMSSNParameters.Create(settings, cmd, 1,
+        Byte(TVariableAccessSpecification.vaBlockNumberAccess), bb, Nil);
+      try
+        Result := GetSnMessages(TGXDLMSSNParameters(p))[0];
+      finally
+        p.Free;
+      end;
+    end;
+  finally
+    FreeAndNil(bb);
   end;
-  FreeAndNil(p);
-  FreeAndNil(bb);
 end;
 
 // Reserved for internal use.
@@ -299,10 +309,11 @@ end;
 
 class procedure TGXDLMS.AddLLCBytes(settings: TGXDLMSSettings; data: TGXByteBuffer);
 begin
+  data.Move(0, 3, data.Size);
   if settings.isServer Then
-    data.SetArray(0, LLCReplyBytes)
+    System.Move(LLCReplyBytes, data.GetData()[0], 3)
   else
-    data.SetArray(0, LLCSendBytes);
+    System.Move(LLCSendBytes, data.GetData()[0], 3);
 end;
 
 class procedure TGXDLMS.MultipleBlocks(p : TGXDLMSLNParameters; reply: TGXByteBuffer; ciphering: Boolean);
@@ -336,84 +347,83 @@ class procedure TGXDLMS.GetLNPdu(p: TGXDLMSLNParameters; reply: TGXByteBuffer);
 var
   len, pos, totalLength: Integer;
   ciphering : Boolean;
+  tmp: TGXByteBuffer;
+  value: byte;
+  bb: TGXByteBuffer;
 begin
     ciphering := (p.Command <> TCommand.AARQ)
             and (p.Command <> TCommand.AARE)
             and (p.Settings.Cipher <> Nil)
             and (p.Settings.Cipher.Security <> TSecurity.NONE);
     len := 0;
-    if (ciphering = False) and (p.Settings.InterfaceType = TInterfaceType.HDLC) Then
-      AddLLCBytes(p.Settings, reply);
-
     if p.Command = TCommand.AARQ Then
-      reply.SetArray(p.AttributeDescriptor)
-    else
     begin
-        if Integer(p.Settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer) <> 0 Then
-        begin
-          reply.SetUInt8(Integer(TCommand.GeneralBlockTransfer));
-          multipleBlocks(p, reply, ciphering);
-          // Is last block
-          if Not p.LastBlock Then
-            reply.SetUInt8(0)
-          else
-            reply.SetUInt8($80);
-
-          // Set block number sent.
-          reply.SetUInt8(0);
-          // Set block number acknowledged
-          reply.SetUInt8(p.BlockIndex);
-          p.BlockIndex := p.BlockIndex + 1;
-          // Add APU tag.
-          reply.SetUInt8(0);
-          // Add Addl fields
-          reply.SetUInt8(0);
-        end;
-        // Add command.
+     if (p.Settings.Gateway <> nil) and (p.Settings.Gateway.PhysicalDeviceAddress <> Nil) Then
+     begin
+       reply.SetUInt8(Integer(TCommand.GatewayRequest));
+       reply.SetUInt8(p.Settings.Gateway.NetworkId);
+       reply.SetUInt8(Length(p.Settings.Gateway.PhysicalDeviceAddress));
+       reply.SetArray(p.Settings.Gateway.PhysicalDeviceAddress);
+    end;
+    reply.SetArray(p.AttributeDescriptor);
+  end
+  else
+  begin
+      // Add command.
+      if (p.Command <> TCommand.GeneralBlockTransfer) Then
         reply.SetUInt8(Integer(p.Command));
 
-        if (p.Command = TCommand.DataNotification)
-                or (p.Command = TCommand.AccessRequest)
-                or (p.Command = TCommand.AccessResponse) Then
+      if (p.Command = TCommand.DataNotification) or
+          (p.Command = TCommand.EventNotification) or
+          (p.Command = TCommand.AccessRequest) or
+          (p.Command = TCommand.AccessResponse) Then
+      begin
+        // Add Long-Invoke-Id-And-Priority
+        if p.Command <> TCommand.DataNotification then
         begin
-          // Add Long-Invoke-Id-And-Priority
           if (p.InvokeId <> 0) Then
               reply.SetUInt32(p.InvokeId)
           else
             reply.SetUInt32(GetLongInvokeIDPriority(p.Settings));
+        end;
 
-          // Add date time.
-          if p.Time = Nil Then
-            reply.SetUInt8(Integer(TDataType.dtNone))
-          else
-          begin
-              // Data is send in octet string. Remove data type.
-              pos := reply.Size;
-              TGXCommon.setData(reply, TDataType.dtOctetString, p.Time);
-              reply.Move(pos + 1, pos, reply.Size() - pos - 1);
-          end;
-        end
+        // Add date time.
+        if p.Time = Nil Then
+          reply.SetUInt8(Integer(TDataType.dtNone))
         else
         begin
-          // Get request size can be bigger than PDU size.
-          if (p.Command <> TCommand.GetRequest) and (p.Data <> Nil) and (p.Data.Size() <> 0) Then
-            multipleBlocks(p, reply, ciphering);
+            // Data is send in octet string. Remove data type.
+            pos := reply.Size;
+            TGXCommon.setData(reply, TDataType.dtOctetString, p.Time);
+            reply.Move(pos + 1, pos, reply.Size() - pos - 1);
+        end;
+        multipleBlocks(p, reply, ciphering);
+      end
+      else if (p.Command <> TCommand.ReleaseRequest) Then
+      begin
+        // Get request size can be bigger than PDU size.
+        if (p.Command <> TCommand.GetRequest) and (p.Data <> Nil) and (p.Data.Size() <> 0) Then
+          multipleBlocks(p, reply, ciphering);
 
-          // Change Request type if Set request and multiple blocks is needed.
-          if (p.Command = TCommand.SetRequest) Then
+        // Change Request type if Set request and multiple blocks is needed.
+        if (p.Command = TCommand.SetRequest) Then
+        begin
+          if p.MultipleBlocks and
+            (Integer(p.Settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer) = 0) Then
           begin
-            if p.MultipleBlocks Then
-              if p.RequestType = 1 Then
-                p.RequestType := 2
-              else if p.RequestType = 2 Then
-                p.RequestType := 3;
+            if p.RequestType = 1 Then
+              p.RequestType := 2
+            else if p.RequestType = 2 Then
+              p.RequestType := 3;
           end;
-          // Change request type If get response and multiple blocks is needed.
-          if p.Command = TCommand.GetResponse Then
-            if p.MultipleBlocks Then
-              if p.RequestType = 1 Then
-                p.RequestType := 2;
-
+        end;
+        // Change request type If get response and multiple blocks is needed.
+        if p.Command = TCommand.GetResponse Then
+          if (p.MultipleBlocks) and (Integer(TConformance.cfGeneralBlockTransfer) = 0) Then
+            if p.RequestType = 1 Then
+              p.RequestType := 2;
+        if p.Command <> TCommand.GeneralBlockTransfer Then
+        begin
           reply.SetUInt8(p.RequestType);
           // Add Invoke Id And Priority.
           if p.InvokeId <> 0 Then
@@ -421,82 +431,193 @@ begin
           else
             reply.SetUInt8(GetInvokeIDPriority(p.Settings));
         end;
-        // Add attribute descriptor.
-        reply.SetArray(p.AttributeDescriptor);
-        if (p.Command <> TCommand.DataNotification) and
-          (Integer(p.Settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer) = 0) Then
+      end;
+      // Add attribute descriptor.
+      reply.SetArray(p.AttributeDescriptor);
+      // If multiple blocks.
+      if p.multipleBlocks and
+        (Integer(p.Settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer) = 0) Then
+      begin
+        // Is last block.
+        if p.LastBlock Then
         begin
-            // If multiple blocks.
-            if (p.MultipleBlocks) Then
-            begin
-                // Is last block.
-                if p.LastBlock Then
-                begin
-                  reply.SetUInt8(1);
-                  p.Settings.Count := 0;
-                  p.Settings.Index := 0;
-                end
-                else
-                  reply.SetUInt8(0);
+          reply.SetUInt8(1);
+          p.Settings.Count := 0;
+          p.Settings.Index := 0;
+        end
+        else
+          reply.SetUInt8(0);
 
-                // Block index.
-                reply.SetUInt32(p.BlockIndex);
-                p.BlockIndex := p.BlockIndex + 1;
-                // Add status if reply.
-                if p.Status <> $FF Then
-                begin
-                  if (p.Status <> 0) and (p.Command = TCommand.GetResponse) Then
-                    reply.SetUInt8(1);
-
-                  reply.SetUInt8(p.Status);
-                end;
-                // Block size.
-                if p.Data <> Nil Then
-                  len := p.Data.Size - p.Data.Position
-                else
-                  len := 0;
-
-                totalLength := len + reply.Size;
-                if ciphering = True Then
-                  totalLength := totalLength + CIPHERING_HEADER_SIZE;
-
-
-                if totalLength > p.Settings.MaxPduSize Then
-                begin
-                    len := p.Settings.MaxPduSize - reply.Size;
-                    if ciphering Then
-                      len := len - CIPHERING_HEADER_SIZE;
-
-                    len := len - TGXCommon.GetObjectCountSizeInBytes(len);
-                end;
-                TGXCommon.SetObjectCount(len, reply);
-                reply.SetArray(p.Data, len);
-            end;
-        end;
-        // Add data that fits to one block.
-        if len = 0 Then
+        // Block index.
+        reply.SetUInt32(p.BlockIndex);
+        p.BlockIndex := p.BlockIndex + 1;
+        // Add status if reply.
+        if p.Status <> $FF Then
         begin
-            // Add status if reply.
-            if (p.Status <> $FF) Then
-            begin
-                if (p.Status <> 0) and (p.Command = TCommand.GetResponse) Then
-                  reply.setUInt8(1);
+          if (p.Status <> 0) and (p.Command = TCommand.GetResponse) Then
+            reply.SetUInt8(1);
 
-                reply.setUInt8(p.Status);
-            end;
-            if (p.Data <> Nil) and (p.Data.Size <> 0) Then
-            begin
-                len := p.Data.Size - p.Data.Position;
-                // Get request size can be bigger than PDU size.
-                if (p.Command <> TCommand.GetRequest) and (len + reply.Size > p.Settings.MaxPduSize) Then
-                    len := p.Settings.MaxPduSize - reply.Size;
-
-                reply.SetArray(p.Data, len);
-            end;
+          reply.SetUInt8(p.Status);
         end;
+        // Block size.
+        if p.Data <> Nil Then
+          len := p.Data.Size - p.Data.Position
+        else
+          len := 0;
+
+        totalLength := len + reply.Size;
         if ciphering = True Then
-          Cipher0(p, reply);
+          totalLength := totalLength + CIPHERING_HEADER_SIZE;
+
+
+        if totalLength > p.Settings.MaxPduSize Then
+        begin
+            len := p.Settings.MaxPduSize - reply.Size;
+            if ciphering Then
+              len := len - CIPHERING_HEADER_SIZE;
+
+            len := len - TGXCommon.GetObjectCountSizeInBytes(len);
+        end;
+        TGXCommon.SetObjectCount(len, reply);
+        reply.SetArray(p.Data, len);
+      end;
+      // Add data that fits to one block.
+      if len = 0 Then
+      begin
+        // Add status if reply.
+        if (p.Status <> $FF) and (p.command <> TCommand.GeneralBlockTransfer) Then
+        begin
+            if (p.Status <> 0) and (p.Command = TCommand.GetResponse) Then
+              reply.setUInt8(1);
+
+            reply.setUInt8(p.Status);
+        end;
+        if (p.Data <> Nil) and (p.Data.Size <> 0) Then
+        begin
+          len := p.Data.Size - p.Data.Position;
+          if (p.settings.Gateway <> Nil) and (p.settings.Gateway.PhysicalDeviceAddress <> Nil) Then
+          begin
+            if (3 + len + Length(p.settings.Gateway.PhysicalDeviceAddress)) > p.settings.MaxPduSize Then
+                len := len - (3 + Length(p.settings.Gateway.PhysicalDeviceAddress));
+
+            tmp := TGXByteBuffer.Create;
+            tmp.SetArray(reply);
+            //GXByteBuffer tmp = new GXByteBuffer(reply);
+            reply.Size(0);
+            reply.SetUInt8(Integer(TCommand.GatewayRequest));
+            reply.SetUInt8(p.settings.Gateway.NetworkId);
+            reply.SetUInt8(Length(p.settings.Gateway.PhysicalDeviceAddress));
+            reply.SetArray(p.settings.Gateway.PhysicalDeviceAddress);
+            reply.SetArray(tmp);
+            FreeAndNil(tmp);
+          end;
+
+          // Get request size can be bigger than PDU size.
+          if (Integer(p.settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer)) <> 0  Then
+          begin
+            if (7 + len + reply.Size > p.settings.MaxPduSize) Then
+              len := p.settings.MaxPduSize - reply.Size - 7;
+
+            //Cipher data only once.
+            if ciphering and (p.command <> TCommand.GeneralBlockTransfer) Then
+            begin
+              reply.SetArray(p.data);
+              Cipher0(p, reply);
+              p.Data.Size(0);
+              p.Data.SetArray(reply);
+              reply.Size(0);
+              len := p.Data.Size;
+              if (7 + len > p.settings.MaxPduSize) Then
+                len := p.settings.MaxPduSize - 7;
+            end;
+          end
+          else if (p.Command <> TCommand.GetRequest) and (len + reply.Size > p.Settings.MaxPduSize) Then
+              len := p.Settings.MaxPduSize - reply.Size;
+
+          reply.SetArray(p.Data, len);
+        end
+        else if (((p.Settings.Gateway <> Nil) and (p.Settings.Gateway.PhysicalDeviceAddress <> Nil)) and
+           Not ((p.Command = TCommand.GeneralBlockTransfer) or (p.multipleBlocks and ((Integer(p.Settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer)) <> 0)))) Then
+        begin
+          if (3 + len + Length(p.settings.Gateway.PhysicalDeviceAddress)) > p.settings.MaxPduSize Then
+              len := len - (3 + Length(p.settings.Gateway.PhysicalDeviceAddress));
+
+          tmp := TGXByteBuffer.Create;
+          tmp.SetArray(reply);
+          reply.Size(0);
+          reply.SetUInt8(Integer(TCommand.GatewayRequest));
+          reply.SetUInt8(p.settings.Gateway.NetworkId);
+          reply.SetUInt8(Length(p.settings.Gateway.PhysicalDeviceAddress));
+          reply.SetArray(p.settings.Gateway.PhysicalDeviceAddress);
+          reply.SetArray(tmp);
+          FreeAndNil(tmp);
+        end;
+      end;
+
+      if ciphering and ((Integer(p.settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer)) = 0) Then
+      begin
+        //GBT ciphering is done for all the data, not just block.
+        Cipher0(p, reply);
+      end;
+
+      if (p.command = TCommand.GeneralBlockTransfer) or (p.multipleBlocks and ((Integer(p.Settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer)) <> 0)) Then
+      begin
+        bb := TGXByteBuffer.Create();
+        bb.SetArray(reply);
+        reply.Clear();
+        reply.SetUInt8(Integer(TCommand.GeneralBlockTransfer));
+        value := 0;
+        // Is last block
+        if p.lastBlock then
+          value := $80
+        else if p.Streaming Then
+          value := $40;
+
+        value := value or p.WindowSize;
+        reply.SetUInt8(value);
+        // Set block number sent.
+        reply.SetUInt16(p.blockIndex);
+        p.blockIndex := p.blockIndex + 1;
+        // Set block number acknowledged
+        if (p.command <> TCommand.DataNotification) and (p.blockNumberAck <> 0) Then
+        begin
+          // Set block number acknowledged
+          reply.SetUInt16(p.blockNumberAck);
+          p.blockNumberAck := p.blockNumberAck + 1;
+        end
+        else
+        begin
+          p.blockNumberAck := $FFFF;
+          reply.SetUInt16(0);
+        end;
+        //Add data length.
+        TGXCommon.SetObjectCount(bb.Size, reply);
+        reply.SetArray(bb);
+        p.blockNumberAck := p.blockNumberAck + 1;
+        if p.command <> TCommand.GeneralBlockTransfer Then
+        begin
+          p.command := TCommand.GeneralBlockTransfer;
+         // p.BlockNumberAck := p.settings.BlockNumberAck + 1;
+        end;
+        if (p.settings.Gateway <> Nil) and (p.Settings.Gateway.PhysicalDeviceAddress <> Nil) Then
+        begin
+          if (3 + len + Length(p.settings.Gateway.PhysicalDeviceAddress)) > p.settings.MaxPduSize Then
+            len := len - (3 + Length(p.settings.Gateway.PhysicalDeviceAddress));
+
+          tmp := TGXByteBuffer.Create;
+          tmp.SetArray(reply);
+          reply.Size(0);
+          reply.SetUInt8(Integer(TCommand.GatewayRequest));
+          reply.SetUInt8(p.settings.Gateway.NetworkId);
+          reply.SetUInt8(Length(p.settings.Gateway.PhysicalDeviceAddress));
+          reply.SetArray(p.settings.Gateway.PhysicalDeviceAddress);
+          reply.SetArray(tmp);
+          FreeAndNil(tmp);
+        end;
     end;
+  end;
+  if p.Settings.InterfaceType = TInterfaceType.HDLC Then
+    AddLLCBytes(p.Settings, reply);
 end;
 
 class procedure TGXDLMS.Cipher0(p: TGXDLMSLNParameters; reply: TGXByteBuffer);
@@ -537,57 +658,66 @@ var
   bb: TGXByteBuffer;
   list: TList<TBytes>;
 begin
-try
+
   bb := TGXByteBuffer.Create();
-  list := TList<TBytes>.Create();
-  frame := 0;
-  if p.Command = TCommand.AARQ Then
-    frame := $10
-  else if (p.Command = TCommand.EventNotification) or (p.Command = TCommand.DataNotification) Then
-    frame := $13;
+  try
 
-  repeat
-  begin
-    GetLNPdu(p, bb);
-    p.LastBlock := True;
-    if p.AttributeDescriptor = Nil Then
-      p.Settings.increaseBlockIndex();
+    list := TList<TBytes>.Create();
+    try
 
-    if (p.Command = TCommand.AARQ) and (p.Command = TCommand.GetRequest) Then
-        assert (Not(p.Settings.MaxPduSize < bb.Size));
+      frame := 0;
+      if p.Command = TCommand.AARQ Then
+        frame := $10
+      else if (p.Command = TCommand.EventNotification) or (p.Command = TCommand.DataNotification) Then
+        frame := $13;
 
-    while (bb.Position() <> bb.Size) do
-    begin
-        if p.Settings.InterfaceType = TInterfaceType.WRAPPER Then
-            list.Add(GetWrapperFrame(p.Settings, bb))
-        else if (p.Settings.InterfaceType = TInterfaceType.HDLC) Then
+      repeat
+      begin
+        GetLNPdu(p, bb);
+        p.LastBlock := True;
+        if p.AttributeDescriptor = Nil Then
+          p.Settings.increaseBlockIndex();
+
+        if (p.Command = TCommand.AARQ) and (p.Command = TCommand.GetRequest) Then
+            assert (Not(p.Settings.MaxPduSize < bb.Size));
+
+        while (bb.Position() <> bb.Size) do
         begin
-            list.Add(GetHdlcFrame(p.Settings, frame, bb));
-            if bb.Position() <> bb.Size Then
+            if p.Settings.InterfaceType = TInterfaceType.WRAPPER Then
+                list.Add(GetWrapperFrame(p.Settings, bb))
+            else if (p.Settings.InterfaceType = TInterfaceType.HDLC) Then
             begin
-              if (p.Settings.isServer) or (p.Command = TCommand.SetRequest) Then
-                frame := 0
-              else
-                frame := p.Settings.NextSend(false);
-            end;
-        end
-        else if (p.Settings.InterfaceType = TInterfaceType.PDU) Then
-        begin
-          list.add(bb.ToArray());
-          frame := 0;
-          break;
-        end
-        else
-          raise EArgumentException.Create('InterfaceType');
+                list.Add(GetHdlcFrame(p.Settings, frame, bb));
+                if bb.Position() <> bb.Size Then
+                begin
+                  if (p.Settings.isServer) or (p.Command = TCommand.SetRequest) Then
+                    frame := 0
+                  else
+                    frame := p.Settings.NextSend(false);
+                end;
+            end
+            else if (p.Settings.InterfaceType = TInterfaceType.PDU) Then
+            begin
+              list.add(bb.ToArray());
+              frame := 0;
+              break;
+            end
+            else
+              raise EArgumentException.Create('InterfaceType');
+        end;
+        bb.Clear();
+      end;
+      until (p.Data = Nil) or (p.Data.position = p.Data.Size);
+      Result := list.ToArray();
+
+    finally
+      list.Free;
     end;
-    bb.Clear();
+
+  finally
+    bb.Free;
   end;
-  until (p.Data = Nil) or (p.Data.position = p.Data.Size);
-  Result := list.ToArray();
-finally
-  FreeAndNil(list);
-  FreeAndNil(bb);
-end;
+
 end;
 
 // Get all Short Name messages. Client uses this to generate messages.
@@ -597,55 +727,64 @@ var
   bb: TGXByteBuffer;
   list: TList<TBytes>;
 begin
+
+  bb := TGXByteBuffer.Create();
   try
-    bb := TGXByteBuffer.Create();
+
     list := TList<TBytes>.Create();
-    frame := $0;
-    if p.Command = TCommand.AARQ Then
-      frame := $10
-    else if p.Command = TCommand.InformationReport Then
-      frame := $13
-    else if p.Command = TCommand.NONE Then
-      frame := p.Settings.NextSend(true);
+    try
 
-    repeat
-    begin
-        GetSNPdu(p, bb);
-        if (p.Command <> TCommand.AARQ) and (p.Command <> TCommand.AARE) Then
-          Assert(Not p.Settings.MaxPduSize > bb.Size);
+      frame := $0;
+      if p.Command = TCommand.AARQ Then
+        frame := $10
+      else if p.Command = TCommand.InformationReport Then
+        frame := $13
+      else if p.Command = TCommand.NONE Then
+        frame := p.Settings.NextSend(true);
 
-        // Command is not add to next PDUs.
-        while (bb.Position() <> bb.Size) do
-        begin
-            if p.Settings.InterfaceType = TInterfaceType.WRAPPER Then
-              list.Add(GetWrapperFrame(p.Settings, bb))
-            else if p.Settings.InterfaceType = TInterfaceType.HDLC Then
-            begin
-                list.add(GetHdlcFrame(p.Settings, frame, bb));
-                if bb.position <> bb.Size Then
-                begin
-                  if p.Settings.IsServer Then
-                    frame := 0
-                  else
-                    frame := p.Settings.NextSend(false);
-                end;
-            end
-            else if p.Settings.InterfaceType = TInterfaceType.PDU Then
-            begin
-                list.Add(bb.ToArray());
-                break;
-            end
-            else
-              raise EArgumentException.Create('InterfaceType');
-        end;
-        bb.clear();
+      repeat
+      begin
+          GetSNPdu(p, bb);
+          if (p.Command <> TCommand.AARQ) and (p.Command <> TCommand.AARE) Then
+            Assert(Not p.Settings.MaxPduSize > bb.Size);
+
+          // Command is not add to next PDUs.
+          while (bb.Position() <> bb.Size) do
+          begin
+              if p.Settings.InterfaceType = TInterfaceType.WRAPPER Then
+                list.Add(GetWrapperFrame(p.Settings, bb))
+              else if p.Settings.InterfaceType = TInterfaceType.HDLC Then
+              begin
+                  list.add(GetHdlcFrame(p.Settings, frame, bb));
+                  if bb.position <> bb.Size Then
+                  begin
+                    if p.Settings.IsServer Then
+                      frame := 0
+                    else
+                      frame := p.Settings.NextSend(false);
+                  end;
+              end
+              else if p.Settings.InterfaceType = TInterfaceType.PDU Then
+              begin
+                  list.Add(bb.ToArray());
+                  break;
+              end
+              else
+                raise EArgumentException.Create('InterfaceType');
+          end;
+          bb.clear();
+      end;
+      until (p.Data = Nil) or (p.Data.Position = p.Data.Size);
+      Result := list.ToArray;
+
+    finally
+      list.Free;
     end;
-    until (p.Data = Nil) or (p.Data.Position = p.Data.Size);
-    Result := list.ToArray;
+
   finally
-    FreeAndNil(list);
-    FreeAndNil(bb);
+    bb.Free;
   end;
+
 end;
 
 class function TGXDLMS.AppendMultipleSNBlocks(p: TGXDLMSSNParameters; header: TGXByteBuffer; reply: TGXByteBuffer): Integer;
@@ -809,7 +948,6 @@ begin
             TGXDLMS.AddLLCBytes(p.Settings, reply);
         end;
         reply.SetArray(tmp);
-        FreeAndNil(tmp);
     end;
 end;
 
@@ -833,16 +971,19 @@ var
 begin
   tmp := GetAddress(value, size);
   bb := TGXByteBuffer.Create();
-  if VarType(tmp) = VarByte Then
-    bb.SetUInt8(tmp)
-  else if VarType(tmp) = VarWord Then
-    bb.SetUInt16(tmp)
-  else if VarType(tmp) = VarLongWord Then
-    bb.SetUInt32(tmp)
-  else
-    raise EArgumentException.Create('Invalid address type.');
-  Result := bb.ToArray();
-  FreeAndNil(bb);
+  try
+    if VarType(tmp) = VarByte Then
+      bb.SetUInt8(tmp)
+    else if VarType(tmp) = VarWord Then
+      bb.SetUInt16(tmp)
+    else if VarType(tmp) = VarLongWord Then
+      bb.SetUInt32(tmp)
+    else
+      raise EArgumentException.Create('Invalid address type.');
+    Result := bb.ToArray();
+  finally
+    FreeAndNil(bb);
+  end;
 end;
 
 // Split DLMS PDU to wrapper frames.
@@ -851,41 +992,44 @@ var
   bb: TGXByteBuffer;
 begin
   bb := TGXByteBuffer.Create();
-  // Add version.
-  bb.setUInt16(1);
-  if settings.IsServer Then
-  begin
-    bb.setUInt16(settings.ServerAddress);
-    bb.setUInt16(settings.ClientAddress);
-  end
-  else
-  begin
-    bb.setUInt16(settings.ClientAddress);
-    bb.setUInt16(settings.ServerAddress);
+  try
+    // Add version.
+    bb.setUInt16(1);
+    if settings.IsServer Then
+    begin
+      bb.setUInt16(settings.ServerAddress);
+      bb.setUInt16(settings.ClientAddress);
+    end
+    else
+    begin
+      bb.setUInt16(settings.ClientAddress);
+      bb.setUInt16(settings.ServerAddress);
+    end;
+    if data = Nil Then
+      // Data length.
+      bb.setUInt16(0)
+    else
+    begin
+      // Data length.
+      bb.SetUInt16(data.Size);
+      // Data
+      bb.SetArray(data);
+    end;
+    // Remove sent data in server side.
+    if settings.IsServer Then
+    begin
+        if data.Size = data.position Then
+          data.clear()
+        else
+        begin
+          data.Move(data.position, 0, data.Size - data.position);
+          data.Position(0);
+        end;
+    end;
+    Result := bb.ToArray();
+  finally
+    FreeAndNil(bb);
   end;
-  if data = Nil Then
-    // Data length.
-    bb.setUInt16(0)
-  else
-  begin
-    // Data length.
-    bb.SetUInt16(data.Size);
-    // Data
-    bb.SetArray(data);
-  end;
-  // Remove sent data in server side.
-  if settings.IsServer Then
-  begin
-      if data.Size = data.position Then
-        data.clear()
-      else
-      begin
-        data.Move(data.position, 0, data.Size - data.position);
-        data.Position(0);
-      end;
-  end;
-  Result := bb.ToArray();
-  FreeAndNil(bb);
 end;
 
 // Get HDLC frame for data.
@@ -912,7 +1056,7 @@ begin
   // Add BOP
   bb.setUInt8(HDLCFrameStartEnd);
   frameSize := Integer(settings.Limits.MaxInfoTX);
-  frameSize := frameSize - 11;
+  frameSize := frameSize - 10 - Length(secondaryAddress);
   // If no data
   if (data = Nil) or (data.Size = 0) Then
     bb.setUInt8($A0)
@@ -1510,7 +1654,7 @@ begin
 
       // Action-Response-Normal. Get data if exists. All meters do not
       // return data here.
-      if data.Data.Position < data.Data.Size Then
+      if (data.Error = 0) AND (data.Data.Position < data.Data.Size) Then
       begin
           // Get-Data-Result
           ret := data.Data.GetUInt8();
@@ -1605,7 +1749,7 @@ begin
       SetLength(tmp, len);
       reply.Data.Get(tmp);
       tm := TGXCommon.ChangeType(tmp, TDataType.dtDateTime).AsType<TGXDateTime>;
-      reply.Time := tm.Value;
+      reply.Time := tm.LocalTime;
       FreeAndNil(tm);
   end;
 
@@ -1646,10 +1790,13 @@ begin
       info := TGXDataInfo.Create();
       info.&Type := dt;
       tmp2 := TGXByteBuffer.Create();
-      tmp2.SetArray(tmp);
-      ret := TGXCommon.GetData(tmp2, info);
-      freeAndNil(tmp2);
-      reply.Time := ret.AsType<TGXDateTime>.Value;
+      try
+        tmp2.SetArray(tmp);
+        ret := TGXCommon.GetData(tmp2, info);
+      finally
+        FreeAndNil(tmp2);
+      end;
+      reply.Time := ret.AsType<TGXDateTime>.LocalTime;
     end;
     getDataFromBlock(reply.Data, start);
     getValueFromData(settings, reply);
@@ -1777,25 +1924,28 @@ begin
       // Get object count.
       cnt := TGXCommon.GetObjectCount(reply.Data);
       values := TList<TValue>.Create();
-      for pos := 0 to cnt - 1 do
-      begin
-        // Result
-        ch := reply.Data.GetUInt8();
-        if ch <> 0 Then
-          reply.Error := reply.Data.GetUInt8()
-        else
+      try
+        for pos := 0 to cnt - 1 do
         begin
-          reply.ReadPosition := reply.Data.Position();
-          GetValueFromData(settings, reply);
-          reply.Data.Position(reply.ReadPosition);
-          if values <> Nil Then
-            values.Add(reply.Value);
+          // Result
+          ch := reply.Data.GetUInt8();
+          if ch <> 0 Then
+            reply.Error := reply.Data.GetUInt8()
+          else
+          begin
+            reply.ReadPosition := reply.Data.Position();
+            GetValueFromData(settings, reply);
+            reply.Data.Position(reply.ReadPosition);
+            if values <> Nil Then
+              values.Add(reply.Value);
 
-          reply.Value := Nil;
+            reply.Value := Nil;
+          end;
         end;
+        reply.Value := TValue.From(values.ToArray());
+      finally
+        FreeAndNil(values);
       end;
-      reply.Value := TValue.From(values.ToArray());
-      FreeAndNil(values);
       Result := false;
     end
     else
@@ -1857,8 +2007,9 @@ end;
 // Get PDU from the packet.
 class procedure TGXDLMS.GetPdu(settings : TGXDLMSSettings; data: TGXReplyData);
 var
-  index: Integer;
+  len, index: Integer;
   cmd: TCommand;
+  pda: TBytes;
 begin
     cmd := data.Command;
     // If header is not read yet or GBT message.
@@ -1939,6 +2090,17 @@ begin
           end;
         TCommand.GeneralCiphering:
           HandleGeneralCiphering(settings, data);
+        TCommand.GatewayRequest,
+        TCommand.GatewayResponse:
+        begin
+          data.Data.GetUInt8();
+          len := TGXCommon.GetObjectCount(data.Data);
+          SetLength(pda, len);
+          data.Data.Get(pda);
+          GetDataFromBlock(data.Data, index);
+          data.Command := TCommand.None;
+          GetPdu(settings, data);
+        end
         else
           raise EArgumentException.Create('Invalid TCommand.');
         end;
@@ -2000,10 +2162,10 @@ begin
         end;
     end;
     // Get data if all data is read or we want to peek data.
-    if ((data.Data.Position() <> data.Data.Size)
+    if ((data.Error = 0) AND ((data.Data.Position() <> data.Data.Size)
             and ((cmd = TCommand.ReadResponse) or (cmd = TCommand.GetResponse)
                     or (cmd = TCommand.MethodResponse))
-            and ((data.MoreData = TRequestTypes.rtNone) or data.Peek)) Then
+            and ((data.MoreData = TRequestTypes.rtNone) or data.Peek))) Then
         getValueFromData(settings, data);
 end;
 
@@ -2046,7 +2208,6 @@ end;
 class procedure TGXDLMS.HandleGloResponse(settings: TGXDLMSSettings; data: TGXReplyData; index: Integer);
 var
   bb: TGXByteBuffer;
-  p: TAesGcmParameter;
 begin
   if settings.Cipher = Nil Then
     raise EArgumentException.Create('Secure connection is not supported.');
@@ -2056,12 +2217,14 @@ begin
   begin
     data.Data.Position(data.Data.Position() - 1);
     bb := TGXByteBuffer.Create(data.Data);
-    data.Data.Position(index);
-    data.Data.size(index);
-    p := settings.Cipher.Decrypt(settings.SourceSystemTitle, bb);
-    FreeAndNil(p);
-    data.Data.SetArray(bb);
-    FreeAndNil(bb);
+    try
+      data.Data.Position(index);
+      data.Data.size(index);
+      settings.Cipher.Decrypt(settings.SourceSystemTitle, bb).Free;
+      data.Data.SetArray(bb);
+    finally
+      FreeAndNil(bb);
+    end;
     data.Command := TCommand.NONE;
     GetPdu(settings, data);
     data.CipherIndex := data.Data.Size;
@@ -2095,61 +2258,67 @@ var
   list: TList<TValue>;
 begin
   info := TGXDataInfo.Create();
-  if Not reply.Value.IsEmpty and reply.Value.IsType<TArray<TValue>> Then
-  begin
-    info.&Type := TDataType.dtArray;
-    info.Count := reply.TotalCount;
-    info.Index := reply.Count;
-  end;
-  index := reply.Data.Position();
-  reply.Data.Position(reply.ReadPosition);
   try
-    value := TGXCommon.GetData(reply.Data, info);
-    if Not value.IsEmpty Then
-    begin // If new data.
-      if Not value.IsArray Then
-      begin
-        reply.ValueType := info.&Type;
-        reply.Value := value;
-        reply.TotalCount := 0;
-        reply.ReadPosition := reply.Data.Position();
-      end
-      else
-      begin
-        if (value.GetArrayLength <> 0) Then
+    if Not reply.Value.IsEmpty and reply.Value.IsType<TArray<TValue>> Then
+    begin
+      info.&Type := TDataType.dtArray;
+      info.Count := reply.TotalCount;
+      info.Index := reply.Count;
+    end;
+    index := reply.Data.Position();
+    reply.Data.Position(reply.ReadPosition);
+    try
+      value := TGXCommon.GetData(reply.Data, info);
+      if Not value.IsEmpty Then
+      begin // If new data.
+        if Not value.IsArray Then
         begin
-          if reply.Value.IsEmpty Then
-            reply.Value := value
-          else
+          reply.ValueType := info.&Type;
+          reply.Value := value;
+          reply.TotalCount := 0;
+          reply.ReadPosition := reply.Data.Position();
+        end
+        else
+        begin
+          if (value.GetArrayLength <> 0) Then
           begin
-            list := TList<TValue>.Create;
-            list.AddRange(reply.Value.AsType<TArray<TValue>>);
-            list.AddRange(value.AsType<TArray<TValue>>);
-            reply.Value := TValue.From(list.ToArray());
-            FreeAndNil(list);
+            if reply.Value.IsEmpty Then
+              reply.Value := value
+            else
+            begin
+              list := TList<TValue>.Create;
+              try
+                list.AddRange(reply.Value.AsType<TArray<TValue>>);
+                list.AddRange(value.AsType<TArray<TValue>>);
+                reply.Value := TValue.From(list.ToArray());
+              finally
+                FreeAndNil(list);
+              end;
+            end;
           end;
+          reply.ReadPosition := reply.Data.Position;
+          // Element count.
+          reply.TotalCount := info.Count;
         end;
+      end
+      else if info.Complete and (reply.Command = TCommand.DataNotification) Then
+        // If last item is null. This is a special case.
         reply.ReadPosition := reply.Data.Position;
-        // Element count.
-        reply.TotalCount := info.Count;
-      end;
-    end
-    else if info.Complete and (reply.Command = TCommand.DataNotification) Then
-      // If last item is null. This is a special case.
-      reply.ReadPosition := reply.Data.Position;
-  finally
-    reply.Data.Position(index);
-  end;
+    finally
+      reply.Data.Position(index);
+    end;
 
-  // If last data frame of the data block is read.
-  if (reply.Command <> TCommand.DataNotification) and info.Complete
-          and (reply.MoreData = TRequestTypes.rtNone) Then
-  begin
-    // If all blocks are read.
-    settings.ResetBlockIndex();
-    reply.Data.Position(0);
+    // If last data frame of the data block is read.
+    if (reply.Command <> TCommand.DataNotification) and info.Complete
+            and (reply.MoreData = TRequestTypes.rtNone) Then
+    begin
+      // If all blocks are read.
+      settings.ResetBlockIndex();
+      reply.Data.Position(0);
+    end;
+  finally
+    FreeAndNil(info);
   end;
-  FreeAndNil(info);
 end;
 
 class function TGXDLMS.GetData(settings: TGXDLMSSettings; reply: TGXByteBuffer; data: TGXReplyData) : Boolean;

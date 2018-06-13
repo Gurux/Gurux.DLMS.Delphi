@@ -711,7 +711,6 @@ end;
 // value : Data to append.
 procedure TGXByteBuffer.SetArray(value : TByteDynArray);
 begin
-Length(value);
   SetArray(value, 0, Length(value));
 end;
 
@@ -865,7 +864,8 @@ begin
   if (size - position < Length(target)) Then
      raise EArgumentException.Create('get');
 
-  System.Move(FData[FPosition], target[0], Length(target));
+  if Length(target) <> 0 then
+    System.Move(FData[FPosition], target[0], Length(target));
   FPosition := FPosition + Length(target);
 end;
 
@@ -990,12 +990,8 @@ procedure TGXByteBuffer.SetHexString(value : String; index : Integer; count : In
 var
  tmp : TBytes;
 begin
-try
   tmp := HexToBytes(value);
   SetArray(tmp, index, count);
-finally
-  freeAndNil(tmp);
-end;
 end;
 
 function TGXByteBuffer.ToString: string;

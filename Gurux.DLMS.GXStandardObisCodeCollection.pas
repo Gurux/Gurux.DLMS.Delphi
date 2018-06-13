@@ -304,78 +304,86 @@ var
   channel : char;
 begin
   Result := TObjectList<TGXStandardObisCode>.Create();
-  for it in Self do
-  begin
-      //Interface is tested first because it's faster.
-      if (EqualsInterface(it, IC) and EqualsObisCode(it.OBIS, obisCode)) then
-      begin
-          tmp := TGXStandardObisCode.Create(it.OBIS, it.Description, it.Interfaces, it.DataType);
-          Result.Add(tmp);
-          tmp2 := it.Description.Split([';']);
-          if Length(tmp2) > 1 then
-          begin
-              desc := GetDescription(tmp2[1].Trim());
-              if desc <> '' then
-              begin
-                  tmp2[1] := desc;
-                  tmp.Description := string.Join(';', tmp2);
-              end;
-          end;
-          tmp.OBIS[0] := obisCode[0].ToString();
-          tmp.OBIS[1] := obisCode[1].ToString();
-          tmp.OBIS[2] := obisCode[2].ToString();
-          tmp.OBIS[3] := obisCode[3].ToString();
-          tmp.OBIS[4] := obisCode[4].ToString();
-          tmp.OBIS[5] := obisCode[5].ToString();
-          tmp.Description := tmp.Description.Replace('$A', obisCode[0].ToString());
-          tmp.Description := tmp.Description.Replace('$B', obisCode[1].ToString());
-          tmp.Description := tmp.Description.Replace('$C', obisCode[2].ToString());
-          tmp.Description := tmp.Description.Replace('$D', obisCode[3].ToString());
-          tmp.Description := tmp.Description.Replace('$E', obisCode[4].ToString());
-          tmp.Description := tmp.Description.Replace('$F', obisCode[5].ToString());
-          //Increase value
-          begin1 := tmp.Description.IndexOf('#$');
-          if begin1 <> -1 then
-          begin
-              start := tmp.Description.IndexOf('(');
-              end1 := tmp.Description.IndexOf(')');
-              channel := tmp.Description[start + 1];
-              ch := 0;
-              if channel = 'A' then
-                ch := obisCode[0]
-              else if channel = 'B' then
-                ch := obisCode[1]
-              else if channel = 'C' then
-                ch := obisCode[2]
-              else if channel = 'D' then
-                ch := obisCode[3]
-              else if channel = 'E' then
-                ch := obisCode[4]
-              else if channel = 'F' then
-                ch := obisCode[5];
+  try
 
-              plus := tmp.Description.IndexOf('+');
-              if plus <> -1 then
-                ch := ch + byte.Parse(tmp.Description.Substring(plus + 1, end1 - plus - 1));
+    for it in Self do
+    begin
+        //Interface is tested first because it's faster.
+        if (EqualsInterface(it, IC) and EqualsObisCode(it.OBIS, obisCode)) then
+        begin
+            tmp := TGXStandardObisCode.Create(it.OBIS, it.Description, it.Interfaces, it.DataType);
+            Result.Add(tmp);
+            tmp2 := it.Description.Split([';']);
+            if Length(tmp2) > 1 then
+            begin
+                desc := GetDescription(tmp2[1].Trim());
+                if desc <> '' then
+                begin
+                    tmp2[1] := desc;
+                    tmp.Description := string.Join(';', tmp2);
+                end;
+            end;
+            tmp.OBIS[0] := obisCode[0].ToString();
+            tmp.OBIS[1] := obisCode[1].ToString();
+            tmp.OBIS[2] := obisCode[2].ToString();
+            tmp.OBIS[3] := obisCode[3].ToString();
+            tmp.OBIS[4] := obisCode[4].ToString();
+            tmp.OBIS[5] := obisCode[5].ToString();
+            tmp.Description := tmp.Description.Replace('$A', obisCode[0].ToString());
+            tmp.Description := tmp.Description.Replace('$B', obisCode[1].ToString());
+            tmp.Description := tmp.Description.Replace('$C', obisCode[2].ToString());
+            tmp.Description := tmp.Description.Replace('$D', obisCode[3].ToString());
+            tmp.Description := tmp.Description.Replace('$E', obisCode[4].ToString());
+            tmp.Description := tmp.Description.Replace('$F', obisCode[5].ToString());
+            //Increase value
+            begin1 := tmp.Description.IndexOf('#$');
+            if begin1 <> -1 then
+            begin
+                start := tmp.Description.IndexOf('(');
+                end1 := tmp.Description.IndexOf(')');
+                channel := tmp.Description[start + 1];
+                ch := 0;
+                if channel = 'A' then
+                  ch := obisCode[0]
+                else if channel = 'B' then
+                  ch := obisCode[1]
+                else if channel = 'C' then
+                  ch := obisCode[2]
+                else if channel = 'D' then
+                  ch := obisCode[3]
+                else if channel = 'E' then
+                  ch := obisCode[4]
+                else if channel = 'F' then
+                  ch := obisCode[5];
 
-              tmp.Description := tmp.Description.Substring(0, begin1) + ch.ToString();
-          end;
-          tmp.Description := tmp.Description.Replace(';', ' ').Replace('  ', ' ').Trim();
-      end;
+                plus := tmp.Description.IndexOf('+');
+                if plus <> -1 then
+                  ch := ch + byte.Parse(tmp.Description.Substring(plus + 1, end1 - plus - 1));
+
+                tmp.Description := tmp.Description.Substring(0, begin1) + ch.ToString();
+            end;
+            tmp.Description := tmp.Description.Replace(';', ' ').Replace('  ', ' ').Trim();
+        end;
+    end;
+
+    //If invalid OBIS code.
+    if Result.Count = 0 Then
+    begin
+      tmp := TGXStandardObisCode.Create(Nil, 'Manufacturer specific', IC.ToString(), '');
+      Result.Add(tmp);
+      tmp.OBIS[0] := obisCode[0].ToString();
+      tmp.OBIS[1] := obisCode[1].ToString();
+      tmp.OBIS[2] := obisCode[2].ToString();
+      tmp.OBIS[3] := obisCode[3].ToString();
+      tmp.OBIS[4] := obisCode[4].ToString();
+      tmp.OBIS[5] := obisCode[5].ToString();
+    end;
+
+  except
+    result.Free;
+    raise;
   end;
 
-  //If invalid OBIS code.
-  if Result.Count = 0 Then
-  begin
-    tmp := TGXStandardObisCode.Create(Nil, 'Manufacturer specific', IC.ToString(), '');
-    Result.Add(tmp);
-    tmp.OBIS[0] := obisCode[0].ToString();
-    tmp.OBIS[1] := obisCode[1].ToString();
-    tmp.OBIS[2] := obisCode[2].ToString();
-    tmp.OBIS[3] := obisCode[3].ToString();
-    tmp.OBIS[4] := obisCode[4].ToString();
-    tmp.OBIS[5] := obisCode[5].ToString();
-  end;
 end;
 
 end.

@@ -48,6 +48,7 @@ Gurux.DLMS.Objects.GXDLMSDemandRegister,
 Gurux.DLMS.Objects.GXDLMSIp4Setup,
 Gurux.DLMS.Objects.GXDLMSPppSetup,
 Gurux.DLMS.Objects.GXDLMSGprsSetup,
+Gurux.DLMS.Objects.GXDLMSGSMDiagnostic,
 Gurux.DLMS.Objects.GXDLMSTcpUdpSetup,
 Gurux.DLMS.Objects.GXDLMSScriptTable,
 Gurux.DLMS.Objects.GXDLMSAutoAnswer,
@@ -105,6 +106,8 @@ begin
       Result := TGXDLMSExtendedRegister.Create()
   else if tp = TObjectType.otGprsSetup Then
       Result := TGXDLMSGprsSetup.Create()
+  else if tp = TObjectType.otGSMDiagnostic Then
+      Result := TGXDLMSGSMDiagnostic.Create()
   else if tp = TObjectType.otIecHdlcSetup Then
       Result := TGXDLMSHdlcSetup.Create()
   else if tp = TObjectType.otIecLocalPortSetup Then

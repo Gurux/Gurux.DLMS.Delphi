@@ -93,24 +93,27 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //ListeningWindow
-  if CanRead(2) Then
-    items.Add(2);
+    //ListeningWindow
+    if CanRead(2) Then
+      items.Add(2);
 
-  //AllowedSenders
-  if CanRead(3) Then
-    items.Add(3);
+    //AllowedSenders
+    if CanRead(3) Then
+      items.Add(3);
 
-  //SendersAndActions
-  if CanRead(4) Then
-    items.Add(4);
+    //SendersAndActions
+    if CanRead(4) Then
+      items.Add(4);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSMessageHandler.GetAttributeCount: Integer;
@@ -188,10 +191,14 @@ begin
       if e.Value.IsType<TArray<TValue>>() Then
       begin
           strs := TList<String>.Create();
-          for it in e.Value.AsType<TArray<TValue>> do
-            strs.Add(TEncoding.ASCII.GetString(it.AsType<TBytes>));
+          try
+            for it in e.Value.AsType<TArray<TValue>> do
+              strs.Add(TEncoding.ASCII.GetString(it.AsType<TBytes>));
 
-          AllowedSenders := strs.ToArray();
+            AllowedSenders := strs.ToArray();
+          finally
+            strs.Free;
+          end;
       end
       else
         AllowedSenders := TArray<String>.Create();

@@ -59,7 +59,7 @@ var
 begin
     if settings.Authentication = TAuthentication.atHigh Then
     begin
-      len := Length(secret);
+      len := Length(data);
       s := TGXByteBuffer.Create();
       r := TGXByteBuffer.Create();
       if len Mod 16 <> 0 Then
@@ -76,9 +76,10 @@ begin
 
       r.SetArray(data);
       r.Zero(r.Size, len - r.Size);
-      for pos := 0 to Floor(len / 16) do
+      for pos := 0 to Floor(len / 16) - 1 do
         TGXDLMSChipperingStream.Aes1Encrypt(r, pos * 16, &s);
-      Result := s.ToArray;
+      Result := r.ToArray;
+      SetLength(Result, 16);
       FreeAndNil(s);
       FreeAndNil(r);
       Exit;

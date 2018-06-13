@@ -109,28 +109,31 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //ScalerUnit
-  if Not IsRead(3) Then
-    items.Add(3);
+    //ScalerUnit
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //Value
-  if CanRead(2) Then
-    items.Add(2);
+    //Value
+    if CanRead(2) Then
+      items.Add(2);
 
-  //Status
-  if CanRead(4) Then
-    items.Add(4);
+    //Status
+    if CanRead(4) Then
+      items.Add(4);
 
-  //CaptureTime
-  if CanRead(5) Then
-    items.Add(5);
+    //CaptureTime
+    if CanRead(5) Then
+      items.Add(5);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSExtendedRegister.GetAttributeCount: Integer;

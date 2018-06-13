@@ -51,15 +51,17 @@ type
    end;
 
 implementation
-  class function TSerialnumberCounter.GetValues(expressions: String): TArray<String>;
-  var
-    values: TList<String>;
-    last, index: Integer;
-    ch: Char;
-  begin
-    last := 0;
-    index := 0;
-    values := TList<string>.Create();
+
+class function TSerialnumberCounter.GetValues(expressions: String): TArray<String>;
+var
+  values: TList<String>;
+  last, index: Integer;
+  ch: Char;
+begin
+  last := 0;
+  index := 0;
+  values := TList<string>.Create();
+  try
     for ch in expressions do
     begin
       case ch
@@ -76,8 +78,10 @@ implementation
       values.Add(expressions.Substring(last, index - last));
 
     Result := values.ToArray();
+  finally
     FreeAndNil(values);
   end;
+end;
 
 class function TSerialnumberCounter.GetValue(value: String; sn: Integer): Integer;
 begin
@@ -124,16 +128,20 @@ begin
     raise EArgumentException.Create('Expression is null or empty.');
 
   sb := TStringBuilder.Create();
-  for ch in expression do
-  begin
-    if (ch = '(') or (ch = ')') Then
-      raise EArgumentException.Create('Invalid serial number formula.');
+  try
+    for ch in expression do
+    begin
+      if (ch = '(') or (ch = ')') Then
+        raise EArgumentException.Create('Invalid serial number formula.');
 
-    if ch <> ' ' Then
-      sb.Append(LowerCase(ch));
+      if ch <> ' ' Then
+        sb.Append(LowerCase(ch));
+    end;
+    Result := sb.ToString();
+  finally
+    FreeAndNil(sb);
   end;
-  Result := sb.ToString();
-  FreeAndNil(sb);
+
 end;
 
 end.

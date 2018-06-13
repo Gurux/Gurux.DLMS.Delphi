@@ -124,32 +124,35 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-//Mode is static and read only once.
-  if Not IsRead(2) Then
-    items.Add(2);
+  //Mode is static and read only once.
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //ListeningWindow is static and read only once.
-  if Not IsRead(3) Then
-      items.Add(3);
+    //ListeningWindow is static and read only once.
+    if Not IsRead(3) Then
+        items.Add(3);
 
-  //Status is not static.
-  if CanRead(4) Then
-    items.Add(4);
+    //Status is not static.
+    if CanRead(4) Then
+      items.Add(4);
 
-  //NumberOfCalls is static and read only once.
-  if Not IsRead(5) Then
-    items.Add(5);
+    //NumberOfCalls is static and read only once.
+    if Not IsRead(5) Then
+      items.Add(5);
 
-  //NumberOfRingsInListeningWindow is static and read only once.
-  if Not IsRead(6) Then
-    items.Add(6);
+    //NumberOfRingsInListeningWindow is static and read only once.
+    if Not IsRead(6) Then
+      items.Add(6);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSAutoAnswer.GetAttributeCount: Integer;
@@ -215,17 +218,21 @@ begin
   else if e.Index = 3 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtArray));
-    //Add count
-    TGXCommon.SetObjectCount(ListeningWindow.Count, data);
-    for it in ListeningWindow do
-    begin
-      data.Add(Integer(TDataType.dtStructure));
-      data.Add(2); //Count
-      TGXCommon.SetData(data, TDataType.dtOctetString, it.Key); //start_time
-      TGXCommon.SetData(data, TDataType.dtOctetString, it.Value); //end_time
+    try
+      data.Add(Integer(TDataType.dtArray));
+      //Add count
+      TGXCommon.SetObjectCount(ListeningWindow.Count, data);
+      for it in ListeningWindow do
+      begin
+        data.Add(Integer(TDataType.dtStructure));
+        data.Add(2); //Count
+        TGXCommon.SetData(data, TDataType.dtOctetString, it.Key); //start_time
+        TGXCommon.SetData(data, TDataType.dtOctetString, it.Value); //end_time
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else if e.Index = 4 Then
   begin
@@ -238,12 +245,16 @@ begin
   else if e.Index = 6 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtStructure));
-    //Add count
-    TGXCommon.SetObjectCount(2, data);
-    TGXCommon.SetData(data, TDataType.dtUInt8, NumberOfRingsInListeningWindow);
-    TGXCommon.SetData(data, TDataType.dtUInt8, NumberOfRingsOutListeningWindow);
-    Result := TValue.From(data.ToArray());
+    try
+      data.Add(Integer(TDataType.dtStructure));
+      //Add count
+      TGXCommon.SetObjectCount(2, data);
+      TGXCommon.SetData(data, TDataType.dtUInt8, NumberOfRingsInListeningWindow);
+      TGXCommon.SetData(data, TDataType.dtUInt8, NumberOfRingsOutListeningWindow);
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
+    end;
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');

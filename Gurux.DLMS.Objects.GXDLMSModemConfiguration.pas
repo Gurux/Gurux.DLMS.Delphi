@@ -121,24 +121,27 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //CommunicationSpeed
-  if Not IsRead(2) Then
-    items.Add(2);
+    //CommunicationSpeed
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //InitialisationStrings
-  if Not IsRead(3) Then
-    items.Add(3);
+    //InitialisationStrings
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //ModemProfile
-  if Not IsRead(4) Then
-    items.Add(4);
+    //ModemProfile
+    if Not IsRead(4) Then
+      items.Add(4);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSModemConfiguration.GetAttributeCount: Integer;
@@ -191,39 +194,47 @@ begin
   else if e.Index = 3 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtArray));
-    //Add count
-    cnt := FInitialisationStrings.Count;
-    TGXCommon.SetObjectCount(cnt, data);
-    if cnt <> 0 Then
-    begin
-      for it in FInitialisationStrings do
+    try
+      data.Add(Integer(TDataType.dtArray));
+      //Add count
+      cnt := FInitialisationStrings.Count;
+      TGXCommon.SetObjectCount(cnt, data);
+      if cnt <> 0 Then
       begin
-        data.Add(Integer(TDataType.dtStructure));
-        data.Add(3); //Count
-        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(it.Request)));
-        TGXCommon.SetData(data, TDataType.dtOctetString, TGXCommon(it.Response));
-        TGXCommon.SetData(data, TDataType.dtUInt16, it.Delay);
-      end
+        for it in FInitialisationStrings do
+        begin
+          data.Add(Integer(TDataType.dtStructure));
+          data.Add(3); //Count
+          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(it.Request)));
+          TGXCommon.SetData(data, TDataType.dtOctetString, TGXCommon(it.Response));
+          TGXCommon.SetData(data, TDataType.dtUInt16, it.Delay);
+        end
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else if e.Index = 4 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtArray));
-    //Add count
-    cnt := 0;
-    if ModemProfile <> Nil Then
-      cnt := Length(FModemProfile);
+    try
+      data.Add(Integer(TDataType.dtArray));
+      //Add count
+      cnt := 0;
+      if ModemProfile <> Nil Then
+        cnt := Length(FModemProfile);
 
-    TGXCommon.SetObjectCount(cnt, data);
-    if cnt <> 0 Then
-    begin
-      for str in ModemProfile do
-        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(str)));
+      TGXCommon.SetObjectCount(cnt, data);
+      if cnt <> 0 Then
+      begin
+        for str in ModemProfile do
+          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(str)));
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');
@@ -263,13 +274,16 @@ begin
   begin
     FModemProfile := Nil;
     strs := TList<string>.Create;
-    if Not e.Value.IsEmpty Then
-    begin
-      for it in e.Value.AsType<TArray<TValue>> do
-        strs.Add(TGXCommon.ChangeType(it.AsType<TBytes>, TDataType.dtString).ToString());
+    try
+      if Not e.Value.IsEmpty Then
+      begin
+        for it in e.Value.AsType<TArray<TValue>> do
+          strs.Add(TGXCommon.ChangeType(it.AsType<TBytes>, TDataType.dtString).ToString());
+      end;
+      FModemProfile := strs.ToArray();
+    finally
+      FreeAndNil(strs);
     end;
-    FModemProfile := strs.ToArray();
-    FreeAndNil(strs);
   end
   else
     raise Exception.Create('SetValue failed. Invalid attribute index.');

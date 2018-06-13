@@ -150,10 +150,13 @@ begin
   begin
     p := TAesGcmParameter.Create(tag, FSecurity, FInvocationCounter,
                                                 title, FBlockCipherKey, FAuthenticationKey);
-    Result := TGXDLMSChippering.EncryptAesGcm(p, data);
-    FreeAndNil(p);
+    try
+      Result := TGXDLMSChippering.EncryptAesGcm(p, data);
+    finally
+      FreeAndNil(p);
+    end;
     FInvocationCounter := FInvocationCounter + 1;
-    end
+  end
   else
     Result := data;
 end;

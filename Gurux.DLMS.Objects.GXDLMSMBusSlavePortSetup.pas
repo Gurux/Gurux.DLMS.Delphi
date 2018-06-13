@@ -101,28 +101,31 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //DefaultBaud
-  if Not IsRead(2) Then
-    items.Add(2);
+    //DefaultBaud
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //AvailableBaud
-  if Not IsRead(3) Then
-    items.Add(3);
+    //AvailableBaud
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //AddressState
-  if Not IsRead(4) Then
-    items.Add(4);
+    //AddressState
+    if Not IsRead(4) Then
+      items.Add(4);
 
-  //BusAddress
-  if Not IsRead(5) Then
-    items.Add(5);
+    //BusAddress
+    if Not IsRead(5) Then
+      items.Add(5);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSMBusSlavePortSetup.GetAttributeCount: Integer;

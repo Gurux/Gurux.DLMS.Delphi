@@ -208,28 +208,31 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //PHYReference
-  if Not IsRead(2) Then
-    items.Add(2);
+    //PHYReference
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //LCPOptions
-  if Not IsRead(3) Then
-    items.Add(3);
+    //LCPOptions
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //IPCPOptions
-  if Not IsRead(4) Then
-    items.Add(4);
+    //IPCPOptions
+    if Not IsRead(4) Then
+      items.Add(4);
 
-  //PPPAuthentication
-  if Not IsRead(5) Then
-    items.Add(5);
+    //PPPAuthentication
+    if Not IsRead(5) Then
+      items.Add(5);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSPppSetup.GetAttributeCount: Integer;
@@ -273,7 +276,6 @@ var
   data : TGXByteBuffer;
   lcp : TGXDLMSPppSetupLcpOption;
   ipc : TGXDLMSPppSetupIPCPOption;
-  icp : TGXDLMSPppSetupIPCPOption;
 begin
   if e.Index = 1 then
   begin

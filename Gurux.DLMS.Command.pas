@@ -127,7 +127,11 @@ type
     // Information Report request.
     InformationReport = $18,
     // Event Notification request.
-    EventNotification = $C2);
+    EventNotification = $C2,
+    // Request message from client to gateway.
+    GatewayRequest = $E6,
+    // Response message from gateway to client.
+    GatewayResponse = $E7);
 implementation
 
 end.

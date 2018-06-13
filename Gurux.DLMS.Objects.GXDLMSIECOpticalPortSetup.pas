@@ -118,44 +118,47 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //DefaultMode
-  if Not IsRead(2) Then
-    items.Add(2);
+    //DefaultMode
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //DefaultBaudrate
-  if Not IsRead(3) Then
-    items.Add(3);
+    //DefaultBaudrate
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //ProposedBaudrate
-  if Not IsRead(4) Then
-    items.Add(4);
+    //ProposedBaudrate
+    if Not IsRead(4) Then
+      items.Add(4);
 
-  //ResponseTime
-  if Not IsRead(5) Then
-    items.Add(5);
+    //ResponseTime
+    if Not IsRead(5) Then
+      items.Add(5);
 
-  //DeviceAddress
-  if Not IsRead(6) Then
-    items.Add(6);
+    //DeviceAddress
+    if Not IsRead(6) Then
+      items.Add(6);
 
-  //Password1
-  if Not IsRead(7) Then
-    items.Add(7);
+    //Password1
+    if Not IsRead(7) Then
+      items.Add(7);
 
-  //Password2
-  if Not IsRead(8) Then
-    items.Add(8);
+    //Password2
+    if Not IsRead(8) Then
+      items.Add(8);
 
-  //Password5
-  if Not IsRead(9) Then
-    items.Add(9);
+    //Password5
+    if Not IsRead(9) Then
+      items.Add(9);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSIECOpticalPortSetup.GetAttributeCount: Integer;

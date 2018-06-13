@@ -139,10 +139,13 @@ var
   it: TGXDLMSCaptureObject;
 begin
   list := TList<TGXDLMSObject>.Create();
-  for it in FCaptureObjects do
-    list.Add(it.Target);
-  Result := list.ToArray;
-  FreeAndNil(list);
+  try
+    for it in FCaptureObjects do
+      list.Add(it.Target);
+    Result := list.ToArray;
+  finally
+    FreeAndNil(list);
+  end;
 end;
 
 procedure TGXDLMSProfileGeneric.Reset();
@@ -172,36 +175,39 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //CaptureObjects
-  if (FCaptureObjects.Count = 0) and (Not IsRead(3)) then
-    items.Add(3);
+    //CaptureObjects
+    if (FCaptureObjects.Count = 0) and (Not IsRead(3)) then
+      items.Add(3);
 
-  //Buffer
-  items.Add(2);
-  //CapturePeriod
-  if Not IsRead(4) then
-    items.Add(4);
+    //Buffer
+    items.Add(2);
+    //CapturePeriod
+    if Not IsRead(4) then
+      items.Add(4);
 
-  //SortMethod
-  if Not IsRead(5) then
-    items.Add(5);
+    //SortMethod
+    if Not IsRead(5) then
+      items.Add(5);
 
-  //SortObject
-  if Not IsRead(6) then
-    items.Add(6);
+    //SortObject
+    if Not IsRead(6) then
+      items.Add(6);
 
-  //EntriesInUse
-  items.Add(7);
-  //ProfileEntries
-  if Not IsRead(8) Then
-    items.Add(8);
+    //EntriesInUse
+    items.Add(7);
+    //ProfileEntries
+    if Not IsRead(8) Then
+      items.Add(8);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSProfileGeneric.GetAttributeCount: Integer;
@@ -221,24 +227,28 @@ var
   it : TGXDLMSCaptureObject;
 begin
   data := TGXByteBuffer.Create;
-  data.Add(Integer(TDataType.dtArray));
-  //Add count
-  TGXCommon.SetObjectCount(CaptureObjects.Count, data);
-  for it in FCaptureObjects do
-  begin
-      data.Add(Integer(TDataType.dtStructure));
-      //Count
-      data.Add(4);
-      //ClassID
-      TGXCommon.SetData(data, TDataType.dtUInt16, Integer(it.Target.ObjectType));
-      //LN
-      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(it.Target.LogicalName)));
-      //Selected Attribute Index
-      TGXCommon.SetData(data, TDataType.dtInt8, it.AttributeIndex);
-      //Selected Data Index
-      TGXCommon.SetData(data, TDataType.dtUInt16, it.DataIndex);
+  try
+    data.Add(Integer(TDataType.dtArray));
+    //Add count
+    TGXCommon.SetObjectCount(CaptureObjects.Count, data);
+    for it in FCaptureObjects do
+    begin
+        data.Add(Integer(TDataType.dtStructure));
+        //Count
+        data.Add(4);
+        //ClassID
+        TGXCommon.SetData(data, TDataType.dtUInt16, Integer(it.Target.ObjectType));
+        //LN
+        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(it.Target.LogicalName)));
+        //Selected Attribute Index
+        TGXCommon.SetData(data, TDataType.dtInt8, it.AttributeIndex);
+        //Selected Data Index
+        TGXCommon.SetData(data, TDataType.dtUInt16, it.DataIndex);
+    end;
+    Result := data.ToArray();
+  finally
+    data.Free;
   end;
-  Result := data.ToArray();
 end;
 
 function TGXDLMSProfileGeneric.GetDataType(index: Integer): TDataType;
@@ -307,7 +317,8 @@ begin
   end
   else if e.Index = 6 then
   begin
-      data := TGXByteBuffer.Create;
+    data := TGXByteBuffer.Create;
+    try
       data.Add(Integer(TDataType.dtStructure));
       data.Add(4); //Count
       if FSortObject = Nil then
@@ -327,6 +338,9 @@ begin
         TGXCommon.SetData(data, TDataType.dtUInt16, FSortDataIndex);
       end;
       Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
+    end;
   end
   else if e.Index = 7 then
   begin
@@ -381,7 +395,7 @@ begin
           it := TGXCommon.ChangeType(row.AsType<TArray<TValue>>[pos].AsType<TBytes>, tp);
           if it.IsType<TGXDateTime> then
           begin
-            lastDate := it.AsType<TGXDateTime>.Value;
+            lastDate := it.AsType<TGXDateTime>.LocalTime;
           end;
 
           //Add objects like GXdateTime to own list so they are released at the end.
@@ -394,7 +408,7 @@ begin
           if (lastDate = 0) and (FBuffer.Count <> 0) Then
           begin
             tmp := FBuffer[FBuffer.Count - 1].AsType<TArray<TValue>>;
-            lastDate := tmp[pos].AsType<TGXDateTime>.Value;
+            lastDate := tmp[pos].AsType<TGXDateTime>.LocalTime;
           end;
           if (lastDate <> 0) Then
           begin

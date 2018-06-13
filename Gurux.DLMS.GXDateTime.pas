@@ -45,16 +45,18 @@ type
   FDaylightSavingsBegin, FDaylightSavingsEnd : Boolean;
   FStatus : TClockStatus;
   FTimeZone : Integer;
+  function GetLocalTime : TDateTime;
   public
     //Minimum date time value.
     class function MinDateTime : TDateTime; static;
 
-    constructor Create; overload;
-    constructor Create(value: TDateTime); overload;
-    constructor Create(year: Integer; month: Integer; day: Integer; hour: Integer;
-      minute: Integer; second: Integer; millisecond: Integer); overload;
+    constructor Create(AValue: TDateTime = -1); overload;
+    constructor Create(year: Integer; month: Integer; day: Integer; hour: Integer; minute: Integer; second: Integer; millisecond: Integer); overload;
 
-    property Value: TDateTime read FValue write FValue;
+    //Convert meter time to local time.
+    property LocalTime: TDateTime read GetLocalTime;
+    //Get meter time.
+    property Time: TDateTime read FValue write FValue;
     property Skip: TDateTimeSkips read FSkip write FSkip;
 
     property DaylightSavingsBegin: Boolean read FDaylightSavingsBegin write FDaylightSavingsBegin;
@@ -72,6 +74,19 @@ implementation
 
 {$WARN SYMBOL_PLATFORM OFF}
 
+uses
+  WinAPI.Windows;
+
+function TGXDateTime.GetLocalTime : TDateTime;
+var
+  TZ: TTimeZoneInformation;
+  UTC_TIME: TDateTime;
+begin
+  GetTimeZoneInformation(TZ);
+  UTC_TIME := IncMinute(FValue, FTimeZone);
+  Result := TTimeZone.Local.ToLocalTime(UTC_TIME);
+end;
+
 class function TGXDateTime.MinDateTime : TDateTime;
 var
 v :Double;
@@ -80,24 +95,34 @@ begin
   Result := TDateTime(v)//01 Jan 1900 has a days value of 2.
 end;
 
-constructor TGXDateTime.Create;
+constructor TGXDateTime.Create(AValue: TDateTime = -1);
+var
+  TZ: TTimeZoneInformation;
 begin
   inherited Create;
   FStatus := TClockStatus.ctNone;
-  FTimeZone := $8000;
+  FSkip := TDateTimeSkips.dkNone;
+
+  if AValue < 0 then
+    AValue := Now;
+
+  GetTimeZoneInformation(TZ);
+  if TTimeZone.Local.IsDaylightTime(AValue) then
+    begin
+      FStatus := TClockStatus.ctDaylightSavingActive;
+      FTimeZone := (TZ.Bias + TZ.DaylightBias);
+    end
+  else
+    begin
+      FStatus := TClockStatus.ctNone;
+      FTimeZone := (TZ.Bias);
+    end;
+  FValue := AValue;
 end;
 
-constructor TGXDateTime.Create(value: TDateTime);
+constructor TGXDateTime.Create(year: Integer; month: Integer; day: Integer; hour: Integer; minute: Integer; second: Integer; millisecond: Integer);
 begin
   Create;
-  Self.Value := value;
-end;
-
-constructor TGXDateTime.Create(year: Integer; month: Integer; day: Integer;
-      hour: Integer; minute: Integer; second: Integer; millisecond: Integer);
-begin
-  Create;
-  FStatus := TClockStatus.ctNone;
   if ((year < 1) or (year = 65535)) then
   begin
     //01 Jan 1900 has a days value of 2.
@@ -152,7 +177,7 @@ begin
     millisecond := 0;
     FSkip := TDateTimeSkips(Integer(FSkip) + Integer(TDateTimeSkips.dkMs));
   end;
-  Self.Value := EncodeDateTime(year, month, day, hour, minute, second, millisecond);
+  FValue := EncodeDateTime(year, month, day, hour, minute, second, millisecond);
 end;
 
 function TGXDateTime.ToString: string;
@@ -166,43 +191,50 @@ begin
   begin
     tmp := Integer(FSkip);
     formatSettings := TFormatSettings.Create();
+
     format := TList<string>.Create();
-    format.AddRange(formatSettings.ShortDateFormat.Split(['/']));
+    try
+      format.AddRange(formatSettings.ShortDateFormat.Split(['/']));
 
-    if (tmp and Integer(TDateTimeSkips.dkYear)) <> 0 then
-      format.Remove('yyyy');
-    if (tmp and Integer(TDateTimeSkips.dkMonth)) <> 0 then
-      format.Remove('M');
-    if (tmp and Integer(TDateTimeSkips.dkDay)) <> 0 then
-      format.Remove('d');
+      if (tmp and Integer(TDateTimeSkips.dkYear)) <> 0 then
+        format.Remove('yyyy');
+      if (tmp and Integer(TDateTimeSkips.dkMonth)) <> 0 then
+        format.Remove('M');
+      if (tmp and Integer(TDateTimeSkips.dkDay)) <> 0 then
+        format.Remove('d');
 
-    if format.Count = 0 then
-      Result := ''
-    else
-    begin
-      formatSettings.ShortDateFormat := string.Join(formatSettings.DateSeparator, format.ToArray());
-      formatSettings.ShortDateFormat := formatSettings.ShortDateFormat;
+      if format.Count = 0 then
+        Result := ''
+      else
+      begin
+        formatSettings.ShortDateFormat := string.Join(formatSettings.DateSeparator, format.ToArray());
+        formatSettings.ShortDateFormat := formatSettings.ShortDateFormat;
 
-      format.Clear;
-      format.AddRange(formatSettings.LongTimeFormat.Split([':']));
-      if (tmp and Integer(TDateTimeSkips.dkHour)) <> 0 then
-        format.Remove('H');
-      if (tmp and Integer(TDateTimeSkips.dkMinute)) <> 0 then
-        format.Remove('mm');
-      if (tmp and Integer(TDateTimeSkips.dkSecond)) <> 0 then
-        format.Remove('ss');
+        format.Clear;
+        format.AddRange(formatSettings.LongTimeFormat.Split([':']));
+        if (tmp and Integer(TDateTimeSkips.dkHour)) <> 0 then
+          format.Remove('H');
+        if (tmp and Integer(TDateTimeSkips.dkMinute)) <> 0 then
+          format.Remove('mm');
+        if (tmp and Integer(TDateTimeSkips.dkSecond)) <> 0 then
+          format.Remove('ss');
 
-      formatSettings.LongTimeFormat := string.Join(formatSettings.TimeSeparator, format.ToArray());
-      formatSettings.ShortTimeFormat := formatSettings.LongTimeFormat;
+        formatSettings.LongTimeFormat := string.Join(formatSettings.TimeSeparator, format.ToArray());
+        formatSettings.ShortTimeFormat := formatSettings.LongTimeFormat;
 
-      Result := DateTimeToStr(FValue, formatSettings);
+      Result := DateTimeToStr(LocalTime, formatSettings);
+      end;
+
+    finally
+      FreeAndNil(format);
     end;
-    FreeAndNil(format);
+
   end
   else
-    Result := DateTimeToStr(FValue);
+    Result := DateTimeToStr(LocalTime);
 {$ELSE}
-  Result := DateTimeToStr(FValue);
+  Result := DateTimeToStr(LocalTime);
 {$ENDIF}
 end;
+
 end.

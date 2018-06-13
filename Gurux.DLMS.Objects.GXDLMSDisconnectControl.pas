@@ -118,24 +118,27 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
- //OutputState
-  if CanRead(2) Then
-    items.Add(2);
+   //OutputState
+    if CanRead(2) Then
+      items.Add(2);
 
-  //ControlState
-  if CanRead(3) Then
-    items.Add(3);
+    //ControlState
+    if CanRead(3) Then
+      items.Add(3);
 
-  //ControlMode
-  if CanRead(4) Then
-    items.Add(4);
+    //ControlMode
+    if CanRead(4) Then
+      items.Add(4);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSDisconnectControl.GetAttributeCount: Integer;

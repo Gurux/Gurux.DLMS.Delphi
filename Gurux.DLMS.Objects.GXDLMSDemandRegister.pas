@@ -154,44 +154,47 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if string.IsNullOrEmpty(LogicalName) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if string.IsNullOrEmpty(LogicalName) then
+      items.Add(1);
 
-   //ScalerUnit
-  if Not IsRead(4) Then
-    items.Add(4);
+     //ScalerUnit
+    if Not IsRead(4) Then
+      items.Add(4);
 
-  //CurrentAvarageValue
-  if CanRead(2) Then
-    items.Add(2);
+    //CurrentAvarageValue
+    if CanRead(2) Then
+      items.Add(2);
 
-  //LastAvarageValue
-  if CanRead(3) Then
-    items.Add(3);
+    //LastAvarageValue
+    if CanRead(3) Then
+      items.Add(3);
 
-  //Status
-  if CanRead(5) Then
-    items.Add(5);
+    //Status
+    if CanRead(5) Then
+      items.Add(5);
 
-  //CaptureTime
-  if CanRead(6) Then
-    items.Add(6);
+    //CaptureTime
+    if CanRead(6) Then
+      items.Add(6);
 
-  //StartTimeCurrent
-  if CanRead(7) Then
-    items.Add(7);
+    //StartTimeCurrent
+    if CanRead(7) Then
+      items.Add(7);
 
-  //Period
-  if CanRead(8) Then
-    items.Add(8);
+    //Period
+    if CanRead(8) Then
+      items.Add(8);
 
-  //NumberOfPeriods
-  if CanRead(9) Then
-    items.Add(9);
+    //NumberOfPeriods
+    if CanRead(9) Then
+      items.Add(9);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSDemandRegister.GetAttributeCount: Integer;
@@ -370,7 +373,7 @@ begin
         tm := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
         e.Value := tm;
       end;
-      FCaptureTime := e.Value.AsType<TGXDateTime>.Value;
+      FCaptureTime := e.Value.AsType<TGXDateTime>.LocalTime;
       FreeAndNil(tm);
     end;
   end
@@ -385,7 +388,7 @@ begin
         tm := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
         e.Value := tm;
       end;
-      FStartTimeCurrent := e.Value.AsType<TGXDateTime>.Value;
+      FStartTimeCurrent := e.Value.AsType<TGXDateTime>.LocalTime;
       FreeAndNil(tm);
     end;
   end

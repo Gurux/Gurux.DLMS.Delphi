@@ -40,7 +40,7 @@ Gurux.DLMS.AccessMode, Gurux.DLMS.GXDLMSException, Gurux.DLMS.MethodAccessMode,
 Gurux.DLMS.DataType, Gurux.DLMS.ErrorCode, Gurux.DLMS.Priority, Gurux.DLMS.ServiceClass,
 Gurux.DLMS.Conformance, Gurux.DLMS.SecuritySuite, Gurux.DLMS.Authentication,
 Gurux.DLMS.InterfaceType, Gurux.DLMS.GXDLMSLimits, Gurux.DLMS.GXCiphering,
-Gurux.DLMS.HdlcFrameType, Gurux.DLMS.GXDateTime;
+Gurux.DLMS.HdlcFrameType, Gurux.DLMS.GXDateTime, Gurux.DLMS.GXDLMSGateway;
 
 const
 // Server frame sequence starting number.
@@ -130,7 +130,7 @@ end;
 TGXDLMSObjectCollection = class(TObjectList<TGXDLMSObject>)
   private
   FParent : TObject;
-  
+
   public
   constructor Create(AOwnsObjects: Boolean); overload;
   constructor Create(Parent: TObject); overload;
@@ -218,15 +218,12 @@ end;
 
 TGXDLMSSettings = class
 private
-  FServer: Boolean;
   // HDLC sender frame sequence number.
   FSenderFrame : Byte;
   /// HDLC receiver frame sequence number.
   FReceiverFrame : Byte;
   // Source system title.
   FSourceSystemTitle : TBytes;
-  /// Key Encrypting Key, also known as Master key.
-  FKek : TBytes;
   // Long data count.
   FCount : LongWord;
   // Long data index.
@@ -259,6 +256,7 @@ private
   FLimits : TGXDLMSLimits;
   FBlockIndex : LongWord;
   FStartingBlockIndex : LongWord;
+  FGateway : TGXDLMSGateway;
 
   // Ciphering.
   FCipher : TGXCiphering;
@@ -395,6 +393,10 @@ private
   property StartingBlockIndex: LongWord read FStartingBlockIndex write FStartingBlockIndex;
   // Source system title.
   property SourceSystemTitle : TBytes read FSourceSystemTitle  write FSourceSystemTitle;
+
+  //Gateway settings.
+  property Gateway : TGXDLMSGateway read FGateway write FGateway;
+
 end;
 
 implementation
@@ -487,8 +489,11 @@ var
   items : TGXAttributeCollection;
 begin
   items := TGXAttributeCollection.Create();
-  Result := GetAttribute(index, items).Access;
-  FreeAndNil(items);
+  try
+    Result := GetAttribute(index, items).Access;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 // Set attribute access.
@@ -630,13 +635,16 @@ var
   list: TList<TGXDLMSObject>;
 begin
   list := TList<TGXDLMSObject>.Create();
-  for it in Self do
-  begin
-    if it.ObjectType = tp then
-      list.Add(it);
+  try
+    for it in Self do
+    begin
+      if it.ObjectType = tp then
+        list.Add(it);
+    end;
+    Result := list.ToArray;
+  finally
+    FreeAndNil(list);
   end;
-  Result := list.ToArray;
-  FreeAndNil(list);
 end;
 
 function TGXDLMSObjectCollection.GetObjects(types: TArray<TObjectType>): TArray<TGXDLMSObject>;
@@ -646,17 +654,20 @@ var
   list: TList<TGXDLMSObject>;
 begin
   list := TList<TGXDLMSObject>.Create();
-  for it in Self do
-  begin
-    for tp in types do
-      if tp = it.ObjectType then
-      begin
-        list.Add(it);
-        break;
-      end;
+  try
+    for it in Self do
+    begin
+      for tp in types do
+        if tp = it.ObjectType then
+        begin
+          list.Add(it);
+          break;
+        end;
+    end;
+    Result := list.ToArray;
+  finally
+    FreeAndNil(list);
   end;
-  Result := list.ToArray;
-  FreeAndNil(list);
 end;
 
 function TGXDLMSObjectCollection.GetObjects(types: array of TObjectType): TArray<TGXDLMSObject>;
@@ -666,17 +677,20 @@ var
   list: TList<TGXDLMSObject>;
 begin
   list := TList<TGXDLMSObject>.Create();
-  for it in Self do
-  begin
-    for tp in types do
-      if tp = it.ObjectType then
-      begin
-        list.Add(it);
-        break;
-      end;
+  try
+    for it in Self do
+    begin
+      for tp in types do
+        if tp = it.ObjectType then
+        begin
+          list.Add(it);
+          break;
+        end;
+    end;
+    Result := list.ToArray;
+  finally
+    FreeAndNil(list);
   end;
-  Result := list.ToArray;
-  FreeAndNil(list);
 end;
 
 function TGXDLMSObjectCollection.FindByLN(tp: TObjectType; ln: string): TGXDLMSObject;
@@ -716,17 +730,20 @@ var
   sb : TStringBuilder;
 begin
   sb := TStringBuilder.Create();
-  sb.Append('[');
-  for it in Self do
-  begin
-    sb.Append(VarToStr(it.Name));
-    sb.Append(', ');
+  try
+    sb.Append('[');
+    for it in Self do
+    begin
+      sb.Append(VarToStr(it.Name));
+      sb.Append(', ');
+    end;
+    //Remove last commma.
+    sb.Remove(sb.Length - 2, 2);
+    sb.Append(']');
+    Result := sb.ToString;
+  finally
+    FreeAndNil(sb);
   end;
-  //Remove last commma.
-  sb.Remove(sb.Length - 2, 2);
-  sb.Append(']');
-  Result := sb.ToString;
-  FreeAndNil(sb);
 end;
 
 procedure TGXDLMSObject.SetDataType(index : Integer; tp : TDataType);
@@ -841,6 +858,7 @@ begin;
   FLimits := TGXDLMSLimits.Create();
   FProposedConformance := TGXDLMSSettings.GetInitialConformance(false);
   ResetFrameSequence();
+  FGateway := Nil;
 end;
 
 destructor TGXDLMSSettings.Destroy;
@@ -918,43 +936,49 @@ end;
 
 function TGXDLMSSettings.CheckFrame(frame : Byte) : Boolean;
 begin
-    if frame and Byte(THdlcFrameType.Uframe) = Byte(THdlcFrameType.Uframe) then
-    begin
-        if (frame = $73) or (frame = $93) then
-        begin
-            ResetFrameSequence();
-            result := true;
-            Exit;
-        end;
-    end;
-    //If S -frame.
-    if frame and Byte(THdlcFrameType.Sframe) = Byte(THdlcFrameType.Sframe) then
-    begin
-        FReceiverFrame := IncreaseReceiverSequence(FReceiverFrame);
-        result := true;
-        Exit;
-    end;
-    //Handle I-frame.
+  //If notify
+  if frame = $13 Then
+  begin
+    result := true;
+    Exit;
+  end;
+
+  if frame and Byte(THdlcFrameType.Uframe) = Byte(THdlcFrameType.Uframe) then
+  begin
+      if (frame = $73) or (frame = $93) then
+        ResetFrameSequence();
+
+      result := true;
+      Exit;
+  end;
+  //If S -frame.
+  if frame and Byte(THdlcFrameType.Sframe) = Byte(THdlcFrameType.Sframe) then
+  begin
+    FReceiverFrame := IncreaseReceiverSequence(FReceiverFrame);
+    result := true;
+    Exit;
+  end;
+  //Handle I-frame.
+  if (FSenderFrame and $1) = 0 Then
+  begin
     if (frame = IncreaseReceiverSequence(IncreaseSendSequence(FReceiverFrame))) then
     begin
-        FReceiverFrame := frame;
-        result := true;
-        Exit;
+      FReceiverFrame := frame;
+      result := true;
+      Exit;
     end;
+  end
+  else
+  begin
     //If answer for RR.
     if (frame = IncreaseSendSequence(FReceiverFrame)) then
     begin
-        FReceiverFrame := frame;
-        result := true;
-        Exit;
+      FReceiverFrame := frame;
+      result := true;
+      Exit;
     end;
-    //If try to find data from bytestream and not real communicating.
-    if (FReceiverFrame = $EE) then
-    begin
-        result := true;
-        Exit;
-    end;
-    result := false;
+  end;
+  result := false;
 end;
 
 /// Generates I-frame.

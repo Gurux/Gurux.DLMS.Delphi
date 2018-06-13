@@ -41,7 +41,7 @@ type
 TGXDLMSException = class(Exception)
   FErrorCode : Integer;
   constructor Create(ErrorCode: Integer);overload;
-  constructor Create(error : String); overload;
+//  constructor Create(error : String); overload;
   constructor Create(StateError : TStateError; ServiceError: TExceptionServiceError);overload;
   constructor Create(result : TAssociationResult; diagnostic : TSourceDiagnostic);overload;
 
@@ -58,8 +58,8 @@ implementation
 
 constructor TGXDLMSException.Create(ErrorCode: Integer);
 begin
+  Create(GetDescription(ErrorCode));
   FErrorCode := ErrorCode;
-  inherited Create(GetDescription(ErrorCode));
 end;
 
 constructor TGXDLMSException.Create(StateError : TStateError; ServiceError: TExceptionServiceError);
@@ -72,12 +72,12 @@ constructor TGXDLMSException.Create(result : TAssociationResult; diagnostic : TS
 begin
   inherited Create('Connection is ' + GetResult(result) + sLineBreak + GetDiagnostic(diagnostic));
 end;
-
+  {
 constructor TGXDLMSException.Create(error : String);
 begin
   inherited Create(error);
 end;
-
+   }
 class function TGXDLMSException.GetServiceError(ErrorCode : TExceptionServiceError) : String;
 begin
  case ErrorCode of

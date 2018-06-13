@@ -102,24 +102,28 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //RegisterAssignment
-  if Not IsRead(2) Then
-    items.Add(2);
+    //RegisterAssignment
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //MaskList
-  if Not IsRead(3) Then
-    items.Add(3);
+    //MaskList
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //ActiveMask
-  if Not IsRead(4) Then
-    items.Add(4);
+    //ActiveMask
+    if Not IsRead(4) Then
+      items.Add(4);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
+
 end;
 
 function TGXDLMSRegisterActivation.GetAttributeCount: Integer;
@@ -168,40 +172,48 @@ begin
   else if e.Index = 2 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(byte(TDataType.dtArray));
-    if RegisterAssignment = Nil Then
-    begin
-        data.Add(0);
-    end
-    else
-    begin
-        data.Add(FRegisterAssignment.Count);
-        for it in RegisterAssignment do
-        begin
-          data.Add(byte(TDataType.dtStructure));
-          data.Add(2);
-          TGXCommon.SetData(data, TDataType.dtUInt16, Integer(it.ClassId));
-          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(it.LogicalName)));
-        end
+    try
+      data.Add(byte(TDataType.dtArray));
+      if RegisterAssignment = Nil Then
+      begin
+          data.Add(0);
+      end
+      else
+      begin
+          data.Add(FRegisterAssignment.Count);
+          for it in RegisterAssignment do
+          begin
+            data.Add(byte(TDataType.dtStructure));
+            data.Add(2);
+            TGXCommon.SetData(data, TDataType.dtUInt16, Integer(it.ClassId));
+            TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(it.LogicalName)));
+          end
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else if e.Index = 3 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(byte(TDataType.dtArray));
-    data.Add(FMaskList.Count);
-    for pair in FMaskList do
-    begin
-      data.Add(byte(TDataType.dtStructure));
-      data.Add(2);
-      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(pair.Key));
+    try
       data.Add(byte(TDataType.dtArray));
-      data.Add(Length(pair.Value));
-      for b in pair.Value do
-        TGXCommon.SetData(data, TDataType.dtUInt8, b);
+      data.Add(FMaskList.Count);
+      for pair in FMaskList do
+      begin
+        data.Add(byte(TDataType.dtStructure));
+        data.Add(2);
+        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(pair.Key));
+        data.Add(byte(TDataType.dtArray));
+        data.Add(Length(pair.Value));
+        for b in pair.Value do
+          TGXCommon.SetData(data, TDataType.dtUInt8, b);
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else if e.Index = 4 Then
   begin

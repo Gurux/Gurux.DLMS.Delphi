@@ -103,44 +103,47 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //CommunicationSpeed
-  if Not IsRead(2) Then
-    items.Add(2);
+    //CommunicationSpeed
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //WindowSizeTransmit
-  if Not IsRead(3) Then
-    items.Add(3);
+    //WindowSizeTransmit
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //WindowSizeReceive
-  if Not IsRead(4) Then
-    items.Add(4);
+    //WindowSizeReceive
+    if Not IsRead(4) Then
+      items.Add(4);
 
-  //MaximumInfoLengthTransmit
-  if Not IsRead(5) Then
-    items.Add(5);
+    //MaximumInfoLengthTransmit
+    if Not IsRead(5) Then
+      items.Add(5);
 
-  //MaximumInfoLengthReceive
-  if Not IsRead(6) Then
-    items.Add(6);
+    //MaximumInfoLengthReceive
+    if Not IsRead(6) Then
+      items.Add(6);
 
-  //InterCharachterTimeout
-  if Not IsRead(7) Then
-    items.Add(7);
+    //InterCharachterTimeout
+    if Not IsRead(7) Then
+      items.Add(7);
 
-  //InactivityTimeout
-  if Not IsRead(8) Then
-    items.Add(8);
+    //InactivityTimeout
+    if Not IsRead(8) Then
+      items.Add(8);
 
-  //DeviceAddress
-  if Not IsRead(9) Then
-    items.Add(9);
+    //DeviceAddress
+    if Not IsRead(9) Then
+      items.Add(9);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSHdlcSetup.GetAttributeCount: Integer;

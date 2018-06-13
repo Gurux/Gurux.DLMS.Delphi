@@ -98,16 +98,19 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //Scripts
-  if Not IsRead(2) Then
-    items.Add(2);
+    //Scripts
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSScriptTable.GetAttributeCount: Integer;
@@ -149,31 +152,35 @@ begin
   begin
     cnt := FScripts.Count;
     data := TGXByteBuffer.Create();
-    data.Add(Integer(TDataType.dtArray));
-    //Add count
-    TGXCommon.SetObjectCount(cnt, data);
-    if cnt <> 0 Then
-    begin
-      for s in Scripts do
+    try
+      data.Add(Integer(TDataType.dtArray));
+      //Add count
+      TGXCommon.SetObjectCount(cnt, data);
+      if cnt <> 0 Then
       begin
-        data.Add(Integer(TDataType.dtStructure));
-        data.Add(2); //Count
-        TGXCommon.SetData(data, TDataType.dtUInt16, s.ID); //Script_identifier:
-        data.Add(Integer(TDataType.dtArray));
-        data.SetUInt8(s.Actions.Count); //Count
-        for a in s.Actions do
+        for s in Scripts do
         begin
+          data.Add(Integer(TDataType.dtStructure));
+          data.Add(2); //Count
+          TGXCommon.SetData(data, TDataType.dtUInt16, s.ID); //Script_identifier:
           data.Add(Integer(TDataType.dtArray));
-          data.Add(5); //Count
-          TGXCommon.SetData(data, TDataType.dtEnum, Integer(a.&Type)); //service_id
-          TGXCommon.SetData(data, TDataType.dtUInt16, Integer(a.ObjectType)); //class_id
-          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(a.LogicalName))); //logical_name
-          TGXCommon.SetData(data, TDataType.dtInt8, a.Index); //index
-          TGXCommon.SetData(data, TGXCommon.GetDLMSDataType(a.Parameter), a.Parameter); //parameter
-        end;
-      end
+          data.SetUInt8(s.Actions.Count); //Count
+          for a in s.Actions do
+          begin
+            data.Add(Integer(TDataType.dtArray));
+            data.Add(5); //Count
+            TGXCommon.SetData(data, TDataType.dtEnum, Integer(a.&Type)); //service_id
+            TGXCommon.SetData(data, TDataType.dtUInt16, Integer(a.ObjectType)); //class_id
+            TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(a.LogicalName))); //logical_name
+            TGXCommon.SetData(data, TDataType.dtInt8, a.Index); //index
+            TGXCommon.SetData(data, TGXCommon.GetDLMSDataType(a.Parameter), a.Parameter); //parameter
+          end;
+        end
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');

@@ -106,24 +106,28 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //Thresholds
-  if Not IsRead(2) Then
-    items.Add(2);
+    //Thresholds
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //MonitoredValue
-  if Not IsRead(3) Then
-    items.Add(3);
+    //MonitoredValue
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //Actions
-  if Not IsRead(4) Then
-    items.Add(4);
+    //Actions
+    if Not IsRead(4) Then
+      items.Add(4);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
+
 end;
 
 function TGXDLMSRegisterMonitor.GetAttributeCount: Integer;
@@ -171,52 +175,62 @@ begin
   else if e.Index = 2 then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtArray));
-    data.setUint8(Length(FThresholds));
-    for it2 in FThresholds do
-    begin
-      TGXCommon.SetData(data, TGXCommon.GetDLMSDataType(it2), it2);
+    try
+      data.Add(Integer(TDataType.dtArray));
+      data.setUint8(Length(FThresholds));
+      for it2 in FThresholds do
+      begin
+        TGXCommon.SetData(data, TGXCommon.GetDLMSDataType(it2), it2);
+      end;
+    finally
+      data.Free;
     end;
   end
   else if e.Index = 3 then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtStructure));
-    data.Add(3);
-    TGXCommon.SetData(data, TDataType.dtUInt16, Integer(MonitoredValue.ObjectType)); //ClassID
-    //Logical name.
-    TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(MonitoredValue.LogicalName)));
-    TGXCommon.SetData(data, TDataType.dtInt8, MonitoredValue.AttributeIndex); //Attribute Index
-    Result := TValue.From(data.ToArray());
-    FreeAndNil(data);
+    try
+      data.Add(Integer(TDataType.dtStructure));
+      data.Add(3);
+      TGXCommon.SetData(data, TDataType.dtUInt16, Integer(MonitoredValue.ObjectType)); //ClassID
+      //Logical name.
+      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(MonitoredValue.LogicalName)));
+      TGXCommon.SetData(data, TDataType.dtInt8, MonitoredValue.AttributeIndex); //Attribute Index
+      Result := TValue.From(data.ToArray());
+    finally
+      FreeAndNil(data);
+    end;
   end
   else if e.Index = 4 then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtStructure));
-    if Actions = Nil Then
-    begin
-      data.Add(0);
-    end
-    else
-    begin
-        data.Add(FActions.Count);
-        for it in Actions do
-        begin
-          data.Add(Integer(TDataType.dtStructure));
-          data.Add(2);
-          data.Add(Integer(TDataType.dtStructure));
-          data.Add(2);
-          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(it.ActionUp.LogicalName))); //Logical name.
-          TGXCommon.SetData(data, TDataType.dtUInt16, it.ActionUp.ScriptSelector); //ScriptSelector
-          data.Add(Integer(TDataType.dtStructure));
-          data.Add(2);
-          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(it.ActionDown.LogicalName))); //Logical name.
-          TGXCommon.SetData(data, TDataType.dtUInt16, it.ActionDown.ScriptSelector); //ScriptSelector
-        end
+    try
+      data.Add(Integer(TDataType.dtStructure));
+      if Actions = Nil Then
+      begin
+        data.Add(0);
+      end
+      else
+      begin
+          data.Add(FActions.Count);
+          for it in Actions do
+          begin
+            data.Add(Integer(TDataType.dtStructure));
+            data.Add(2);
+            data.Add(Integer(TDataType.dtStructure));
+            data.Add(2);
+            TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(it.ActionUp.LogicalName))); //Logical name.
+            TGXCommon.SetData(data, TDataType.dtUInt16, it.ActionUp.ScriptSelector); //ScriptSelector
+            data.Add(Integer(TDataType.dtStructure));
+            data.Add(2);
+            TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXDLMSObject.GetLogicalName(it.ActionDown.LogicalName))); //Logical name.
+            TGXCommon.SetData(data, TDataType.dtUInt16, it.ActionDown.ScriptSelector); //ScriptSelector
+          end
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      FreeAndNil(data);
     end;
-    Result := TValue.From(data.ToArray());
-    FreeAndNil(data);
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');

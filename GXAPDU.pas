@@ -214,10 +214,13 @@ begin
   data.SetUInt8($00);
 
   bb := TGXByteBuffer.Create(4);
-  bb.SetUInt32(Integer(settings.ProposedConformance));
-  data.SetArray(bb.SubArray(1, 3));
-  data.SetUInt16(settings.MaxPduSize);
-  FreeAndNil(bb);
+  try
+    bb.SetUInt32(Integer(settings.ProposedConformance));
+    data.SetArray(bb.SubArray(1, 3));
+    data.SetUInt16(settings.MaxPduSize);
+  finally
+    FreeAndNil(bb);
+  end;
 end;
 
 // Generate user information.
@@ -255,9 +258,12 @@ begin
     else
     begin
       tmp := TGXByteBuffer.Create();
-      GetInitiateRequest(settings, cipher, tmp);
-      crypted := cipher.Encrypt(Integer(TCommand.GloInitiateRequest), cipher.SystemTitle, tmp.ToArray());
-      FreeAndNil(tmp);
+      try
+        GetInitiateRequest(settings, cipher, tmp);
+        crypted := cipher.Encrypt(Integer(TCommand.GloInitiateRequest), cipher.SystemTitle, tmp.ToArray());
+      finally
+        FreeAndNil(tmp);
+      end;
       //Length for AARQ user field
       data.SetUInt8(2 + Length(crypted));
       //Coding the choice for user-information (Octet STRING, universal)
@@ -387,12 +393,15 @@ begin
   //tag :=
   data.GetUInt8();
   bb := TGXByteBuffer.Create(4);
-  SetLength(tmp, 3);
-  data.Get(tmp);
-  bb.SetUInt8(0);
-  bb.SetArray(tmp);
-  v := bb.GetUInt32();
-  FreeAndNil(bb);
+  try
+    SetLength(tmp, 3);
+    data.Get(tmp);
+    bb.SetUInt8(0);
+    bb.SetArray(tmp);
+    v := bb.GetUInt32();
+  finally
+    FreeAndNil(bb);
+  end;
   if settings.IsServer Then
     settings.NegotiatedConformance := TConformance(v and Integer(settings.ProposedConformance))
   else
@@ -441,7 +450,7 @@ begin
         // Unknown VAA.
         raise EArgumentException.Create('Invalid VAA.');
   end;
- end;
+end;
 
 class procedure TGXAPDU.ParseInitiate(initiateRequest: Boolean;
     settings: TGXDLMSSettings; cipher: TGXCiphering; data: TGXByteBuffer);
@@ -770,7 +779,8 @@ class function TGXAPDU.GetUserInformation(settings: TGXDLMSSettings; cipher: TGX
 var
   data, bb: TGXByteBuffer;
 begin
-    data:= TGXByteBuffer.Create();
+  data := TGXByteBuffer.Create();
+  try
     // Tag for xDLMS-Initiate response
     data.SetUInt8(Byte(TCommand.InitiateResponse));
     // NegotiatedQualityOfService (not used)
@@ -782,9 +792,12 @@ begin
     data.SetUInt8($04);// length of the conformance block
     data.SetUInt8($00);// encoding the number of unused bits in the bit string
     bb := TGXByteBuffer.Create();
-    bb.SetUInt32(LongWord(settings.NegotiatedConformance));
-    data.SetArray(bb.GetData(), 1, 3);
-    FreeAndNil(bb);
+    try
+      bb.SetUInt32(LongWord(settings.NegotiatedConformance));
+      data.SetArray(bb.GetData(), 1, 3);
+    finally
+      FreeAndNil(bb);
+    end;
     data.SetUInt16(settings.MaxPduSize);
     //VAA Name VAA name ($0007 for LN referencing and $FA00 for SN)
     if settings.UseLogicalNameReferencing Then
@@ -798,6 +811,9 @@ begin
       Exit;
     end;
     Result := data.ToArray();
+  finally
+    data.Free;
+  end;
 end;
 
 //Server generates AARE message.
@@ -871,11 +887,14 @@ begin
     if (encryptedData <> Nil) and (encryptedData.Size <> 0) Then
     begin
       tmp2 := TGXByteBuffer.Create(2 + encryptedData.Size);
-      tmp2.SetUInt8(Byte(TCommand.GloInitiateResponse));
-      TGXCommon.SetObjectCount(encryptedData.Size, tmp2);
-      tmp2.SetArray(encryptedData);
-      tmp := tmp2.ToArray();
-      freeAndNil(tmp2);
+      try
+        tmp2.SetUInt8(Byte(TCommand.GloInitiateResponse));
+        TGXCommon.SetObjectCount(encryptedData.Size, tmp2);
+        tmp2.SetArray(encryptedData);
+        tmp := tmp2.ToArray();
+      finally
+        FreeAndNil(tmp2);
+      end;
     end
     else
       tmp := GetUserInformation(settings, cipher);
@@ -887,7 +906,7 @@ begin
     data.SetUInt8(Length(tmp));
     data.SetArray(tmp);
     data.SetUInt8(offset + 1, data.Size - offset - 2);
-    freeAndNil(tmp);
+
 end;
 
 end.

@@ -55,7 +55,8 @@ Gurux.DLMS.VariableAccessSpecification,
 Gurux.DLMS.GXDLMSConverter, Gurux.DLMS.SetRequestType,
 Gurux.DLMS.GetCommandType, Gurux.DLMS.GXDLMSCaptureObject,
 Gurux.DLMS.GXReplyData, Gurux.DLMS.IGXDLMSClient,
-Gurux.DLMS.SerialnumberCounter;
+Gurux.DLMS.SerialnumberCounter,
+Gurux.DLMS.GXDLMSGateway;
 
 type
   CaptureObject = TGXDLMSCaptureObject;
@@ -77,6 +78,9 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
     function get_Limits: TGXDLMSLimits;
     function get_ClientAddress: Integer;
     function get_ServerAddress: Integer;
+    function GetGateway: TGXDLMSGateway;
+    procedure SetGateway(Value: TGXDLMSGateway);
+
     procedure set_Authentication(Value: TAuthentication);
     procedure set_Priority(Value: TPriority);
     procedure set_ServiceClass(Value: TServiceClass);
@@ -124,7 +128,7 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
 				//Authentication type. Default is None
 				Authentication : TAuthentication;
 				//Password if authentication is used.
-				Password : TBytes;
+				APassword : TBytes;
         //Interface type. Default is general.
 				intefaceType : TInterfaceType);overload;
 
@@ -138,7 +142,7 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
 				//Authentication type. Default is None
 				Authentication : TAuthentication;
 				//Password if authentication is used.
-				Password : string;
+				APassword : string;
         //Interface type. Default is general.
 				intefaceType : TInterfaceType);overload;
 
@@ -155,6 +159,9 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
     property Limits: TGXDLMSLimits read get_Limits;
     property ClientAddress : Integer read get_ClientAddress write set_ClientAddress;
     property ServerAddress : Integer read get_ServerAddress write set_ServerAddress;
+    //Gateway settings.
+    property Gateway : TGXDLMSGateway read GetGateway write SetGateway;
+
     // Generates a write message.
     function Write(item : TGXDLMSObject; index : Integer) : TArray<TBytes>;overload;
     function Write(name : Variant; value : TValue; dt : TDataType; ot : TObjectType; index : Integer) : TArray<TBytes>;overload;
@@ -241,7 +248,7 @@ constructor TGXDLMSClient.Create(
     //Authentication type. Default is None
     Authentication : TAuthentication;
     //Password if authentication is used.
-    Password : string;
+    APassword : string;
     //Interface type. Default is general.
     intefaceType : TInterfaceType);
 begin
@@ -251,7 +258,7 @@ begin
   Self.ClientAddress := ClientAddress;
   Self.ServerAddress := ServerAddress;
   Self.Authentication := Authentication;
-  Self.Password := TGXCommon.GetBytes(Password);
+  Self.Password := TGXCommon.GetBytes(APassword);
 end;
 
 constructor TGXDLMSClient.Create(
@@ -263,7 +270,7 @@ constructor TGXDLMSClient.Create(
     //Authentication type. Default is None
     Authentication : TAuthentication;
     //Password if authentication is used.
-    Password: TBytes;
+    APassword: TBytes;
     //Interface type. Default is general.
     intefaceType : TInterfaceType);
 var
@@ -275,9 +282,11 @@ begin
   Self.ClientAddress := ClientAddress;
   Self.ServerAddress := ServerAddress;
   Self.Authentication := Authentication;
-  tmp := FSettings.Password;
-  SetLength(tmp, Length(Password));
-  Move(Password[0], tmp[0], Length(Password));
+  SetLength(tmp, Length(APassword));
+  if Length(APassword) > 0 then
+    Move(APassword[0], tmp[0], Length(APassword));
+
+  FSettings.Password := tmp;
 end;
 
 destructor TGXDLMSClient.Destroy;
@@ -377,6 +386,16 @@ begin
   Result := FSettings.ServerAddress;
 end;
 
+function TGXDLMSClient.GetGateway: TGXDLMSGateway;
+begin
+  Result := FSettings.Gateway;
+end;
+
+procedure TGXDLMSClient.SetGateway(Value: TGXDLMSGateway);
+begin
+  FSettings.Gateway := Value;
+end;
+
 function TGXDLMSClient.get_MaxReceivePDUSize: System.UInt16;
 begin
   Result := FSettings.MaxPduSize;
@@ -441,44 +460,45 @@ begin
       Exit;
 
   data := TGXByteBuffer.Create(25);
-  data.SetUInt8($81); // FromatID
-  data.SetUInt8($80); // GroupID
-  data.SetUInt8(0); // Length.
+  try
+    data.SetUInt8($81); // FromatID
+    data.SetUInt8($80); // GroupID
+    data.SetUInt8(0); // Length.
 
-  // If custom HDLC parameters are used.
-  if DEFAULT_MAX_INFO_TX <> FSettings.Limits.MaxInfoTX Then
-  begin
-    data.SetUInt8(BYTE(THDLCInfo.MaxInfoTX));
-    TGXDLMS.AppendHdlcParameter(data, FSettings.Limits.MaxInfoTX);
+    // If custom HDLC parameters are used.
+    if DEFAULT_MAX_INFO_TX <> FSettings.Limits.MaxInfoTX Then
+    begin
+      data.SetUInt8(BYTE(THDLCInfo.MaxInfoTX));
+      TGXDLMS.AppendHdlcParameter(data, FSettings.Limits.MaxInfoTX);
+    end;
+    if DEFAULT_MAX_INFO_RX <> FSettings.Limits.MaxInfoRX Then
+    begin
+      data.SetUInt8(BYTE(THDLCInfo.MaxInfoRX));
+      TGXDLMS.AppendHdlcParameter(data, FSettings.Limits.MaxInfoRX);
+     end;
+    if DEFAULT_WINDOWS_SIZE_TX <> FSettings.Limits.WindowSizeTX Then
+    begin
+      data.SetUInt8(BYTE(THDLCInfo.WindowSizeTX));
+      data.SetUInt8(4);
+      data.SetUInt32(FSettings.Limits.WindowSizeTX);
+     end;
+    if DEFAULT_WINDOWS_SIZE_RX <> FSettings.Limits.WindowSizeRX Then
+    begin
+      data.SetUInt8(BYTE(THDLCInfo.WindowSizeRX));
+      data.SetUInt8(4);
+      data.SetUInt32(FSettings.Limits.WindowSizeRX);
+     end;
+    // If default HDLC parameters are not used.
+    if data.size() <> 3 Then
+      data.SetUInt8(2, data.size() - 3) // Length.
+    else
+      FreeAndNil(data);
+
+    FSettings.ResetFrameSequence();
+    Result := TGXDLMS.GetHdlcFrame(FSettings, Byte(TCommand.Snrm), Nil);
+  finally
+    data.Free;
   end;
-  if DEFAULT_MAX_INFO_RX <> FSettings.Limits.MaxInfoRX Then
-  begin
-    data.SetUInt8(BYTE(THDLCInfo.MaxInfoRX));
-    TGXDLMS.AppendHdlcParameter(data, FSettings.Limits.MaxInfoRX);
-   end;
-  if DEFAULT_WINDOWS_SIZE_TX <> FSettings.Limits.WindowSizeTX Then
-  begin
-    data.SetUInt8(BYTE(THDLCInfo.WindowSizeTX));
-    data.SetUInt8(4);
-    data.SetUInt32(FSettings.Limits.WindowSizeTX);
-   end;
-  if DEFAULT_WINDOWS_SIZE_RX <> FSettings.Limits.WindowSizeRX Then
-  begin
-    data.SetUInt8(BYTE(THDLCInfo.WindowSizeRX));
-    data.SetUInt8(4);
-    data.SetUInt32(FSettings.Limits.WindowSizeRX);
-   end;
-  // If default HDLC parameters are not used.
-  if data.size() <> 3 Then
-    data.SetUInt8(2, data.size() - 3) // Length.
-  else
-  begin
-    FreeAndNil(data);
-    data := Nil;
-  end;
-  FSettings.ResetFrameSequence();
-  Result := TGXDLMS.GetHdlcFrame(FSettings, Byte(TCommand.Snrm), Nil);
-  FreeAndNil(data);
 end;
 
 procedure TGXDLMSClient.ParseUAResponse(Data : TGXByteBuffer);
@@ -581,10 +601,13 @@ begin
   else
   begin
     bb := TGXByteBuffer.Create(2);
-    bb.SetUInt8(Byte(TCommand.ReleaseRequest));
-    bb.SetUInt8($0);
-    Result := TGXDLMS.GetWrapperFrame(FSettings, bb);
-    FreeAndNil(bb);
+    try
+      bb.SetUInt8(Byte(TCommand.ReleaseRequest));
+      bb.SetUInt8($0);
+      Result := TGXDLMS.GetWrapperFrame(FSettings, bb);
+    finally
+      bb.Free;
+    end;
   end;
 end;
 
@@ -595,7 +618,7 @@ var
   ic: LongWord;
   bb: TGXByteBuffer;
   tmp: Tvalue;
- begin
+begin
 
  if ((FSettings.Authentication <> TAuthentication.atHighECDSA) and
         (FSettings.Authentication <> TAuthentication.atHighGMAC) and
@@ -614,17 +637,20 @@ var
   challenge := TGXSecure.Secure(FSettings, FSettings.Cipher, ic,
                                      FSettings.StoCChallenge, pw);
   bb := TGXByteBuffer.Create();
-  bb.SetUInt8(Byte(TDataType.dtOctetString));
-  TGXCommon.SetObjectCount(Length(challenge), bb);
-  bb.SetArray(challenge);
-  tmp := TValue.From(bb.ToArray());
-  if UseLogicalNameReferencing Then
-    Result := Method('0.0.40.0.0.255', TObjectType.otAssociationLogicalName,
-                    1, tmp, TDataType.dtOctetString)
-  else
-    Result := Method($FA00, TObjectType.otAssociationShortName, 8, tmp,
-                TDataType.dtOctetString);
-  FreeAndNil(bb);
+  try
+    bb.SetUInt8(Byte(TDataType.dtOctetString));
+    TGXCommon.SetObjectCount(Length(challenge), bb);
+    bb.SetArray(challenge);
+    tmp := TValue.From(bb.ToArray());
+    if UseLogicalNameReferencing Then
+      Result := Method('0.0.40.0.0.255', TObjectType.otAssociationLogicalName,
+                      1, tmp, TDataType.dtOctetString)
+    else
+      Result := Method($FA00, TObjectType.otAssociationShortName, 8, tmp,
+                  TDataType.dtOctetString);
+  finally
+    bb.Free;
+  end;
 end;
 
 // Parse server's challenge if HLS authentication is used.
@@ -637,9 +663,13 @@ var
   ic: LongWord;
 begin
   info := TGXDataInfo.Create();
-  equals := false;
-  value := TGXCommon.GetData(reply, info).AsType<TBytes>;
-  FreeAndNil(info);
+  try
+    equals := false;
+    value := TGXCommon.GetData(reply, info).AsType<TBytes>;
+  finally
+    FreeAndNil(info);
+  end;
+
   if value <> Nil Then
   begin
     ic := 0;
@@ -647,9 +677,12 @@ begin
     begin
         secret := FSettings.SourceSystemTitle;
         bb := TGXByteBuffer.Create(value);
-        bb.GetUInt8();
-        ic := bb.GetUInt32();
-        FreeAndNil(bb);
+        try
+          bb.GetUInt8();
+          ic := bb.GetUInt32();
+        finally
+          FreeAndNil(bb);
+        end;
     end
     else
       secret := FSettings.Password;
@@ -657,8 +690,11 @@ begin
     tmp := TGXSecure.Secure(FSettings, FSettings.Cipher, ic,
                                  FSettings.CtoSChallenge, secret);
     challenge := TGXByteBuffer.Create(tmp);
-    equals := challenge.Compare(value);
-    FreeAndNil(challenge);
+    try
+      equals := challenge.Compare(value);
+    finally
+      FreeAndNil(challenge);
+    end;
   end;
   if Not equals Then
     raise TGXDLMSException.Create('Invalid password. Server to Client challenge do not match.');
@@ -692,58 +728,76 @@ begin
     dt := TGXDLMSConverter.GetDLMSDataType(value);
 
   attributeDescriptor := TGXByteBuffer.Create();
-  data := TGXByteBuffer.Create();
-  if value.IsType<TBytes> Then
-    data.SetArray(value.AsType<TBytes>)
-  else if dt <> TDataType.dtNone Then
-    TGXCommon.SetData(data, dt, value);
+  try
 
-  if UseLogicalNameReferencing Then
-  begin
-    // CI
-    attributeDescriptor.SetUInt16(Integer(ot));
-    // Add LN
-    ln := TGXCommon.LogicalNameToBytes(String(name));
-    attributeDescriptor.SetArray(ln);
-    // Attribute ID.
-    attributeDescriptor.SetUInt8(Byte(index));
-    // Method Invocation Parameters is not used.
-    if dt = TDataType.dtNone Then
-      attributeDescriptor.SetUInt8(0)
-    else
-      attributeDescriptor.SetUInt8(1);
+    data := TGXByteBuffer.Create();
+    try
 
-    p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.MethodRequest,
-      Byte(TActionRequestType.Normal), attributeDescriptor, data, $ff);
-    Result := TGXDLMS.GetLnMessages(TGXDLMSLNParameters(p));
-  end
-  else
-  begin
-    if dt = TDataType.dtNone Then
-      requestType := Byte(TVariableAccessSpecification.vaVariableName)
-    else
-      requestType := Byte(TVariableAccessSpecification.vaParameterisedAccess);
-    ind := 0;
-    count := 0;
-    TGXDLMS.GetActionInfo(ot, @ind, @count);
-      if index > count then
-        raise EArgumentException.Create('methodIndex');
+      if value.IsType<TBytes> Then
+        data.SetArray(value.AsType<TBytes>)
+      else if dt <> TDataType.dtNone Then
+        TGXCommon.SetData(data, dt, value);
 
-    sn := Integer(name);
-    index := (ind + (index - 1) * $8);
-    sn := sn + index;
-    // Add name.
-    attributeDescriptor.SetUInt16(sn);
-    // Add selector.
-    if dt <> TDataType.dtNone Then
-        attributeDescriptor.SetUInt8(1);
+      if UseLogicalNameReferencing Then
+      begin
+        // CI
+        attributeDescriptor.SetUInt16(Integer(ot));
+        // Add LN
+        ln := TGXCommon.LogicalNameToBytes(String(name));
+        attributeDescriptor.SetArray(ln);
+        // Attribute ID.
+        attributeDescriptor.SetUInt8(Byte(index));
+        // Method Invocation Parameters is not used.
+        if dt = TDataType.dtNone Then
+          attributeDescriptor.SetUInt8(0)
+        else
+          attributeDescriptor.SetUInt8(1);
 
-    p := TGXDLMSSNParameters.Create(FSettings, TCommand.ReadRequest, 1, requestType, attributeDescriptor, data);
-    Result := TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p));
+        p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.MethodRequest,
+          Byte(TActionRequestType.Normal), attributeDescriptor, data, $ff);
+        try
+          Result := TGXDLMS.GetLnMessages(TGXDLMSLNParameters(p));
+        finally
+          p.Free;
+        end;
+      end
+      else
+      begin
+        if dt = TDataType.dtNone Then
+          requestType := Byte(TVariableAccessSpecification.vaVariableName)
+        else
+          requestType := Byte(TVariableAccessSpecification.vaParameterisedAccess);
+        ind := 0;
+        count := 0;
+        TGXDLMS.GetActionInfo(ot, @ind, @count);
+          if index > count then
+            raise EArgumentException.Create('methodIndex');
+
+        sn := Integer(name);
+        index := (ind + (index - 1) * $8);
+        sn := sn + index;
+        // Add name.
+        attributeDescriptor.SetUInt16(sn);
+        // Add selector.
+        if dt <> TDataType.dtNone Then
+            attributeDescriptor.SetUInt8(1);
+
+        p := TGXDLMSSNParameters.Create(FSettings, TCommand.ReadRequest, 1, requestType, attributeDescriptor, data);
+        try
+          Result := TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p));
+        finally
+          p.Free;
+        end;
+      end;
+
+    finally
+      data.Free;
+    end;
+
+  finally
+    attributeDescriptor.Free;
   end;
-  FreeAndNil(attributeDescriptor);
-  FreeAndNil(data);
-  FreeAndNil(p);
+
 end;
 
 function TGXDLMSClient.Write(item: TGXDLMSObject; index: Integer) : TArray<TBytes>;
@@ -756,12 +810,15 @@ begin
     raise TGXDLMSException.Create('Invalid parameter');
 
   p := TValueEventArgs.Create(FSettings, item, index, 0, Nil);
+  try
+    value := item.GetValue(p);
+    dt := item.GetDataType(index);
+    if dt = TDataType.dtNone then
+      dt := TGXCommon.GetDLMSDataType(value);
+  finally
+    FreeAndNil(p);
+  end;
 
-  value := item.GetValue(p);
-  dt := item.GetDataType(index);
-  if dt = TDataType.dtNone then
-    dt := TGXCommon.GetDLMSDataType(value);
-  FreeAndNil(p);
   Result := Write(item.Name, value, dt, item.ObjectType, index);
 end;
 
@@ -786,42 +843,58 @@ begin
     if dt = TDataType.dtNone Then
       raise EArgumentException.Create('Invalid parameter. Unknown value type.');
   end;
+
   attributeDescriptor := TGXByteBuffer.Create();
-  data := TGXByteBuffer.Create();
-try
-  TGXCommon.SetData(data, dt, value);
-  if UseLogicalNameReferencing Then
-  begin
-    // Add CI.
-    attributeDescriptor.SetUInt16(WORD(ot));
-    // Add LN.
-    ln := TGXCommon.LogicalNameToBytes(string(name));
-    attributeDescriptor.SetArray(ln);
-    // Attribute ID.
-    attributeDescriptor.SetUInt8(index);
-    // Access selection is not used.
-    attributeDescriptor.SetUInt8(0);
-    p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.SetRequest,
-          Byte(TSetRequestType.Normal), attributeDescriptor, data, $ff);
-    Result := TGXDLMS.GetLnMessages(TGXDLMSLNParameters(p));
-  end
-  else
-  begin
-    // Add name.
-    sn := WORD(name);
-    sn := sn + ((index - 1) * 8);
-    attributeDescriptor.SetUInt16(sn);
-    //Data cnt.
-    attributeDescriptor.SetUInt8(1);
-    p := TGXDLMSSNParameters.Create(FSettings, TCommand.WriteRequest, 1,
-            Byte(TVariableAccessSpecification.vaVariableName), attributeDescriptor, data);
-    Result := TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p));
+  try
+
+    data := TGXByteBuffer.Create();
+    try
+
+      TGXCommon.SetData(data, dt, value);
+      if UseLogicalNameReferencing Then
+      begin
+        // Add CI.
+        attributeDescriptor.SetUInt16(WORD(ot));
+        // Add LN.
+        ln := TGXCommon.LogicalNameToBytes(string(name));
+        attributeDescriptor.SetArray(ln);
+        // Attribute ID.
+        attributeDescriptor.SetUInt8(index);
+        // Access selection is not used.
+        attributeDescriptor.SetUInt8(0);
+        p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.SetRequest,
+              Byte(TSetRequestType.Normal), attributeDescriptor, data, $ff);
+        try
+          Result := TGXDLMS.GetLnMessages(TGXDLMSLNParameters(p));
+        finally
+          p.Free;
+        end;
+      end
+      else
+      begin
+        // Add name.
+        sn := WORD(name);
+        sn := sn + ((index - 1) * 8);
+        attributeDescriptor.SetUInt16(sn);
+        //Data cnt.
+        attributeDescriptor.SetUInt8(1);
+        p := TGXDLMSSNParameters.Create(FSettings, TCommand.WriteRequest, 1,
+                Byte(TVariableAccessSpecification.vaVariableName), attributeDescriptor, data);
+        try
+          Result := TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p));
+        finally
+          p.Free;
+        end;
+      end;
+
+    finally
+      data.Free;
+    end;
+
+  finally
+    attributeDescriptor.Free;
   end;
-finally
-  freeAndNil(p);
-  freeAndNil(attributeDescriptor);
-  freeAndNil(data);
-end;
+
 end;
 
 // Read list of COSEM objects.
@@ -837,72 +910,88 @@ begin
   if (list = Nil) or (list.Count = 0) Then
     raise EArgumentException.Create('Invalid parameter.');
 
+  FSettings.ResetBlockIndex();
+
+  messages := TList<TBytes>.Create();
   try
-    FSettings.ResetBlockIndex();
-    messages := TList<TBytes>.Create();
+
     data := TGXByteBuffer.Create();
-    if UseLogicalNameReferencing Then
-    begin
-      p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.GetRequest, BYTE(TGetCommandType.ctWithList), Nil, data, $ff);
-      //Request service primitive shall always fit in a single APDU.
-      pos := 0;
-      count := Floor((FSettings.MaxPduSize - 12) / 10);
-      if list.Count < count Then
-        count := list.Count;
+    try
 
-      //All meters can handle 10 items.
-      if (count > 10) Then
-        count := 10;
-
-      // Add length.
-      TGXCommon.SetObjectCount(count, data);
-      for it in list do
+      if UseLogicalNameReferencing Then
       begin
-        // CI.
-        data.SetUInt16(Integer(it.Key.ObjectType));
-        // Add LN
-        ln := TGXCommon.LogicalNameToBytes(it.Key.LogicalName);
-        data.SetArray(ln);
-        // Attribute ID.
-        data.SetUInt8(BYTE(it.Value));
-        // Attribute selector is not used.
-        data.SetUInt8(0);
-        pos := pos + 1;
-        if (pos Mod count = 0) and (list.Count <> pos) Then
-        begin
+        p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.GetRequest, BYTE(TGetCommandType.ctWithList), Nil, data, $ff);
+        try
+          //Request service primitive shall always fit in a single APDU.
+          pos := 0;
+          count := Floor((FSettings.MaxPduSize - 12) / 10);
+          if list.Count < count Then
+            count := list.Count;
+
+          //All meters can handle 10 items.
+          if (count > 10) Then
+            count := 10;
+
+          // Add length.
+          TGXCommon.SetObjectCount(count, data);
+          for it in list do
+          begin
+            // CI.
+            data.SetUInt16(Integer(it.Key.ObjectType));
+            // Add LN
+            ln := TGXCommon.LogicalNameToBytes(it.Key.LogicalName);
+            data.SetArray(ln);
+            // Attribute ID.
+            data.SetUInt8(BYTE(it.Value));
+            // Attribute selector is not used.
+            data.SetUInt8(0);
+            pos := pos + 1;
+            if (pos Mod count = 0) and (list.Count <> pos) Then
+            begin
+              messages.AddRange(TGXDLMS.GetLnMessages(TGXDLMSLNParameters(p)));
+              data.Clear();
+              if (list.Count - pos < count) Then
+                TGXCommon.SetObjectCount(list.Count - pos, data)
+              else
+                TGXCommon.SetObjectCount(count, data);
+            end;
+          end;
           messages.AddRange(TGXDLMS.GetLnMessages(TGXDLMSLNParameters(p)));
-          data.Clear();
-          if (list.Count - pos < count) Then
-            TGXCommon.SetObjectCount(list.Count - pos, data)
-          else
-            TGXCommon.SetObjectCount(count, data);
+        finally
+          p.Free;
         end;
-      end;
-     messages.AddRange(TGXDLMS.GetLnMessages(TGXDLMSLNParameters(p)));
-    end
-    else
-    begin
-      p := TGXDLMSSNParameters.Create(FSettings, TCommand.ReadRequest, list.Count, $FF, Nil, data);
-      for it in list do
+      end
+      else
       begin
-        // Add variable type.
-        data.SetUInt8(BYTE(TVariableAccessSpecification.vaVariableName));
-        sn := it.Key.ShortName + ((it.Value - 1) * 8);
-        data.SetUInt16(Integer(sn));
-        if data.Size >= FSettings.MaxPduSize Then
-        begin
+        p := TGXDLMSSNParameters.Create(FSettings, TCommand.ReadRequest, list.Count, $FF, Nil, data);
+        try
+          for it in list do
+          begin
+            // Add variable type.
+            data.SetUInt8(BYTE(TVariableAccessSpecification.vaVariableName));
+            sn := it.Key.ShortName + ((it.Value - 1) * 8);
+            data.SetUInt16(Integer(sn));
+            if data.Size >= FSettings.MaxPduSize Then
+            begin
+              messages.AddRange(TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p)));
+              data.Clear();
+            end;
+          end;
           messages.AddRange(TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p)));
-          data.Clear();
+        finally
+          p.Free;
         end;
       end;
-      messages.AddRange(TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p)));
+      Result := messages.ToArray();
+
+    finally
+      data.Free;
     end;
-    Result := messages.ToArray();
+
   finally
-    FreeAndNil(p);
-    FreeAndNil(messages);
-    FreeAndNil(data);
+    messages.Free;
   end;
+
 end;
 
 function TGXDLMSClient.Read(it : TGXDLMSObject; attributeIndex : Integer) : TArray<TBytes>;
@@ -997,8 +1086,11 @@ begin
     ParseSNObjects(data, onlyKnownObjects);
 
   c := TGXDLMSConverter.Create();
-  c.UpdateOBISCodeInformation(objects);
-  FreeAndNil(c);
+  try
+    c.UpdateOBISCodeInformation(objects);
+  finally
+    c.Free;
+  end;
 end;
 
 // Reserved for internal use.
@@ -1016,8 +1108,14 @@ begin
     Result := TGXDLMSAssociationLogicalName.Create()
   else
     Result := TGXObjectFactory.CreateObject(tp);
-  UpdateObjectData(Result, tp, Version, BaseName, LN,
-          AccessRights);
+
+  try
+    UpdateObjectData(Result, tp, Version, BaseName, LN,
+            AccessRights);
+  except
+    result.Free;
+    raise;
+  end;
 end;
 
 function TGXDLMSClient.CreateObject(ot: TObjectType) : TGXDLMSObject;
@@ -1090,15 +1188,17 @@ var
   objects: TArray<TValue>;
   comp: TGXDLMSObject;
 begin
-  try
-    //Get array tag.
-    size := buff.GetUInt8();
-    //Check that data is in the array
-    if size <> 1 Then
-      raise TGXDLMSException.Create('Invalid response.');
+  //Get array tag.
+  size := buff.GetUInt8();
+  //Check that data is in the array
+  if size <> 1 Then
+    raise TGXDLMSException.Create('Invalid response.');
 
-    cnt := TGXCommon.GetObjectCount(buff);
-    info := TGXDataInfo.Create();
+  cnt := TGXCommon.GetObjectCount(buff);
+
+  info := TGXDataInfo.Create();
+  try
+
     for pos := 0 to cnt do
     begin
       // Some meters give wrong item count.
@@ -1115,8 +1215,13 @@ begin
       if baseName > 0 Then
       begin
         comp := CreateDLMSObject(ot, objects[2].AsType<WORD>, baseName, objects[3], Nil);
-        if comp.ClassType = TGXDLMSObject Then
-          TGXCommon.Trace('Unknown object ' + ot.ToString + ' ' + objects[0].ToString());
+        try
+          if comp.ClassType = TGXDLMSObject Then
+            TGXCommon.Trace('Unknown object ' + ot.ToString + ' ' + objects[0].ToString());
+        except
+          comp.Free;
+          raise;
+        end;
 
         if (Not onlyKnownObjects) or (comp.ClassType <> TGXDLMSObject) then
           FSettings.Objects.Add(comp)
@@ -1124,9 +1229,11 @@ begin
           FreeAndNil(comp);
       end;
     end;
+
   finally
-    FreeAndNil(info);
+    info.Free;
   end;
+
 end;
 
 //Reserved for internal use.
@@ -1137,16 +1244,17 @@ var
   comp : TGXDLMSObject;
   info: TGXDataInfo;
 begin
-  try
-    cnt := buff.GetUInt8();
-    //Check that data is in the array.
-    if cnt <> 1 Then
-        raise TGXDLMSException.Create('Invalid response.');
+  cnt := buff.GetUInt8();
+  //Check that data is in the array.
+  if cnt <> 1 Then
+      raise TGXDLMSException.Create('Invalid response.');
 
-    //Get object count
-    cnt := TGXCommon.GetObjectCount(buff);
-    objectCnt := 0;
-    info := TGXDataInfo.Create();
+  //Get object count
+  cnt := TGXCommon.GetObjectCount(buff);
+  objectCnt := 0;
+
+  info := TGXDataInfo.Create();
+  try
     //Some meters give wrong item count.
     while (buff.Position <> buff.Size) and (cnt <> objectCnt) do
     begin
@@ -1158,18 +1266,25 @@ begin
       objectCnt := objectCnt + 1;
       ot := objects[0].AsType<WORD>;
       comp := CreateDLMSObject(ot, objects[1].AsType<WORD>, 0, objects[2], objects[3]);
-      if comp.ClassType = TGXDLMSObject Then
-        TGXCommon.Trace('Unknown object ' + ot.toString() + ' ' +
-                  TGXDLMSObject.ToLogicalName(objects[2].AsType<TBytes>()));
+      try
+        if comp.ClassType = TGXDLMSObject Then
+          TGXCommon.Trace('Unknown object ' + ot.toString() + ' ' +
+                    TGXDLMSObject.ToLogicalName(objects[2].AsType<TBytes>()));
+      except
+        comp.Free;
+        raise;
+      end;
 
       if (comp.ClassType <> TGXDLMSObject) or Not onlyKnownObjects then
         FSettings.Objects.Add(comp)
       else
         FreeAndNil(comp);
     end;
+
   finally
-  FreeAndNil(info);
+    info.Free;
   end;
+
 end;
 
 function TGXDLMSClient.ReceiverReady(tp : TRequestTypes) : TBytes;
@@ -1181,8 +1296,8 @@ function TGXDLMSClient.GetData(reply: TBytes; data: TGXReplyData): Boolean;
 var
   tmp: TGXByteBuffer;
 begin
+  tmp := TGXByteBuffer.Create(reply);
   try
-    tmp := TGXByteBuffer.Create(reply);
     Result := TGXDLMS.GetData(FSettings, tmp, data);
   finally
     FreeAndNil(tmp);
@@ -1303,7 +1418,7 @@ try
   if count = 0 then
     TGXCommon.SetData(buff, TDataType.dtUInt32, count)
   else
-    TGXCommon.SetData(buff, TDataType.dtUInt32, index + count);
+    TGXCommon.SetData(buff, TDataType.dtUInt32, index + count - 1);
 
   columnIndex := 1;
   columnCount := 0;
@@ -1373,8 +1488,8 @@ begin
         value := ChangeType(tmp, dt);
     end;
   end;
+  e := TValueEventArgs.Create(FSettings, target, attributeIndex, 0, columns);
   try
-    e := TValueEventArgs.Create(FSettings, target, attributeIndex, 0, columns);
     e.Value := value;
     target.SetValue(e);
     Result := target.GetValues()[attributeIndex - 1];
@@ -1394,10 +1509,13 @@ begin
   for it in list do
   begin
     e := TValueEventArgs.Create(FSettings, it.Key, it.Value, 0, Nil);
-    e.Value := values[pos];
-    it.Key.SetValue(e);
-    pos := pos + 1;
-    FreeAndNil(e);
+    try
+      e.Value := values[pos];
+      it.Key.SetValue(e);
+      pos := pos + 1;
+    finally
+      FreeAndNil(e);
+    end;
   end;
 end;
 
@@ -1407,9 +1525,9 @@ var
 begin
   info := TGXDataInfo.Create();
   try
-  Result := TGXCommon.GetData(data, info);
-  if (Result.IsType<TBytes>) and (dt <> TDataType.dtNone) Then
-    Result := TGXDLMSClient.ChangeType(Result.AsType<TBytes>, dt);
+    Result := TGXCommon.GetData(data, info);
+    if (Result.IsType<TBytes>) and (dt <> TDataType.dtNone) Then
+      Result := TGXDLMSClient.ChangeType(Result.AsType<TBytes>, dt);
   finally
     FreeAndNil(info);
   end;
@@ -1472,7 +1590,7 @@ begin
     otTunnel: Result := 'GXDLMSTunnel';
     otUtilityTables: Result := 'GXDLMSUtilityTables';
     else
-      Result := 'Manufacturer spesific';
+      Result := 'Manufacturer specific';
   end;
 end;
 
@@ -1488,11 +1606,11 @@ end;
 
 class function TGXDLMSClient.GetServerAddress(serialNumber: Integer; formula: string): Integer;
 begin
-    //If formula is not given use default formula.
-    //This formula is defined in DLMS specification.
-    if formula = '' Then
-      formula := 'SN % 10000 + 1000';
-    Result := $4000 or TSerialnumberCounter.Count(serialNumber, formula);
+  //If formula is not given use default formula.
+  //This formula is defined in DLMS specification.
+  if formula = '' Then
+    formula := 'SN % 10000 + 1000';
+  Result := $4000 or TSerialnumberCounter.Count(serialNumber, formula);
 end;
 
 end.

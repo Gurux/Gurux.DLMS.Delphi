@@ -116,7 +116,8 @@ function TAesGcmParameter.ToString : String;
 var
   sb: TStringBuilder;
 begin
-    sb := TStringBuilder.create();
+  sb := TStringBuilder.create();
+  try
     sb.Append('Security: ');
     sb.Append(Integer(FSecurity));
     sb.Append(' Invocation Counter: ');
@@ -128,5 +129,9 @@ begin
     sb.Append(' BlockCipherKey: ');
     sb.Append(TGXByteBuffer.ToHexString(FBlockCipherKey, true, 0, Length(FBlockCipherKey)));
     Result := sb.ToString();
+  finally
+    sb.Free;
+  end;
 end;
+
 end.

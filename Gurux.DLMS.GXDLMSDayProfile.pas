@@ -69,13 +69,17 @@ var
   it : TGXDLMSDayProfileAction;
 begin
   sb := TStringBuilder.Create();
-  sb.Append(IntToStr(DayId));
-  for it in FDaySchedules do
-  begin
-    sb.Append(' ');
-    sb.Append(it.ToString());
+  try
+    sb.Append(IntToStr(DayId));
+    for it in FDaySchedules do
+    begin
+      sb.Append(' ');
+      sb.Append(it.ToString());
+    end;
+    Result := sb.ToString();
+  finally
+    sb.Free;
   end;
-  Result := sb.ToString();
 end;
 
 end.

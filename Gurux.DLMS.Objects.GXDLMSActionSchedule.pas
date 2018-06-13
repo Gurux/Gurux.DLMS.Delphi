@@ -106,24 +106,27 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //ExecutedScriptLogicalName is static and read only once.
-  if Not IsRead(2) Then
-    items.Add(2);
+    //ExecutedScriptLogicalName is static and read only once.
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //Type is static and read only once.
-  if Not IsRead(3) Then
-    items.Add(3);
+    //Type is static and read only once.
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //ExecutionTime is static and read only once.
-  if Not IsRead(4) Then
-    items.Add(4);
+    //ExecutionTime is static and read only once.
+    if Not IsRead(4) Then
+      items.Add(4);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSActionSchedule.GetAttributeCount: Integer;
@@ -185,8 +188,8 @@ begin
         begin
           stream.Add(Integer(TDataType.dtStructure));
           stream.Add(2); //Count
-          TGXCommon.SetData(stream, TDataType.dtOctetString, it.Value); //Time
-          TGXCommon.SetData(stream, TDataType.dtOctetString, it.Value); //Date
+          TGXCommon.SetData(stream, TDataType.dtOctetString, it.Time); //Time
+          TGXCommon.SetData(stream, TDataType.dtOctetString, it.Time); //Date
         end
     end;
     Result := TValue.From(stream.ToArray());
@@ -223,12 +226,12 @@ begin
       begin
         tm := TGXCommon.ChangeType(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtTime).AsType<TGXDateTime>;
         date := TGXCommon.ChangeType(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>, TDataType.dtDate).AsType<TGXDateTime>;
-        DecodeDate(date.Value, Y, M, D);
+        DecodeDate(date.Time, Y, M, D);
         if Y <> 2 then
         begin
-          tm.Value := IncYear(tm.Value, Y - 1);
-          tm.Value := IncMonth(tm.Value, M - 1);
-          tm.Value := IncDay(tm.Value, D - 1);
+          tm.Time := IncYear(tm.Time, Y - 1);
+          tm.Time := IncMonth(tm.Time, M - 1);
+          tm.Time := IncDay(tm.Time, D - 1);
         end;
         tm.Skip := TDateTimeSkips(Integer(tm.Skip) or Integer(date.Skip));
         FExecutionTime.Add(tm);

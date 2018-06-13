@@ -123,44 +123,47 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //Time
-  if CanRead(2) Then
-    items.Add(2);
+    //Time
+    if CanRead(2) Then
+      items.Add(2);
 
-  //TimeZone
-  if Not IsRead(3) Then
-    items.Add(3);
+    //TimeZone
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //Status
-  if CanRead(4) Then
-    items.Add(4);
+    //Status
+    if CanRead(4) Then
+      items.Add(4);
 
-  //Begin
-  if Not IsRead(5) Then
-    items.Add(5);
+    //Begin
+    if Not IsRead(5) Then
+      items.Add(5);
 
-  //End
-  if Not IsRead(6) Then
-    items.Add(6);
+    //End
+    if Not IsRead(6) Then
+      items.Add(6);
 
-  //Deviation
-  if Not IsRead(7) Then
-    items.Add(7);
+    //Deviation
+    if Not IsRead(7) Then
+      items.Add(7);
 
-  //Enabled
-  if Not IsRead(8) Then
-    items.Add(8);
+    //Enabled
+    if Not IsRead(8) Then
+      items.Add(8);
 
-  //ClockBase
-  if Not IsRead(9) Then
-      items.Add(9);
+    //ClockBase
+    if Not IsRead(9) Then
+        items.Add(9);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSClock.GetAttributeCount: Integer;

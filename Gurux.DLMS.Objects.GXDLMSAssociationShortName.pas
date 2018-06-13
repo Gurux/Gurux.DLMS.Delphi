@@ -107,27 +107,30 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //ObjectList is static and read only once.
-  if Not IsRead(2) Then
-    items.Add(2);
+    //ObjectList is static and read only once.
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  if FVersion > 1 Then
-  begin
-    //AccessRightsList is static and read only once.
-    if Not IsRead(3) Then
-      items.Add(3);
+    if FVersion > 1 Then
+    begin
+      //AccessRightsList is static and read only once.
+      if Not IsRead(3) Then
+        items.Add(3);
 
-    //SecuritySetupReference is static and read only once.
-    if Not IsRead(4) Then
-      items.Add(4);
+      //SecuritySetupReference is static and read only once.
+      if Not IsRead(4) Then
+        items.Add(4);
+    end;
+
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
   end;
-
-  Result := items.ToArray;
-  FreeAndNil(items);
 end;
 
 function TGXDLMSAssociationShortName.GetAttributeCount: Integer;
@@ -207,32 +210,36 @@ begin
   else if e.Index = 2 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtArray));
-    //Add count
-    cnt := ObjectList.Count;
-    TGXCommon.SetObjectCount(cnt, data);
-    if cnt <> 0 then
-    begin
-      for it in FObjectList do
+    try
+      data.Add(Integer(TDataType.dtArray));
+      //Add count
+      cnt := ObjectList.Count;
+      TGXCommon.SetObjectCount(cnt, data);
+      if cnt <> 0 then
       begin
-        data.Add(Integer(TDataType.dtStructure));
-        data.Add(4); //Count
-        TGXCommon.SetData(data, TDataType.dtInt16, it.ShortName); //base address.
-        TGXCommon.SetData(data, TDataType.dtUInt16, Integer(it.ObjectType)); //ClassID
-        TGXCommon.SetData(data, TDataType.dtUInt8, 0); //Version
-        TGXCommon.SetData(data, TDataType.dtOctetString, it.LogicalName); //LN
+        for it in FObjectList do
+        begin
+          data.Add(Integer(TDataType.dtStructure));
+          data.Add(4); //Count
+          TGXCommon.SetData(data, TDataType.dtInt16, it.ShortName); //base address.
+          TGXCommon.SetData(data, TDataType.dtUInt16, Integer(it.ObjectType)); //ClassID
+          TGXCommon.SetData(data, TDataType.dtUInt8, 0); //Version
+          TGXCommon.SetData(data, TDataType.dtOctetString, it.LogicalName); //LN
+        end;
+        if FObjectList.FindBySN(ShortName) = Nil Then
+        begin
+          data.Add(Integer(TDataType.dtStructure));
+          data.Add(4); //Count
+          TGXCommon.SetData(data, TDataType.dtInt16, FShortName); //base address.
+          TGXCommon.SetData(data, TDataType.dtUInt16, Integer(FObjectType)); //ClassID
+          TGXCommon.SetData(data, TDataType.dtUInt8, 0); //Version
+          TGXCommon.SetData(data, TDataType.dtOctetString, LogicalName); //LN
+        end
       end;
-      if FObjectList.FindBySN(ShortName) = Nil Then
-      begin
-        data.Add(Integer(TDataType.dtStructure));
-        data.Add(4); //Count
-        TGXCommon.SetData(data, TDataType.dtInt16, FShortName); //base address.
-        TGXCommon.SetData(data, TDataType.dtUInt16, Integer(FObjectType)); //ClassID
-        TGXCommon.SetData(data, TDataType.dtUInt8, 0); //Version
-        TGXCommon.SetData(data, TDataType.dtOctetString, LogicalName); //LN
-      end
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else if e.Index = 3 Then
   begin
@@ -243,14 +250,18 @@ begin
       cnt := cnt + 1;
 
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtArray));
-    TGXCommon.SetObjectCount(cnt, data);
-    for it in FObjectList do
-      GetAccessRights(it, data);
+    try
+      data.Add(Integer(TDataType.dtArray));
+      TGXCommon.SetObjectCount(cnt, data);
+      for it in FObjectList do
+        GetAccessRights(it, data);
 
-    if Not lnExists Then
-      GetAccessRights(Self, data);
-    Result := TValue.From(data.ToArray());
+      if Not lnExists Then
+        GetAccessRights(Self, data);
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
+    end;
   end
   else if e.Index = 4 Then
   begin

@@ -908,7 +908,7 @@ begin
   for round := 0 to 9 do
   begin
       for i := 0 to 15 do
-        data[i + offset] := SBox[(data[i + offset] xor  key[i]) and $FF];
+        data[i + offset] := SBox[(data[i + offset] xor  key[i])];
 
       // cip_shift rows
       buf1 := data[1 + offset];

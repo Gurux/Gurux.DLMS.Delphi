@@ -39,7 +39,8 @@ Gurux.DLMS.GXDateTime,
 Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
 Gurux.DLMS.Objects.GXSendDestinationAndMethod,
 Gurux.DLMS.Objects.ServiceType, Gurux.DLMS.Objects.MessageType,
-Gurux.DLMS.GXDLMSCaptureObject, GXByteBuffer;
+Gurux.DLMS.GXDLMSCaptureObject, GXByteBuffer,
+Gurux.DLMS.IGXDLMSClient;
 
 type
 TGXDLMSPushSetup = class(TGXDLMSObject)
@@ -71,6 +72,9 @@ TGXDLMSPushSetup = class(TGXDLMSObject)
   function GetValue(e: TValueEventArgs): TValue;override;
   procedure SetValue(e: TValueEventArgs);override;
   function Invoke(e: TValueEventArgs): TBytes;override;
+
+  //Activates the push process.
+  function Activate(client: IGXDLMSClient) : TArray<TBytes>;
 end;
 
 implementation
@@ -109,40 +113,48 @@ begin
             FRandomisationStartInterval, FNumberOfRetries, FRepetitionDelay);
 end;
 
+function TGXDLMSPushSetup.Activate(client: IGXDLMSClient) : TArray<TBytes>;
+begin
+  Result := client.Method(Self, 1, 0, TDataType.dtInt8);
+end;
+
 function TGXDLMSPushSetup.GetAttributeIndexToRead: TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //PushObjectList
-  if CanRead(2) then
-    items.Add(2);
+    //PushObjectList
+    if CanRead(2) then
+      items.Add(2);
 
-  //SendDestinationAndMethod
-  if (CanRead(3)) then
-    items.Add(3);
-  //CommunicationWindow
-  if (CanRead(4)) then
-    items.Add(4);
+    //SendDestinationAndMethod
+    if (CanRead(3)) then
+      items.Add(3);
+    //CommunicationWindow
+    if (CanRead(4)) then
+      items.Add(4);
 
-  //RandomisationStartInterval
-  if (CanRead(5)) then
-    items.Add(5);
+    //RandomisationStartInterval
+    if (CanRead(5)) then
+      items.Add(5);
 
-  //NumberOfRetries
-  if (CanRead(6)) then
-    items.Add(6);
+    //NumberOfRetries
+    if (CanRead(6)) then
+      items.Add(6);
 
-  //RepetitionDelay
-  if (CanRead(7)) then
-    items.Add(7);
+    //RepetitionDelay
+    if (CanRead(7)) then
+      items.Add(7);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSPushSetup.GetAttributeCount: Integer;
@@ -184,55 +196,59 @@ var
  it2: TPair<TGXDateTime, TGXDateTime>;
 begin
   buff:= TGXByteBuffer.Create();
-  if (e.Index = 1) then
-    Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName))
-  else if e.Index = 2 Then
-  begin
-    buff.SetUInt8(Integer(TDataType.dtArray));
-    TGXCommon.SetObjectCount(FPushObjectList.Count, buff);
-    for it in FPushObjectList do
+  try
+    if (e.Index = 1) then
+      Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName))
+    else if e.Index = 2 Then
+    begin
+      buff.SetUInt8(Integer(TDataType.dtArray));
+      TGXCommon.SetObjectCount(FPushObjectList.Count, buff);
+      for it in FPushObjectList do
+      begin
+        buff.SetUInt8(Integer(TDataType.dtStructure));
+        buff.SetUInt8(4);
+        TGXCommon.SetData(buff, TDataType.dtUInt16, Integer(it.Target.ObjectType));
+        TGXCommon.SetData(buff, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(it.Target.LogicalName)));
+        TGXCommon.SetData(buff, TDataType.dtInt8, it.AttributeIndex);
+        TGXCommon.SetData(buff, TDataType.dtUInt16, it.DataIndex);
+      end;
+      Result := TValue.From(buff.ToArray());
+    end
+    else if e.Index = 3 Then
     begin
       buff.SetUInt8(Integer(TDataType.dtStructure));
-      buff.SetUInt8(4);
-      TGXCommon.SetData(buff, TDataType.dtUInt16, Integer(it.Target.ObjectType));
-      TGXCommon.SetData(buff, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(it.Target.LogicalName)));
-      TGXCommon.SetData(buff, TDataType.dtInt8, it.AttributeIndex);
-      TGXCommon.SetData(buff, TDataType.dtUInt16, it.DataIndex);
-    end;
-    Result := TValue.From(buff.ToArray());
-  end
-  else if e.Index = 3 Then
-  begin
-    buff.SetUInt8(Integer(TDataType.dtStructure));
-    buff.SetUInt8(3);
-    TGXCommon.SetData(buff, TDataType.dtEnum, Integer(FSendDestinationAndMethod.FService));
-    TGXCommon.SetData(buff, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(FSendDestinationAndMethod.FDestination)));
-    TGXCommon.SetData(buff, TDataType.dtEnum, Integer(FSendDestinationAndMethod.FMessage));
-    Result := TValue.From(buff.ToArray());
-  end
-  else if e.Index = 4 Then
-  begin
-    buff.SetUInt8(Integer(TDataType.dtArray));
-    TGXCommon.SetObjectCount(FCommunicationWindow.Count, buff);
-    for it2 in FCommunicationWindow do
+      buff.SetUInt8(3);
+      TGXCommon.SetData(buff, TDataType.dtEnum, Integer(FSendDestinationAndMethod.FService));
+      TGXCommon.SetData(buff, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(FSendDestinationAndMethod.FDestination)));
+      TGXCommon.SetData(buff, TDataType.dtEnum, Integer(FSendDestinationAndMethod.FMessage));
+      Result := TValue.From(buff.ToArray());
+    end
+    else if e.Index = 4 Then
     begin
-      buff.SetUInt8(Integer(TDataType.dtStructure));
-      buff.SetUInt8(2);
-      TGXCommon.SetData(buff, TDataType.dtOctetString, it2.Key);
-      TGXCommon.SetData(buff, TDataType.dtOctetString, it2.Value);
-    end;
-    Result := TValue.From(buff.ToArray());
-  end
-  else if e.Index = 5 Then
-    Result := FRandomisationStartInterval
-  else if e.Index = 6 Then
-    Result := FNumberOfRetries
-  else if e.Index = 7 Then
-    Result := FRepetitionDelay
-  else
-    raise Exception.Create('GetValue failed. Invalid attribute index.');
+      buff.SetUInt8(Integer(TDataType.dtArray));
+      TGXCommon.SetObjectCount(FCommunicationWindow.Count, buff);
+      for it2 in FCommunicationWindow do
+      begin
+        buff.SetUInt8(Integer(TDataType.dtStructure));
+        buff.SetUInt8(2);
+        TGXCommon.SetData(buff, TDataType.dtOctetString, it2.Key);
+        TGXCommon.SetData(buff, TDataType.dtOctetString, it2.Value);
+      end;
+      Result := TValue.From(buff.ToArray());
+    end
+    else if e.Index = 5 Then
+      Result := FRandomisationStartInterval
+    else if e.Index = 6 Then
+      Result := FNumberOfRetries
+    else if e.Index = 7 Then
+      Result := FRepetitionDelay
+    else
+      raise Exception.Create('GetValue failed. Invalid attribute index.');
 
-  FreeAndNil(buff);
+  finally
+    FreeAndNil(buff);
+  end;
+
 end;
 
 procedure TGXDLMSPushSetup.SetValue(e: TValueEventArgs);
@@ -315,7 +331,8 @@ end;
 
 function TGXDLMSPushSetup.Invoke(e: TValueEventArgs): TBytes;
 begin
-  raise Exception.Create('Invoke failed. Invalid attribute index.');
+  if e.Index <> 1 then
+    raise Exception.Create('Invoke failed. Invalid attribute index.');
 end;
 
 end.

@@ -97,16 +97,19 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //Value
-  if CanRead(2) then
-    items.Add(2);
+    //Value
+    if CanRead(2) then
+      items.Add(2);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSSpecialDaysTable.GetAttributeCount: Integer;
@@ -146,19 +149,22 @@ begin
   else if (e.Index = 2) then
   begin
     data := TGXByteBuffer.Create();
-    data.Add(Integer(TDataType.dtArray));
-    //Add count
-    TGXCommon.SetObjectCount(FEntries.Count, data);
-    for it in Entries do
-    begin
-      data.Add(Integer(TDataType.dtStructure));
-      data.Add(3); //Count
-      TGXCommon.SetData(data, TDataType.dtUInt16, it.Index);
-      TGXCommon.SetData(data, TDataType.dtOctetString, it.Date);
-      TGXCommon.SetData(data, TDataType.dtUInt8, it.DayId);
+    try
+      data.Add(Integer(TDataType.dtArray));
+      //Add count
+      TGXCommon.SetObjectCount(FEntries.Count, data);
+      for it in Entries do
+      begin
+        data.Add(Integer(TDataType.dtStructure));
+        data.Add(3); //Count
+        TGXCommon.SetData(data, TDataType.dtUInt16, it.Index);
+        TGXCommon.SetData(data, TDataType.dtOctetString, it.Date);
+        TGXCommon.SetData(data, TDataType.dtUInt8, it.DayId);
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      FreeAndNil(data);
     end;
-    Result := TValue.From(data.ToArray());
-    FreeAndNil(data);
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');

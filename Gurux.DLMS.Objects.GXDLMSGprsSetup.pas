@@ -120,24 +120,27 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //APN
-  if Not IsRead(2) Then
-    items.Add(2);
+    //APN
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //PINCode
-  if Not IsRead(3) Then
-    items.Add(3);
+    //PINCode
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //DefaultQualityOfService + RequestedQualityOfService
-  if Not IsRead(4) Then
-    items.Add(4);
+    //DefaultQualityOfService + RequestedQualityOfService
+    if Not IsRead(4) Then
+      items.Add(4);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSGprsSetup.GetAttributeCount: Integer;
@@ -191,44 +194,48 @@ begin
   else if e.Index = 4 then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtStructure));
-    //Add count
-    data.Add(2);
-    data.Add(Integer(TDataType.dtStructure));
-    data.Add(5);
-    if FDefaultQualityOfService <> Nil Then
-    begin
-      TGXCommon.SetData(data, TDataType.dtUInt8, DefaultQualityOfService.Precedence);
-      TGXCommon.SetData(data, TDataType.dtUInt8, DefaultQualityOfService.Delay);
-      TGXCommon.SetData(data, TDataType.dtUInt8, DefaultQualityOfService.Reliability);
-      TGXCommon.SetData(data, TDataType.dtUInt8, DefaultQualityOfService.PeakThroughput);
-      TGXCommon.SetData(data, TDataType.dtUInt8, DefaultQualityOfService.MeanThroughput);
-    end
-    else
-    begin
-      TGXCommon.SetData(data, TDataType.dtUInt8, 0);
-      TGXCommon.SetData(data, TDataType.dtUInt8, 0);
-      TGXCommon.SetData(data, TDataType.dtUInt8, 0);
-      TGXCommon.SetData(data, TDataType.dtUInt8, 0);
-      TGXCommon.SetData(data, TDataType.dtUInt8, 0);
-    end;
-    data.Add(Integer(TDataType.dtStructure));
-    data.Add(5);
-    if FRequestedQualityOfService <> Nil Then
-    begin
-      TGXCommon.SetData(data, TDataType.dtUInt8, RequestedQualityOfService.Precedence);
-      TGXCommon.SetData(data, TDataType.dtUInt8, RequestedQualityOfService.Delay);
-      TGXCommon.SetData(data, TDataType.dtUInt8, RequestedQualityOfService.Reliability);
-      TGXCommon.SetData(data, TDataType.dtUInt8, RequestedQualityOfService.PeakThroughput);
-      TGXCommon.SetData(data, TDataType.dtUInt8, RequestedQualityOfService.MeanThroughput);
-    end
-    else
-    begin
-      TGXCommon.SetData(data, TDataType.dtUInt8, 0);
-      TGXCommon.SetData(data, TDataType.dtUInt8, 0);
-      TGXCommon.SetData(data, TDataType.dtUInt8, 0);
-      TGXCommon.SetData(data, TDataType.dtUInt8, 0);
-      TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+    try
+      data.Add(Integer(TDataType.dtStructure));
+      //Add count
+      data.Add(2);
+      data.Add(Integer(TDataType.dtStructure));
+      data.Add(5);
+      if FDefaultQualityOfService <> Nil Then
+      begin
+        TGXCommon.SetData(data, TDataType.dtUInt8, DefaultQualityOfService.Precedence);
+        TGXCommon.SetData(data, TDataType.dtUInt8, DefaultQualityOfService.Delay);
+        TGXCommon.SetData(data, TDataType.dtUInt8, DefaultQualityOfService.Reliability);
+        TGXCommon.SetData(data, TDataType.dtUInt8, DefaultQualityOfService.PeakThroughput);
+        TGXCommon.SetData(data, TDataType.dtUInt8, DefaultQualityOfService.MeanThroughput);
+      end
+      else
+      begin
+        TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+        TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+        TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+        TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+        TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+      end;
+      data.Add(Integer(TDataType.dtStructure));
+      data.Add(5);
+      if FRequestedQualityOfService <> Nil Then
+      begin
+        TGXCommon.SetData(data, TDataType.dtUInt8, RequestedQualityOfService.Precedence);
+        TGXCommon.SetData(data, TDataType.dtUInt8, RequestedQualityOfService.Delay);
+        TGXCommon.SetData(data, TDataType.dtUInt8, RequestedQualityOfService.Reliability);
+        TGXCommon.SetData(data, TDataType.dtUInt8, RequestedQualityOfService.PeakThroughput);
+        TGXCommon.SetData(data, TDataType.dtUInt8, RequestedQualityOfService.MeanThroughput);
+      end
+      else
+      begin
+        TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+        TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+        TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+        TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+        TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+      end;
+    finally
+      data.Free;
     end;
     Result := TValue.From(data.ToArray());
   end

@@ -160,44 +160,47 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //ObjectList is static and read only once.
-  if Not IsRead(2) Then
-    items.Add(2);
+    //ObjectList is static and read only once.
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //associated_partners_id is static and read only once.
-  if Not IsRead(3) Then
-    items.Add(3);
+    //associated_partners_id is static and read only once.
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //Application Context Name is static and read only once.
-  if Not IsRead(4) Then
-    items.Add(4);
+    //Application Context Name is static and read only once.
+    if Not IsRead(4) Then
+      items.Add(4);
 
-  //xDLMS Context Info
-  if Not IsRead(5) Then
-    items.Add(5);
+    //xDLMS Context Info
+    if Not IsRead(5) Then
+      items.Add(5);
 
-  // Authentication Mechanism Name
-  if Not IsRead(6) Then
-    items.Add(6);
+    // Authentication Mechanism Name
+    if Not IsRead(6) Then
+      items.Add(6);
 
-  // Secret
-  if Not IsRead(7) Then
-    items.Add(7);
+    // Secret
+    if Not IsRead(7) Then
+      items.Add(7);
 
-  // Association Status
-  if Not IsRead(8) Then
-    items.Add(8);
+    // Association Status
+    if Not IsRead(8) Then
+      items.Add(8);
 
-  //Security Setup Reference is from version 1.
-  if (Version > 0) and (Not IsRead(9)) Then
-    items.Add(9);
+    //Security Setup Reference is from version 1.
+    if (Version > 0) and (Not IsRead(9)) Then
+      items.Add(9);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSAssociationLogicalName.GetAttributeCount: Integer;
@@ -339,64 +342,79 @@ begin
   else if e.Index = 3 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtArray));
-    //Add count
-    data.SetUInt8(2);
-    data.SetUInt8(Integer(TDataType.dtUInt8));
-    data.Add(FClientSAP);
-    data.SetUInt8(Integer(TDataType.dtUInt16));
-    data.SetUInt16(FServerSAP);
-    Result := TValue.From(data.ToArray());
-    FreeAndNil(data);
+    try
+      data.Add(Integer(TDataType.dtArray));
+      //Add count
+      data.SetUInt8(2);
+      data.SetUInt8(Integer(TDataType.dtUInt8));
+      data.Add(FClientSAP);
+      data.SetUInt8(Integer(TDataType.dtUInt16));
+      data.SetUInt16(FServerSAP);
+      Result := TValue.From(data.ToArray());
+    finally
+      FreeAndNil(data);
+    end;
   end
   else if (e.Index = 4) Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtStructure));
-    //Add count
-    data.SetUInt8(7);
-    TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.JointIsoCtt);
-    TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.Country);
-    TGXCommon.SetData(data, TDataType.dtUInt16, ApplicationContextName.CountryName);
-    TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.IdentifiedOrganization);
-    TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.DlmsUA);
-    TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.ApplicationContext);
-    TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.ContextId);
-    Result := TValue.From(data.ToArray());
-    FreeAndNil(data);
+    try
+      data.Add(Integer(TDataType.dtStructure));
+      //Add count
+      data.SetUInt8(7);
+      TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.JointIsoCtt);
+      TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.Country);
+      TGXCommon.SetData(data, TDataType.dtUInt16, ApplicationContextName.CountryName);
+      TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.IdentifiedOrganization);
+      TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.DlmsUA);
+      TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.ApplicationContext);
+      TGXCommon.SetData(data, TDataType.dtUInt8, ApplicationContextName.ContextId);
+      Result := TValue.From(data.ToArray());
+    finally
+      FreeAndNil(data);
+    end;
   end
   else if (e.Index = 5) Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtStructure));
-    data.SetUInt8(6);
-    bb := TGXByteBuffer.Create();
-    bb.SetUInt32(Integer(XDLMSContextInfo.Conformance));
-    TGXCommon.SetData(data, TDataType.dtBitString, TValue.From(bb.SubArray(1, 3)));
-    TGXCommon.SetData(data, TDataType.dtUInt16, XDLMSContextInfo.MaxReceivePduSize);
-    TGXCommon.SetData(data, TDataType.dtUInt16, XDLMSContextInfo.MaxSendPduSize);
-    TGXCommon.SetData(data, TDataType.dtUInt8, XDLMSContextInfo.DlmsVersionNumber);
-    TGXCommon.SetData(data, TDataType.dtInt8, XDLMSContextInfo.QualityOfService);
-    TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(XDLMSContextInfo.CypheringInfo));
-    Result := TValue.From(data.ToArray());
-    FreeAndNil(bb);
-    FreeAndNil(data);
+    try
+      data.Add(Integer(TDataType.dtStructure));
+      data.SetUInt8(6);
+      bb := TGXByteBuffer.Create();
+      try
+        bb.SetUInt32(Integer(XDLMSContextInfo.Conformance));
+        TGXCommon.SetData(data, TDataType.dtBitString, TValue.From(bb.SubArray(1, 3)));
+        TGXCommon.SetData(data, TDataType.dtUInt16, XDLMSContextInfo.MaxReceivePduSize);
+        TGXCommon.SetData(data, TDataType.dtUInt16, XDLMSContextInfo.MaxSendPduSize);
+        TGXCommon.SetData(data, TDataType.dtUInt8, XDLMSContextInfo.DlmsVersionNumber);
+        TGXCommon.SetData(data, TDataType.dtInt8, XDLMSContextInfo.QualityOfService);
+        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(XDLMSContextInfo.CypheringInfo));
+        Result := TValue.From(data.ToArray());
+      finally
+        FreeAndNil(bb);
+      end;
+    finally
+      FreeAndNil(data);
+    end;
   end
   else if (e.Index = 6) Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtStructure));
-    //Add count
-    data.SetUInt8(7);
-    TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.JointIsoCtt);
-    TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.Country);
-    TGXCommon.SetData(data, TDataType.dtUInt16, FAuthenticationMechanismName.CountryName);
-    TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.IdentifiedOrganization);
-    TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.DlmsUA);
-    TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.AuthenticationMechanismName);
-    TGXCommon.SetData(data, TDataType.dtUInt8, Integer(FAuthenticationMechanismName.MechanismId));
-    Result := TValue.From(data.ToArray());
-    FreeAndNil(data);
+    try
+      data.Add(Integer(TDataType.dtStructure));
+      //Add count
+      data.SetUInt8(7);
+      TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.JointIsoCtt);
+      TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.Country);
+      TGXCommon.SetData(data, TDataType.dtUInt16, FAuthenticationMechanismName.CountryName);
+      TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.IdentifiedOrganization);
+      TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.DlmsUA);
+      TGXCommon.SetData(data, TDataType.dtUInt8, FAuthenticationMechanismName.AuthenticationMechanismName);
+      TGXCommon.SetData(data, TDataType.dtUInt8, Integer(FAuthenticationMechanismName.MechanismId));
+      Result := TValue.From(data.ToArray());
+    finally
+      FreeAndNil(data);
+    end;
   end
   else if e.Index = 7 Then
   begin
@@ -494,10 +512,13 @@ begin
   else if e.Index = 5 Then
   begin
     bb := TGXByteBuffer.Create(4);
-    TGXCommon.SetBitString(bb, e.Value.GetArrayElement(0).AsType<TValue>.ToString);
-    bb.SetUInt8(0, 0);
-    FXDLMSContextInfo.Conformance := TConformance(bb.GetUInt32());
-    FreeAndNil(bb);
+    try
+      TGXCommon.SetBitString(bb, e.Value.GetArrayElement(0).AsType<TValue>.ToString);
+      bb.SetUInt8(0, 0);
+      FXDLMSContextInfo.Conformance := TConformance(bb.GetUInt32());
+    finally
+      FreeAndNil(bb);
+    end;
     FXDLMSContextInfo.MaxReceivePduSize := e.Value.GetArrayElement(1).AsType<TValue>.AsInteger;
     FXDLMSContextInfo.MaxSendPduSize := e.Value.GetArrayElement(2).AsType<TValue>.AsInteger;
     FXDLMSContextInfo.DlmsVersionNumber := e.Value.GetArrayElement(3).AsType<TValue>.AsInteger;

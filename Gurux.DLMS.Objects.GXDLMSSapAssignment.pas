@@ -98,16 +98,19 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //SapAssignmentList
-  if Not IsRead(2) Then
-    items.Add(2);
+    //SapAssignmentList
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSSapAssignment.GetAttributeCount: Integer;
@@ -146,22 +149,26 @@ begin
   else if e.Index = 2 Then
   begin
     data := TGXByteBuffer.Create;
-    if SapAssignmentList = Nil Then
-      TGXCommon.SetObjectCount(0, data)
-    else
-    begin
-      data.Add(Integer(TDataType.dtArray));
-      //Add count
-      TGXCommon.SetObjectCount(FSapAssignmentList.Count, data);
-      for it in FSapAssignmentList do
+    try
+      if SapAssignmentList = Nil Then
+        TGXCommon.SetObjectCount(0, data)
+      else
       begin
-          data.Add(Integer(TDataType.dtStructure));
-          data.Add(2); //Count
-          TGXCommon.SetData(data, TDataType.dtUInt16, it.Key);
-          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(it.Value)));
+        data.Add(Integer(TDataType.dtArray));
+        //Add count
+        TGXCommon.SetObjectCount(FSapAssignmentList.Count, data);
+        for it in FSapAssignmentList do
+        begin
+            data.Add(Integer(TDataType.dtStructure));
+            data.Add(2); //Count
+            TGXCommon.SetData(data, TDataType.dtUInt16, it.Key);
+            TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(it.Value)));
+        end;
       end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');

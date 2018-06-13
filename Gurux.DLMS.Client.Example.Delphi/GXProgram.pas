@@ -216,7 +216,9 @@ begin
       if (it is TGXDLMSDemandRegister) Then
         list.Add(TPair<TGXDLMSObject, Integer>.Create(it, 4));
       end;
-      ReadList(list);
+
+      if list.Count <> 0 Then
+        ReadList(list);
     end;
   except
   on E: Exception do
@@ -795,7 +797,7 @@ begin
       writeln('Parsing AARE reply: ');
     Client.ParseAAREResponse(reply.Data);
     reply.Clear;
-    if Client.IsAuthenticationRequired then
+    if Client.Authentication > TAuthentication.atLow then
     begin
       for data in Client.GetApplicationAssociationRequest do
       begin

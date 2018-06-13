@@ -130,56 +130,59 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //MBusPortReference
-  if CanRead(2) Then
-    items.Add(2);
+    //MBusPortReference
+    if CanRead(2) Then
+      items.Add(2);
 
-  //CaptureDefinition
-  if CanRead(3) Then
-    items.Add(3);
+    //CaptureDefinition
+    if CanRead(3) Then
+      items.Add(3);
 
-  //CapturePeriod
-  if CanRead(4) Then
-    items.Add(4);
+    //CapturePeriod
+    if CanRead(4) Then
+      items.Add(4);
 
-  //PrimaryAddress
-  if CanRead(5) Then
-    items.Add(5);
+    //PrimaryAddress
+    if CanRead(5) Then
+      items.Add(5);
 
-  //IdentificationNumber
-  if CanRead(6) Then
-    items.Add(6);
+    //IdentificationNumber
+    if CanRead(6) Then
+      items.Add(6);
 
-  //ManufacturerID
-  if CanRead(7) Then
-    items.Add(7);
+    //ManufacturerID
+    if CanRead(7) Then
+      items.Add(7);
 
-  //Version
-  if CanRead(8) Then
-    items.Add(8);
+    //Version
+    if CanRead(8) Then
+      items.Add(8);
 
-  //DeviceType
-  if CanRead(9) Then
-    items.Add(9);
+    //DeviceType
+    if CanRead(9) Then
+      items.Add(9);
 
-  //AccessNumber
-  if CanRead(10) Then
-    items.Add(10);
+    //AccessNumber
+    if CanRead(10) Then
+      items.Add(10);
 
-  //Status
-  if CanRead(11) Then
-    items.Add(11);
+    //Status
+    if CanRead(11) Then
+      items.Add(11);
 
-  //Alarm
-  if CanRead(12) Then
-    items.Add(12);
+    //Alarm
+    if CanRead(12) Then
+      items.Add(12);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSMBusClient.GetAttributeCount: Integer;

@@ -117,32 +117,35 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //Port
-  if Not IsRead(2) Then
-    items.Add(2);
+    //Port
+    if Not IsRead(2) Then
+      items.Add(2);
 
-  //IPReference
-  if Not IsRead(3) Then
-    items.Add(3);
+    //IPReference
+    if Not IsRead(3) Then
+      items.Add(3);
 
-  //MaximumSegmentSize
-  if Not IsRead(4) Then
-    items.Add(4);
+    //MaximumSegmentSize
+    if Not IsRead(4) Then
+      items.Add(4);
 
-  //MaximumSimultaneousConnections
-  if Not IsRead(5) Then
-    items.Add(5);
+    //MaximumSimultaneousConnections
+    if Not IsRead(5) Then
+      items.Add(5);
 
-  //InactivityTimeout
-  if Not IsRead(6) Then
-    items.Add(6);
+    //InactivityTimeout
+    if Not IsRead(6) Then
+      items.Add(6);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSTcpUdpSetup.GetAttributeCount: Integer;

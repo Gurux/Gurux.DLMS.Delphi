@@ -58,9 +58,15 @@ TGXDLMSLNParameters = class
   FLastBlock: Boolean;
   // Block index.
   FBlockIndex: Cardinal;
+  //Block number ack.
+  FBlockNumberAck: WORD;
 
   // Received invoke ID.
   FInvokeId: Cardinal;
+
+  FWindowSize: Byte;
+
+  FStreaming: Boolean;
 
   // Constructor.
   // <param name="ASettings">DLMS settings.</param>
@@ -96,6 +102,11 @@ TGXDLMSLNParameters = class
   property BlockIndex: Cardinal read FBlockIndex write FBlockIndex;
   // Received invoke ID.
   property InvokeId: Cardinal read FInvokeId write FInvokeId;
+
+  property WindowSize: Byte read FWindowSize write FWindowSize;
+  property Streaming: Boolean read FStreaming write FStreaming;
+
+  property BlockNumberAck: WORD read FBlockNumberAck write FBlockNumberAck;
 end;
 
 implementation
@@ -114,5 +125,8 @@ implementation
     FStatus := AStatus;
     FMultipleBlocks := ASettings.Count <> ASettings.Index;
     FLastBlock := ASettings.Count = ASettings.Index;
+    FStreaming := false;
+    WindowSize := 1;
+    FBlockNumberAck := 0;
   end;
 end.

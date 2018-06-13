@@ -415,35 +415,35 @@ var
 begin
   RS := TResourceStream.Create(HInstance, Name, 'Text');
   try
-  RS.Read(wx,2);
-  //UTF16
-  if wx=$FEFF then
-  begin
-    len :=(RS.Size div 2) - 1;
-    SetLength(Result, len);
-    RS.Read(Result[1], len *2);
-  end
-  else
+    RS.Read(wx,2);
+    //UTF16
+    if wx=$FEFF then
     begin
-    len:=0;
-    if wx=$BBEF then RS.Read(len, 1);
-
-    //UTF-8
-    if (wx=$BBEF) and (len = $BF) then
-    begin
-      len:= RS.Size - 3;
-      SetLength(str, len);
-      RS.Read(str[1], len);
-      Result:=UTF8ToString(str);
+      len :=(RS.Size div 2) - 1;
+      SetLength(Result, len);
+      RS.Read(Result[1], len *2);
     end
     else
-    begin
-      RS.Position := 0;
-      SetLength(str, RS.Size);
-      RS.Read(str[1], RS.Size);
-      Result := string(str);
+      begin
+      len:=0;
+      if wx=$BBEF then RS.Read(len, 1);
+
+      //UTF-8
+      if (wx=$BBEF) and (len = $BF) then
+      begin
+        len:= RS.Size - 3;
+        SetLength(str, len);
+        RS.Read(str[1], len);
+        Result:=UTF8ToString(str);
+      end
+      else
+      begin
+        RS.Position := 0;
+        SetLength(str, RS.Size);
+        RS.Read(str[1], RS.Size);
+        Result := string(str);
+      end;
     end;
-  end;
   finally
     RS.Free;
   end;
@@ -463,7 +463,7 @@ begin
     else if (Result = $84) then
       Result := data.GetUInt32()
     else
-    raise EArgumentException.Create('Invalid count.');
+      raise EArgumentException.Create('Invalid count.');
 end;
 
 // Get data from DLMS frame.
@@ -572,32 +572,39 @@ begin
     Exit;
   end;
   startIndex := index;
+
   arr := TList<TValue>.Create();
-  pos := 0;
-  // Position where last row was found. Cache uses this info.
-  for pos := info.Index to info.Count - 1 do
-  begin
-    try
+  try
+
+    pos := 0;
+    // Position where last row was found. Cache uses this info.
+    for pos := info.Index to info.Count - 1 do
+    begin
       info2 := TGXDataInfo.Create();
-      tmp := GetData(buff, info2);
-      if info2.Complete = False then
-      begin
-        buff.position(startIndex);
-        info.Complete := False;
-        break;
-      end
-      else if info2.Count = info2.Index then
-      begin
-        startIndex := buff.Position;
-        arr.add(tmp.AsType<TValue>);
+      try
+        tmp := GetData(buff, info2);
+        if info2.Complete = False then
+        begin
+          buff.position(startIndex);
+          info.Complete := False;
+          break;
+        end
+        else if info2.Count = info2.Index then
+        begin
+          startIndex := buff.Position;
+          arr.add(tmp.AsType<TValue>);
+        end;
+      finally
+        FreeAndNil(info2);
       end;
-    finally
-      FreeAndNil(info2);
     end;
+    info.Index := pos;
+    Result := TValue.From(arr.ToArray());
+
+  finally
+    FreeAndNil(arr);
   end;
-  info.Index := pos;
-  Result := TValue.From(arr.ToArray());
-  FreeAndNil(arr);
+
 end;
 
 // Get time from DLMS data.
@@ -719,20 +726,29 @@ begin
   min := buff.GetUInt8();
   sec := buff.GetUInt8();
   ms := buff.GetUInt8();
+
   dt := TGXDateTime.Create(year, month, day, hour, min, sec, ms);
-  deviation := buff.getInt16();
-  if (deviation = -32768) Then
-  begin
-    skip := skip or Integer(TDateTimeSkips.dkDeviation);
-    dt.Skip := TDateTimeSkips(Integer(dt.Skip) or skip);
-  end
-  else
-  begin
-    deviation := Round(TTimeZone.Local.UtcOffset.TotalMinutes) + deviation;
-    dt.Value := IncMinute(dt.Value, deviation);
+  try
+
+    deviation := buff.getInt16();
+    if (deviation = -32768) Then
+    begin
+      dt.TimeZone := -32768;
+      skip := skip or Integer(TDateTimeSkips.dkDeviation);
+      dt.Skip := TDateTimeSkips(Integer(dt.Skip) or skip);
+    end
+    else
+    begin
+      dt.TimeZone := deviation;
+    end;
+    dt.Status := TClockStatus(buff.GetUInt8());
+  except
+    dt.Free;
+    raise;
   end;
-  dt.Status := TClockStatus(buff.GetUInt8());
+
   Result := TValue.From(dt);
+
 end;
 
 // Get double value from DLMS data.
@@ -1034,14 +1050,19 @@ begin
     info.Complete := False;
     Exit;
   end;
+
   sb := TStringBuilder.Create;
-  while cnt > 0 do
-  begin
-    toBitString(sb, buff.getInt8(), cnt);
-    cnt := cnt - 8;
+  try
+    while cnt > 0 do
+    begin
+      toBitString(sb, buff.getInt8(), cnt);
+      cnt := cnt - 8;
+    end;
+    Result := sb.ToString();
+  finally
+    sb.Free;
   end;
-  Result := sb.ToString();
-  sb.Free;
+
 end;
 
 // Get boolean value from DLMS data.
@@ -1230,7 +1251,7 @@ if value.IsType<TTime> Then
    end
    else if value.IsType<TGXDateTime> Then
    begin
-    tm := value.AsType<TGXDateTime>.Value;
+    tm := value.AsType<TGXDateTime>.Time;
     skip := Integer(value.AsType<TGXDateTime>.Skip);
    end
    else
@@ -1279,7 +1300,7 @@ begin
   end
   else if value.IsType<TGXDateTime> Then
   begin
-    dt := value.AsType<TGXDateTime>.Value;
+    dt := value.AsType<TGXDateTime>.Time;
     skip := Integer(value.AsType<TGXDateTime>.Skip);
   end
   else
@@ -1318,7 +1339,6 @@ var
   tm: TDateTime;
   skip, deviation: Integer;
   status: TClockStatus;
-
 begin
   status := TClockStatus.ctNone;
   deviation := $8000;
@@ -1339,9 +1359,9 @@ begin
   end
   else if value.IsType<TGXDateTime> Then
   begin
-    tm := value.AsType<TGXDateTime>.Value;
+    tm := value.AsType<TGXDateTime>.Time;
     skip := Integer(value.AsType<TGXDateTime>.Skip);
-    deviation := -value.AsType<TGXDateTime>.TimeZone;
+    deviation := value.AsType<TGXDateTime>.TimeZone;
     status := value.AsType<TGXDateTime>.Status;
   end
   else
@@ -1373,11 +1393,17 @@ begin
   // Week day is not specified.
     buff.SetUInt8($FF)
   else
-    if System.SysUtils.DayOfWeek(tm) = 0 Then
+  begin
+  {$IFDEF VER260}
+    //If Sunday.
+    if System.SysUtils.DayOfWeek(tm) = 1 Then
       buff.SetUInt8(7)
     else
-      buff.SetUInt8(System.SysUtils.DayOfWeek(tm));
-
+      buff.SetUInt8(System.SysUtils.DayOfWeek(tm) - 1);
+  {$ELSE}
+    buff.SetUInt8(System.SysUtils.DayOfTheWeek(tm));
+  {$ENDIF}
+  end;
     // Add time.
   if skip and Integer(TDateTimeSkips.dkHour) <> 0 Then
     buff.SetUInt8($FF)
@@ -1409,13 +1435,10 @@ begin
 
   // Add clock_status
   if skip and Integer(TDateTimeSkips.dkDeviation) <> 0 Then
-    if Integer(status) and Integer(TClockStatus.ctDaylightSavingActive) <> 0 Then
-      buff.setUInt8(Integer(status) or Integer(TClockStatus.ctDaylightSavingActive))
-    else
-      buff.SetUInt8(Integer(status))
-  else
     // Status is not used.
-    buff.setUInt8($FF);
+    buff.SetUInt8($FF)
+  else
+    buff.SetUInt8(Integer(Status));
 end;
 
 // Convert BCD to DLMS bytes.
@@ -1535,8 +1558,8 @@ class function TGXCommon.ChangeType(value: TBytes; tp: TDataType): TValue;
 var
  bb: TGXByteBuffer;
 begin
+  bb := TGXByteBuffer.Create(value);
   try
-    bb := TGXByteBuffer.Create(value);
     Result := ChangeType(bb, tp);
   finally
     FreeAndNil(bb);
@@ -1584,15 +1607,16 @@ begin
   end;
 
   info := TGXDataInfo.Create();
-  info.&Type := tp;
   try
+    info.&Type := tp;
     Result := TGXCommon.GetData(value, info);
     if Not info.Complete Then
       raise Exception.Create('OutOfMemoryException');
   finally
     freeAndNil(info);
   end;
-  end;
+
+end;
 
 class function TGXCommon.LogicalNameToBytes(value: String): LogicalName;
 var
@@ -1777,31 +1801,40 @@ var
   c: TGXCmdParameter;
 begin
   index := 1;
+
   Result := TObjectList<TGXCmdParameter>.Create();
-  while index <= ParamCount do
-  begin
-    str := ParamStr(index);
+  try
 
-    if (str.Chars[0] <> '-') and (str.Chars[0] <> '/') Then
-      raise EArgumentException.Create('Invalid parameter: ' + str);
-
-    pos := optstring.IndexOf(str.Chars[1]);
-    if pos = -1 Then
-      raise EArgumentException.Create('Invalid parameter: ' + str);
-
-    c := TGXCmdParameter.Create();
-    c.Tag := str.Chars[1];
-    Result.Add(c);
-    if (pos < Length(optstring) -1 )and (optstring.Chars[1 + pos] = ':') Then
+    while index <= ParamCount do
     begin
-      index := index + 1;
-      if ParamCount <= index Then
-        c.Missing := true;
+      str := ParamStr(index);
 
-      c.Value := ParamStr(index);
+      if (str.Chars[0] <> '-') and (str.Chars[0] <> '/') Then
+        raise EArgumentException.Create('Invalid parameter: ' + str);
+
+      pos := optstring.IndexOf(str.Chars[1]);
+      if pos = -1 Then
+        raise EArgumentException.Create('Invalid parameter: ' + str);
+
+      c := TGXCmdParameter.Create();
+      c.Tag := str.Chars[1];
+      Result.Add(c);
+      if (pos < Length(optstring) -1 )and (optstring.Chars[1 + pos] = ':') Then
+      begin
+        index := index + 1;
+        if ParamCount <= index Then
+          c.Missing := true;
+
+        c.Value := ParamStr(index);
+      end;
+      index := index + 1;
     end;
-    index := index + 1;
+
+  except
+    result.Free;
+    raise;
   end;
+
 end;
 
 end.

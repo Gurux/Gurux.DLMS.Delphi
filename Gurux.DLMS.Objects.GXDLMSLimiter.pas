@@ -156,52 +156,55 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //MonitoredValue
-  if CanRead(2) Then
-    items.Add(2);
+    //MonitoredValue
+    if CanRead(2) Then
+      items.Add(2);
 
-  //ThresholdActive
-  if CanRead(3) Then
-    items.Add(3);
+    //ThresholdActive
+    if CanRead(3) Then
+      items.Add(3);
 
-  //ThresholdNormal
-  if CanRead(4) Then
-    items.Add(4);
+    //ThresholdNormal
+    if CanRead(4) Then
+      items.Add(4);
 
-  //ThresholdEmergency
-  if CanRead(5) Then
-    items.Add(5);
+    //ThresholdEmergency
+    if CanRead(5) Then
+      items.Add(5);
 
-  //MinOverThresholdDuration
-  if CanRead(6) Then
-    items.Add(6);
+    //MinOverThresholdDuration
+    if CanRead(6) Then
+      items.Add(6);
 
-  //MinUnderThresholdDuration
-  if CanRead(7) Then
-    items.Add(7);
+    //MinUnderThresholdDuration
+    if CanRead(7) Then
+      items.Add(7);
 
-  //EmergencyProfile
-  if CanRead(8) Then
-    items.Add(8);
+    //EmergencyProfile
+    if CanRead(8) Then
+      items.Add(8);
 
-  //EmergencyProfileGroup
-  if CanRead(9) Then
-    items.Add(9);
+    //EmergencyProfileGroup
+    if CanRead(9) Then
+      items.Add(9);
 
-  //EmergencyProfileActive
-  if CanRead(10) Then
-    items.Add(10);
+    //EmergencyProfileActive
+    if CanRead(10) Then
+      items.Add(10);
 
-  //Actions
-  if CanRead(11) Then
-    items.Add(11);
+    //Actions
+    if CanRead(11) Then
+      items.Add(11);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSLimiter.GetAttributeCount: Integer;
@@ -274,22 +277,25 @@ begin
   else if (e.Index = 2) Then
   begin
     data := TGXByteBuffer.Create();
-    data.SetUInt8(Integer(TDataType.dtStructure));
-    data.SetUInt8(3);
-    if (MonitoredValue = Nil) Then
-    begin
-      TGXCommon.SetData(data, TDataType.dtInt16, 0);
-      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes('')));
-      TGXCommon.SetData(data, TDataType.dtUInt8, 0);
-    end
-    else
-    begin
-      TGXCommon.SetData(data, TDataType.dtInt16, TValue.From(FMonitoredValue.ObjectType));
-      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(FMonitoredValue.LogicalName)));
-      TGXCommon.SetData(data, TDataType.dtUInt8, FMonitoredAttributeIndex);
+    try
+      data.SetUInt8(Integer(TDataType.dtStructure));
+      data.SetUInt8(3);
+      if (MonitoredValue = Nil) Then
+      begin
+        TGXCommon.SetData(data, TDataType.dtInt16, 0);
+        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes('')));
+        TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+      end
+      else
+      begin
+        TGXCommon.SetData(data, TDataType.dtInt16, TValue.From(FMonitoredValue.ObjectType));
+        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(FMonitoredValue.LogicalName)));
+        TGXCommon.SetData(data, TDataType.dtUInt8, FMonitoredAttributeIndex);
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      FreeAndNil(data);
     end;
-    Result := TValue.From(data.ToArray());
-    FreeAndNil(data);
   end
   else if (e.Index = 3) Then
     Result := FThresholdActive
@@ -304,46 +310,55 @@ begin
   else if (e.Index = 8) Then
   begin
     data := TGXByteBuffer.Create();
-    data.SetUInt8(Integer(TDataType.dtStructure));
-    data.SetUInt8(3);
-    TGXCommon.SetData(data, TDataType.dtUInt16, EmergencyProfile.ID);
-    TGXCommon.SetData(data, TDataType.dtOctetString, EmergencyProfile.ActivationTime);
-    TGXCommon.SetData(data, TDataType.dtUInt32, EmergencyProfile.Duration);
-    Result := TValue.From(data.ToArray());
-    FreeAndNil(data);
+    try
+      data.SetUInt8(Integer(TDataType.dtStructure));
+      data.SetUInt8(3);
+      TGXCommon.SetData(data, TDataType.dtUInt16, EmergencyProfile.ID);
+      TGXCommon.SetData(data, TDataType.dtOctetString, EmergencyProfile.ActivationTime);
+      TGXCommon.SetData(data, TDataType.dtUInt32, EmergencyProfile.Duration);
+      Result := TValue.From(data.ToArray());
+    finally
+      FreeAndNil(data);
+    end;
   end
   else if (e.Index = 9) Then
   begin
     data := TGXByteBuffer.Create();
-    data.SetUInt8(Integer(TDataType.dtArray));
-    if (EmergencyProfileGroupIDs = Nil) Then
-      data.SetUInt8(0)
-    else
-    begin
-      data.SetUInt8(FEmergencyProfileGroupIDs.Count);
-      for it in FEmergencyProfileGroupIDs do
-        TGXCommon.SetData(data, TDataType.dtUInt16, it);
+    try
+      data.SetUInt8(Integer(TDataType.dtArray));
+      if (EmergencyProfileGroupIDs = Nil) Then
+        data.SetUInt8(0)
+      else
+      begin
+        data.SetUInt8(FEmergencyProfileGroupIDs.Count);
+        for it in FEmergencyProfileGroupIDs do
+          TGXCommon.SetData(data, TDataType.dtUInt16, it);
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      FreeAndNil(data);
     end;
-    Result := TValue.From(data.ToArray());
-    FreeAndNil(data);
   end
   else if (e.Index = 10) Then
     Result := FEmergencyProfileActive
   else if (e.Index = 11) Then
   begin
     data := TGXByteBuffer.Create();
-    data.SetUInt8(Integer(TDataType.dtStructure));
-    data.SetUInt8(2);
-    data.SetUInt8(Integer(TDataType.dtStructure));
-    data.SetUInt8(2);
-    TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(ActionOverThreshold.LogicalName)));
-    TGXCommon.SetData(data, TDataType.dtUInt16, ActionOverThreshold.ScriptSelector);
-    data.SetUInt8(Integer(TDataType.dtStructure));
-    data.SetUInt8(2);
-    TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(ActionUnderThreshold.LogicalName)));
-    TGXCommon.SetData(data, TDataType.dtUInt16, ActionUnderThreshold.ScriptSelector);
-    Result := TValue.From(data.ToArray());
-    FreeAndNil(data);
+    try
+      data.SetUInt8(Integer(TDataType.dtStructure));
+      data.SetUInt8(2);
+      data.SetUInt8(Integer(TDataType.dtStructure));
+      data.SetUInt8(2);
+      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(ActionOverThreshold.LogicalName)));
+      TGXCommon.SetData(data, TDataType.dtUInt16, ActionOverThreshold.ScriptSelector);
+      data.SetUInt8(Integer(TDataType.dtStructure));
+      data.SetUInt8(2);
+      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(ActionUnderThreshold.LogicalName)));
+      TGXCommon.SetData(data, TDataType.dtUInt16, ActionUnderThreshold.ScriptSelector);
+      Result := TValue.From(data.ToArray());
+    finally
+      FreeAndNil(data);
+    end;
   end
   else
     e.Error := TErrorCode.ecReadWriteDenied;

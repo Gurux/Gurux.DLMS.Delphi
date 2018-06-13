@@ -36,7 +36,8 @@ interface
 
 uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
 Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-Gurux.DLMS.GXDateTime, Gurux.DLMS.AutoConnectMode, GXByteBuffer;
+Gurux.DLMS.GXDateTime, Gurux.DLMS.AutoConnectMode, GXByteBuffer,
+Gurux.DLMS.IGXDLMSClient;
 
 type
 TGXDLMSAutoConnect = class(TGXDLMSObject)
@@ -78,6 +79,9 @@ TGXDLMSAutoConnect = class(TGXDLMSObject)
   function GetValue(e: TValueEventArgs): TValue;override;
   procedure SetValue(e: TValueEventArgs);override;
   function Invoke(e: TValueEventArgs): TBytes;override;
+
+  //Initiates the connection process.
+  function Connect(client: IGXDLMSClient) : TArray<TBytes>;
 end;
 
 implementation
@@ -116,6 +120,10 @@ begin
   end;
 end;
 
+function TGXDLMSAutoConnect.Connect(client: IGXDLMSClient) : TArray<TBytes>;
+begin
+  Result := client.Method(Self, 1, 0, TDataType.dtInt8);
+end;
 
 function TGXDLMSAutoConnect.GetValues() : TArray<TValue>;
 begin
@@ -128,32 +136,35 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //Mode
-  if CanRead(2) Then
-    items.Add(2);
+    //Mode
+    if CanRead(2) Then
+      items.Add(2);
 
-  //Repetitions
-  if CanRead(3) Then
-    items.Add(3);
+    //Repetitions
+    if CanRead(3) Then
+      items.Add(3);
 
-  //RepetitionDelay
-  if CanRead(4) Then
-    items.Add(4);
+    //RepetitionDelay
+    if CanRead(4) Then
+      items.Add(4);
 
-  //CallingWindow
-  if CanRead(5) Then
-    items.Add(5);
+    //CallingWindow
+    if CanRead(5) Then
+      items.Add(5);
 
-  //Destinations
-  if CanRead(6) Then
-    items.Add(6);
+    //Destinations
+    if CanRead(6) Then
+      items.Add(6);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSAutoConnect.GetAttributeCount: Integer;
@@ -163,7 +174,7 @@ end;
 
 function TGXDLMSAutoConnect.GetMethodCount: Integer;
 begin
-  Result := 0;
+  Result := 1;
 end;
 
 function TGXDLMSAutoConnect.GetDataType(index: Integer): TDataType;
@@ -296,11 +307,14 @@ begin
     if Not e.Value.IsEmpty Then
     begin
       items := TList<string>.Create;
-      for item in e.Value.AsType<TArray<TValue>> do
-        items.Add(TGXCommon.ChangeType(item.AsType<TBytes>, TDataType.dtString).ToString());
+      try
+        for item in e.Value.AsType<TArray<TValue>> do
+          items.Add(TGXCommon.ChangeType(item.AsType<TBytes>, TDataType.dtString).ToString());
 
-      FDestinations := items.ToArray();
-      FreeAndNil(items);
+        FDestinations := items.ToArray();
+      finally
+        FreeAndNil(items);
+      end;
     end;
   end
   else
@@ -309,7 +323,8 @@ end;
 
 function TGXDLMSAutoConnect.Invoke(e: TValueEventArgs): TBytes;
 begin
-  raise Exception.Create('Invoke failed. Invalid attribute index.');
+  if e.Index <> 1 then
+    raise Exception.Create('Invoke failed. Invalid attribute index.');
 end;
 
 end.
