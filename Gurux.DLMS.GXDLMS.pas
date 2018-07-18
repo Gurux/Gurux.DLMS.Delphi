@@ -1040,23 +1040,25 @@ var
   primaryAddress, secondaryAddress: TBytes;
 begin
   bb := TGXByteBuffer.Create();
-  len := 0;
   if settings.IsServer Then
   begin
     primaryAddress := getAddressBytes(settings.ClientAddress, 0);
     secondaryAddress := getAddressBytes(settings.ServerAddress,
       settings.ServerAddressSize);
+    len := Length(secondaryAddress);
   end
   else
   begin
     primaryAddress := getAddressBytes(settings.ServerAddress,
         settings.ServerAddressSize);
     secondaryAddress := getAddressBytes(settings.ClientAddress, 0);
+    len := Length(primaryAddress);
   end;
   // Add BOP
   bb.setUInt8(HDLCFrameStartEnd);
   frameSize := Integer(settings.Limits.MaxInfoTX);
-  frameSize := frameSize - 10 - Length(secondaryAddress);
+  frameSize := frameSize - 10 - len;
+  len := 0;
   // If no data
   if (data = Nil) or (data.Size = 0) Then
     bb.setUInt8($A0)
