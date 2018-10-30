@@ -128,6 +128,20 @@ type
     InformationReport = $18,
     // Event Notification request.
     EventNotification = $C2,
+    // Ded get request.
+    DedGetRequest = $D0,
+    // Ded get response.
+    DedGetResponse = $D4,
+    // Ded set request.
+    DedSetRequest = $D1,
+    // Ded set response.
+    DedSetResponse = $D5,
+    // Ded event notification request.
+    DedEventNotificationRequest = $D2,
+    // Ded method request.
+    DedMethodRequest = $D3,
+    // Ded method response.
+    DedMethodResponse = $D7,
     // Request message from client to gateway.
     GatewayRequest = $E6,
     // Response message from gateway to client.

@@ -40,30 +40,30 @@ Gurux.DLMS.DateTimeSkips, Gurux.DLMS.ClockStatus;
 type
   TGXDateTime = class
   private
-  FValue : TDateTime;
-  FSkip : TDateTimeSkips;
-  FDaylightSavingsBegin, FDaylightSavingsEnd : Boolean;
-  FStatus : TClockStatus;
-  FTimeZone : Integer;
-  function GetLocalTime : TDateTime;
+    FValue : TDateTime;
+    FDoW: Byte;
+    FSkip : TDateTimeSkipsSet;
+    FDaylightSavingsBegin, FDaylightSavingsEnd : Boolean;
+    FStatus : TClockStatus;
+    FTimeZone : Integer;
+    function GetLocalTime : TDateTime;
   public
     //Minimum date time value.
     class function MinDateTime : TDateTime; static;
 
     constructor Create(AValue: TDateTime = -1); overload;
-    constructor Create(year: Integer; month: Integer; day: Integer; hour: Integer; minute: Integer; second: Integer; millisecond: Integer); overload;
+    constructor Create(year: Integer; month: Integer; day: Integer; hour: Integer; minute: Integer; second: Integer; millisecond: Integer; dow: Integer); overload;
 
     //Convert meter time to local time.
     property LocalTime: TDateTime read GetLocalTime;
     //Get meter time.
     property Time: TDateTime read FValue write FValue;
-    property Skip: TDateTimeSkips read FSkip write FSkip;
+    property Skip: TDateTimeSkipsSet read FSkip write FSkip;
 
     property DaylightSavingsBegin: Boolean read FDaylightSavingsBegin write FDaylightSavingsBegin;
     property DaylightSavingsEnd: Boolean read FDaylightSavingsEnd write FDaylightSavingsEnd;
     //Status of the clock.
     property Status: TClockStatus read FStatus write FStatus;
-
     //Used time zone. In default it's not used.
     property TimeZone: Integer read FTimeZone write FTimeZone;
 
@@ -88,11 +88,8 @@ begin
 end;
 
 class function TGXDateTime.MinDateTime : TDateTime;
-var
-v :Double;
 begin
-  v := 2;
-  Result := TDateTime(v)//01 Jan 1900 has a days value of 2.
+  Result := EncodeDate(1900, 01, 01); //01 Jan 1900 has a days value of 2.
 end;
 
 constructor TGXDateTime.Create(AValue: TDateTime = -1);
@@ -101,7 +98,7 @@ var
 begin
   inherited Create;
   FStatus := TClockStatus.ctNone;
-  FSkip := TDateTimeSkips.dkNone;
+  FSkip.SetOnly(TDateTimeSkips.dkNone);
 
   if AValue < 0 then
     AValue := Now;
@@ -120,64 +117,109 @@ begin
   FValue := AValue;
 end;
 
-constructor TGXDateTime.Create(year: Integer; month: Integer; day: Integer; hour: Integer; minute: Integer; second: Integer; millisecond: Integer);
+constructor TGXDateTime.Create(year: Integer; month: Integer; day: Integer; hour: Integer; minute: Integer; second: Integer; millisecond: Integer; dow: Integer);
 begin
   Create;
-  if ((year < 1) or (year = 65535)) then
-  begin
-    //01 Jan 1900 has a days value of 2.
-    year := 2;
-    FSkip := TDateTimeSkips(Integer(FSkip) + Integer(TDateTimeSkips.dkYear));
+  case year of
+    0..65534: ;
+    $FFFF:
+    begin
+      year := 1900;
+      FSkip.Add(TDateTimeSkips.dkYear);
+    end;
+    else
+      raise Exception.CreateFmt('Illegal year used for date. %d-%d-%d is not a valid date.',[Year,Month,Day]);
   end;
 
   FDaylightSavingsBegin := month = $FE;
   FDaylightSavingsEnd := month = $FD;
-  if (month < 1) or (month = 255) then
-  begin
-    month := 1;
-    FSkip := TDateTimeSkips(Integer(FSkip) + Integer(TDateTimeSkips.dkMonth));
-  end
-  else if (month = 254) or (month = 253) then
-    month := 1;
 
-  if (day < 1) or (day = 255) then
-  begin
-    day := 1;
-    FSkip := TDateTimeSkips(Integer(FSkip) + Integer(TDateTimeSkips.dkDay));
-  end
-  else if day = $FD then
-  begin
-    day := DaysInMonth(EncodeDate(year,month, 1)) -1;
-  end
-  else if day = $FE then//Last day of the month.
-  begin
-    day := DaysInMonth(EncodeDate(year,month, 1));
-  end
-  else if ((day < 1) or (day > 31)) then
-    day := 1;
+  case month of
+    1..12: ;
+    $FD: month := 1;
+    $FE: month := 1;
+    $FF:
+    begin
+      month := 1;
+      FSkip.Add(TDateTimeSkips.dkMonth);
+    end;
+    else
+      raise Exception.CreateFmt('Illegal month used for date. %d-%d-%d is not a valid date.',[Year,Month,Day]);
+  end;
 
-  if (hour < 0) or (hour > 24) then
-  begin
-    hour := 0;
-    FSkip := TDateTimeSkips(Integer(FSkip) + Integer(TDateTimeSkips.dkHour));
+  case day of
+    1..31: ;
+    $FD: day := DaysInMonth(EncodeDate(year, month, 1)) - 1;
+    $FE: day := DaysInMonth(EncodeDate(year, month, 1));
+    $FF:
+    begin
+      day := 1;
+      FSkip.Add(TDateTimeSkips.dkDay);
+    end;
+    else
+      raise Exception.CreateFmt('Illegal day used for date. %d-%d-%d is not a valid date.',[Year,Month,Day]);
   end;
-  if (minute < 0) or (minute > 60) then
-  begin
-    minute := 0;
-    FSkip := TDateTimeSkips(Integer(FSkip) + Integer(TDateTimeSkips.dkMinute));
+
+  case hour of
+    0..23: ;
+    $FF:
+    begin
+      hour := 0;
+      FSkip.Add(TDateTimeSkips.dkHour);
+    end;
+    else
+      raise Exception.CreateFmt('Illegal hour used. %d is not a valid hour.',[Hour]);
   end;
-  if (second < 0) or (second > 60) then
-  begin
-    second := 0;
-    FSkip := TDateTimeSkips(Integer(FSkip) + Integer(TDateTimeSkips.dkSecond));
+
+  case minute of
+    0..59: ;
+    $FF:
+    begin
+      minute := 0;
+      FSkip.Add(TDateTimeSkips.dkMinute);
+    end;
+    else
+      raise Exception.CreateFmt('Illegal minute used. %d is not a valid minute.',[Minute]);
   end;
-  //If ms is Zero it's skipped.
-  if (millisecond < 1) or (millisecond > 60) then
-  begin
-    millisecond := 0;
-    FSkip := TDateTimeSkips(Integer(FSkip) + Integer(TDateTimeSkips.dkMs));
+
+  case second of
+    0..59: ;
+    $FF:
+    begin
+      second := 0;
+      FSkip.Add(TDateTimeSkips.dkSecond);
+    end;
+    else
+      raise Exception.CreateFmt('Illegal second used. %d is not a valid second.',[Second]);
   end;
+
+  case millisecond of
+    0..99: ;
+    $FF:
+    begin
+      millisecond := 0;
+      FSkip.Add(TDateTimeSkips.dkMs);
+    end;
+    else
+      raise Exception.CreateFmt('Illegal hundreths used. %d is not a valid hundreths value.',[millisecond*10]);
+  end;
+
+  case dow of
+    1 .. 7: FDoW := dow; // valid
+    $FF:
+    begin
+      FDoW := dow;
+      FSkip.Add(TDateTimeSkips.dkDayOfWeek);
+    end;
+    else
+      raise Exception.CreateFmt('Illegal day of week used. %d is not a valid date.',[DoW]);
+  end;
+
   FValue := EncodeDateTime(year, month, day, hour, minute, second, millisecond);
+
+  if (dow <> DayOfTheWeek(FValue)) and (dow <> $FF) then
+    if not FSkip.Contains(TDateTimeSkips.dkYear) then
+      raise Exception.CreateFmt('Illegal day of week used. %s is not the %d-th day of the week.',[self.toString, dow]);
 end;
 
 function TGXDateTime.ToString: string;
@@ -187,7 +229,7 @@ var
   tmp : Integer;
 begin
 {$IFDEF MSWINDOWS}
-  if (Self.Skip <> TDateTimeSkips.dkNone) then
+  if FSkip.IsEmpty then
   begin
     tmp := Integer(FSkip);
     formatSettings := TFormatSettings.Create();
@@ -196,11 +238,11 @@ begin
     try
       format.AddRange(formatSettings.ShortDateFormat.Split(['/']));
 
-      if (tmp and Integer(TDateTimeSkips.dkYear)) <> 0 then
+      if FSkip.Contains(TDateTimeSkips.dkYear) then
         format.Remove('yyyy');
-      if (tmp and Integer(TDateTimeSkips.dkMonth)) <> 0 then
+      if FSkip.Contains(TDateTimeSkips.dkMonth) then
         format.Remove('M');
-      if (tmp and Integer(TDateTimeSkips.dkDay)) <> 0 then
+      if FSkip.Contains(TDateTimeSkips.dkDay) then
         format.Remove('d');
 
       if format.Count = 0 then
@@ -212,11 +254,11 @@ begin
 
         format.Clear;
         format.AddRange(formatSettings.LongTimeFormat.Split([':']));
-        if (tmp and Integer(TDateTimeSkips.dkHour)) <> 0 then
+        if FSkip.Contains(TDateTimeSkips.dkHour) then
           format.Remove('H');
-        if (tmp and Integer(TDateTimeSkips.dkMinute)) <> 0 then
+        if FSkip.Contains(TDateTimeSkips.dkMinute) then
           format.Remove('mm');
-        if (tmp and Integer(TDateTimeSkips.dkSecond)) <> 0 then
+        if FSkip.Contains(TDateTimeSkips.dkSecond) then
           format.Remove('ss');
 
         formatSettings.LongTimeFormat := string.Join(formatSettings.TimeSeparator, format.ToArray());

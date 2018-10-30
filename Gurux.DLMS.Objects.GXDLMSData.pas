@@ -72,7 +72,7 @@ end;
 
 constructor TGXDLMSData.Create(ln: string; sn: System.UInt16);
 begin
-  inherited Create(TObjectType.otData, ln, 0);
+  inherited Create(TObjectType.otData, ln, sn);
 end;
 
 function TGXDLMSData.GetValues() : TArray<TValue>;

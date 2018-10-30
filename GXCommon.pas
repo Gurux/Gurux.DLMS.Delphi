@@ -37,7 +37,7 @@ interface
 
 uses System.TypInfo, System.Generics.Collections,
 SysUtils, DateUtils, Classes, Variants, Gurux.DLMS.ActionType, Gurux.DLMS.DataType,
-Gurux.DLMS.GXDateTime, Gurux.DLMS.GXDate, Gurux.DLMS.GXTime, Gurux.DLMS.DateTimeSkips, Generics.Collections, Rtti,
+Gurux.DLMS.GXDateTime, Gurux.DLMS.GXDate, Gurux.DLMS.GXTime, Gurux.DLMS.DateTimeSkips, Rtti,
 Gurux.DLMS.TUnit, Windows, Gurux.DLMS.ClockStatus, GXByteBuffer, GXDataInfo,
 Gurux.DLMS.ErrorCode, GXCmdParameter, System.Types;
 
@@ -475,8 +475,8 @@ var
   startIndex : Integer;
   knownType : Boolean;
 begin
-    startIndex := data.Position();
-    if (data.Position() = data.Size()) then
+    startIndex := data.Position;
+    if (data.Position = data.Size) then
     begin
         info.Complete := False;
         Result := Nil;
@@ -493,7 +493,7 @@ begin
         Result := Nil;
         Exit;
     end;
-    if (data.Position() = data.Size()) then
+    if (data.Position = data.Size) then
     begin
         info.Complete := False;
         Result := Nil;
@@ -565,7 +565,7 @@ begin
   if info.Count = 0 then
     info.Count := GetObjectCount(buff);
 
-  size := buff.Size() - buff.Position();
+  size := buff.Size - buff.Position;
   if (info.Count <> 0) and (size < 1) then
   begin
     info.Complete := False;
@@ -585,7 +585,7 @@ begin
         tmp := GetData(buff, info2);
         if info2.Complete = False then
         begin
-          buff.position(startIndex);
+          buff.Position := startIndex;
           info.Complete := False;
           break;
         end
@@ -615,7 +615,7 @@ class function TGXCommon.GetTime(buff : TGXByteBuffer; info: TGXDataInfo) : TVal
 var
   hour, minute, second, ms : Integer;
 begin
-  if (buff.Size() - buff.Position() < 4) then
+  if ((buff.Size - buff.Position) < 4) then
   begin
     // If there is not enough data available.
     info.Complete := False;
@@ -637,10 +637,10 @@ end;
 // return Parsed date.
 class function TGXCommon.GetDate(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
 var
-  year, month, day : Integer;
+  year, month, day, dow : Integer;
   dt : TGXDate;
 begin
-  if buff.Size() - buff.Position() < 5 then
+  if ((buff.Size - buff.Position) < 5) then
   begin
     // If there is not enough data available.
     info.Complete := False;
@@ -652,11 +652,10 @@ begin
   month := buff.GetUInt8();
   // Get day
   day := buff.GetUInt8();
-  dt := TGXDate.Create(year, month, day);
+  // Get week day
+  dow := buff.GetUInt8();
+  dt := TGXDate.Create(year, month, day, dow);
   Result := dt;
-  // Skip week day
-  if buff.GetUInt8() = $FF then
-    dt.Skip := TDateTimeSkips(Integer(dt.Skip) or Integer(TDateTimeSkips.dkDayOfWeek));
 end;
 
 // Get the number of days in that month.
@@ -694,32 +693,33 @@ class function TGXCommon.GetDateTime(buff : TGXByteBuffer; info: TGXDataInfo): T
 var
   dt : TGXDateTime;
   year: WORD;
-  month, day, hour, min, sec, ms : Byte;
-  deviation, skip: Integer;
+  month, day, hour, min, sec, ms, dow : Byte;
+  deviation: Integer;
+  skip: TDateTimeSkipsSet;
 begin
   // If there is not enough data available.
   if buff.Size - buff.Position < 12 then
   begin
-  //If time.
-  if buff.Size - buff.Position < 5 Then
-    Result := GetTime(buff, info)
-  //If date.
-  else if buff.Size - buff.Position < 6 Then
-    Result := GetDate(buff, info)
-  else
-    info.Complete := False;
+    //If time.
+    if buff.Size - buff.Position < 5 Then
+      Result := GetTime(buff, info)
+    //If date.
+    else if buff.Size - buff.Position < 6 Then
+      Result := GetDate(buff, info)
+    else
+      info.Complete := False;
     Exit;
   end;
-  skip := 0;
+  skip.SetOnly(TDateTimeSkips.dkNone);
+
   // Get year.
   year := buff.getUInt16();
   // Get month
   month := buff.GetUInt8();
   // Get day
   day := buff.GetUInt8();
-  // Skip week day
-  if (buff.GetUInt8() = $FF) Then
-    skip := Integer(TDateTimeSkips.dkDayOfWeek);
+  // Get week day
+  dow := buff.GetUInt8();
 
   // Get time.
   hour := buff.GetUInt8();
@@ -727,15 +727,14 @@ begin
   sec := buff.GetUInt8();
   ms := buff.GetUInt8();
 
-  dt := TGXDateTime.Create(year, month, day, hour, min, sec, ms);
+  dt := TGXDateTime.Create(year, month, day, hour, min, sec, ms, dow);
   try
 
     deviation := buff.getInt16();
     if (deviation = -32768) Then
     begin
-      dt.TimeZone := -32768;
-      skip := skip or Integer(TDateTimeSkips.dkDeviation);
-      dt.Skip := TDateTimeSkips(Integer(dt.Skip) or skip);
+      dt.TimeZone := 0;
+      dt.Skip.Add(TDateTimeSkips.dkDeviation);
     end
     else
     begin
@@ -758,7 +757,7 @@ end;
 class function TGXCommon.GetDouble(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
 begin
   // If there is not enough data available.
-  if (buff.Size() - buff.Position() < 8) then
+  if ((buff.Size - buff.Position) < 8) then
     info.Complete := False
   else
     Result := buff.GetDouble();
@@ -771,7 +770,7 @@ end;
 class function TGXCommon.GetFloat(buff : TGXByteBuffer;info: TGXDataInfo): TValue;
 begin
   // If there is not enough data available.
-  if buff.Size() - buff.Position() < 4 then
+  if ((buff.Size - buff.Position) < 4) then
     info.Complete := False
   else
     Result := buff.GetFloat();
@@ -784,7 +783,7 @@ end;
 class function TGXCommon.GetEnum(buff : TGXByteBuffer; info: TGXDataInfo) : TValue;
 begin
   // If there is not enough data available.
-  if buff.Size() - buff.Position() < 1 then
+  if ((buff.Size - buff.Position) < 1) then
       info.Complete := False
   else
     Result := buff.GetUInt8();
@@ -797,7 +796,7 @@ end;
 class function TGXCommon.GetUInt64(buff : TGXByteBuffer; info: TGXDataInfo) : TValue;
 begin
   // If there is not enough data available.
-  if (buff.Size() - buff.Position() < 8) then
+  if ((buff.Size - buff.Position) < 8) then
       info.Complete := False
   else
     Result := buff.GetUInt64();
@@ -810,7 +809,7 @@ end;
 class function TGXCommon.GetInt64(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
 begin
   // If there is not enough data available.
-  if buff.Size() - buff.Position() < 8 then
+  if ((buff.Size - buff.Position) < 8) then
       info.Complete := False
   else
     Result := buff.getInt64();
@@ -823,7 +822,7 @@ end;
 class function TGXCommon.GetUInt16(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
 begin
   // If there is not enough data available.
-  if buff.Size() - buff.Position() < 2 then
+  if ((buff.Size - buff.Position) < 2) then
     info.Complete := False
   else
     Result := buff.getUInt16();
@@ -836,7 +835,7 @@ end;
 class function TGXCommon.GetUInt8(buff : TGXByteBuffer; info: TGXDataInfo) : TValue;
 begin
   // If there is not enough data available.
-  if buff.Size() - buff.Position() < 1 then
+  if ((buff.Size - buff.Position) < 1) then
     info.Complete := False
   else
     Result := buff.GetUInt8();
@@ -849,7 +848,7 @@ end;
 class function TGXCommon.GetInt16(buff : TGXByteBuffer; info: TGXDataInfo) : TValue;
 begin
   // If there is not enough data available.
-  if buff.Size() - buff.Position() < 2 then
+  if ((buff.Size - buff.Position) < 2) then
       info.Complete := False
   else
     Result := buff.getInt16();
@@ -862,7 +861,7 @@ end;
 class function TGXCommon.GetInt8(buff : TGXByteBuffer; info: TGXDataInfo) : TValue;
 begin
   // If there is not enough data available.
-  if buff.Size() - buff.Position() < 1 then
+  if ((buff.Size - buff.Position) < 1) then
     info.Complete := False
   else
     Result := buff.getInt8();
@@ -875,7 +874,7 @@ end;
 class function TGXCommon.GetBcd(buff : TGXByteBuffer; info: TGXDataInfo; knownType: Boolean): TValue;
 begin
   // If there is not enough data available.
-  if buff.Size() - buff.Position() < 1 then
+  if ((buff.Size - buff.Position) < 1) then
       info.Complete := False
   else
     Result := buff.GetUInt8();
@@ -890,19 +889,19 @@ var
   len : Integer;
 begin
   if knownType then
-    len := buff.Size()
+    len := buff.Size
   else
   begin
     len := TGXCommon.GetObjectCount(buff);
     // If there is not enough data available.
-    if buff.Size() - buff.Position() < len then
+    if buff.Size - buff.Position < len then
     begin
       info.Complete := False;
       Exit;
     end;
   end;
   if len > 0 then
-    Result := buff.GetString(buff.Position(), len)
+    Result := buff.GetString(buff.Position, len)
   else
     Result := '';
 end;
@@ -938,12 +937,12 @@ var
   tmp: TBytes;
 begin
   if knownType then
-    len := buff.Size()
+    len := buff.Size
   else
   begin
     len := TGXCommon.GetObjectCount(buff);
     // If there is not enough data available.
-    if buff.Size() - buff.Position() < len then
+    if buff.Size - buff.Position < len then
     begin
       info.Complete := False;
       Exit;
@@ -963,12 +962,12 @@ var
  len : Integer;
 begin
   if knownType then
-    len := buff.Size()
+    len := buff.Size
   else
   begin
     len := GetObjectCount(buff);
     // If there is not enough data available.
-    if (buff.Size() - buff.Position() < len) then
+    if (buff.Size - buff.Position < len) then
     begin
         info.Complete := False;
         Exit;
@@ -987,7 +986,7 @@ end;
 class function TGXCommon.GetUInt32(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
 begin
   // If there is not enough data available.
-  if buff.Size() - buff.Position() < 4 then
+  if ((buff.Size - buff.Position) < 4) then
     info.Complete := False
   else
     Result := buff.getUInt32();
@@ -1000,7 +999,7 @@ end;
 class function TGXCommon.GetInt32(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
 begin
   // If there is not enough data available.
-  if buff.Size() - buff.Position() < 4 then
+  if ((buff.Size - buff.Position) < 4) then
     info.Complete := False
   else
     Result := buff.getInt32();
@@ -1045,7 +1044,7 @@ begin
 
   byteCnt := Trunc(t);
   // If there is not enough data available.
-  if buff.Size() - buff.Position() < byteCnt then
+  if (buff.Size - buff.Position) < byteCnt then
   begin
     info.Complete := False;
     Exit;
@@ -1072,7 +1071,7 @@ end;
 class function TGXCommon.GetBoolean(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
 begin
     // If there is not enough data available.
-    if buff.Size() - buff.Position() < 1 then
+    if ((buff.Size - buff.Position) < 1) then
       info.Complete := False
     else
       Result := Boolean(buff.GetUInt8() <> 0);
@@ -1088,7 +1087,7 @@ var
   pos : Integer;
 begin
   size := 0;
-  for pos := buff.Position() to buff.Size() do
+  for pos := buff.Position to buff.Size do
   begin
     size := size + 1;
     if (buff.GetUInt8(pos) and $1) = 1 then
@@ -1226,7 +1225,7 @@ begin
   begin
     str := value.ToString;
     SetObjectCount(Length(str), buff);
-    buff.SetArray(TBytes(str.ToCharArray));
+    buff.SetArray(TEncoding.ASCII.GetBytes(str));
   end
   else
     buff.setUInt8(0);
@@ -1237,45 +1236,45 @@ class procedure TGXCommon.SetTime(buff : TGXByteBuffer; value: TValue);
 var
   Hour, Min, Sec, Ms : Word;
   tm: TDateTime;
-  skip: Integer;
+  skip: TDateTimeSkipsSet;
 begin
 if value.IsType<TTime> Then
   begin
     tm := TDateTime(value.AsType<TTime>);
-    skip := Integer(TDateTimeSkips.dkNone);
+    skip.SetOnly(TDateTimeSkips.dkNone);
   end
   else if value.IsType<TDateTime> Then
    begin
     tm := value.AsType<TDateTime>;
-    skip := Integer(TDateTimeSkips.dkNone);
+    skip.SetOnly(TDateTimeSkips.dkNone);
    end
    else if value.IsType<TGXDateTime> Then
    begin
     tm := value.AsType<TGXDateTime>.Time;
-    skip := Integer(value.AsType<TGXDateTime>.Skip);
+    skip.SetOnly(value.AsType<TGXDateTime>.Skip);
    end
    else
     raise EArgumentException.Create('Invalid Time format.');
   DecodeTime(tm, Hour, Min, Sec, Ms);
 
   // Add time.
-  if skip and Integer(TDateTimeSkips.dkHour) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkHour) Then
     buff.SetUInt8($FF)
   else
     buff.SetUInt8(Hour);
 
-  if skip and Integer(TDateTimeSkips.dkMinute) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkMinute) Then
     buff.SetUInt8($FF)
   else
     buff.SetUInt8(Min);
 
-  if skip and Integer(TDateTimeSkips.dkSecond) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkSecond) Then
     buff.setUInt8($FF)
   else
     buff.SetUInt8(Sec);
 
   // Hundredths of second is not used.
-  if skip and Integer(TDateTimeSkips.dkMs) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkMs) Then
     buff.SetUInt8($FF)
   else
     buff.SetUInt8(Round(Ms / 10));
@@ -1286,50 +1285,50 @@ class procedure TGXCommon.SetDate(buff : TGXByteBuffer; value: TValue);
 var
   Y, M, D : Word;
   dt: TDateTime;
-  skip: Integer;
+  skip: TDateTimeSkipsSet;
 begin
  if value.IsType<TDate> Then
   begin
     dt := TDateTime(value.AsType<TDate>);
-    skip := Integer(TDateTimeSkips.dkNone);
+    skip.SetOnly(TDateTimeSkips.dkNone);
   end
   else if value.IsType<TDateTime> Then
   begin
     dt := value.AsType<TDateTime>;
-    skip := Integer(TDateTimeSkips.dkNone);
+    skip.SetOnly(TDateTimeSkips.dkNone);
   end
   else if value.IsType<TGXDateTime> Then
   begin
     dt := value.AsType<TGXDateTime>.Time;
-    skip := Integer(value.AsType<TGXDateTime>.Skip);
+    skip.SetOnly(value.AsType<TGXDateTime>.Skip);
   end
   else
     raise EArgumentException.Create('Invalid Time format.');
 
   DecodeDate(dt, Y, M, D);
   // Add year.
-  if skip and Integer(TDateTimeSkips.dkYear) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkYear) Then
     buff.SetUInt16($FFFF)
   else
     buff.SetUInt16(Y);
 
   // Add month
-  if skip and Integer(TDateTimeSkips.dkMonth) <> 0 Then
-    buff.SetUInt8($FE)
+  if skip.Contains(TDateTimeSkips.dkMonth) Then
+    buff.SetUInt8($FF)
   else
     buff.SetUInt8(M);
 
   // Add day
-  if skip and Integer(TDateTimeSkips.dkDay) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkDay) Then
     buff.setUInt8($FF)
   else
     buff.setUInt8(D);
 
-  if skip and Integer(TDateTimeSkips.dkDayOfWeek) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkDayOfWeek) Then
     // Week day is not specified.
     buff.SetUInt8($FF)
   else
-    buff.SetUInt8(System.SysUtils.DayOfWeek(dt));
+    buff.SetUInt8(DateUtils.DayOfTheWeek(dt));
 end;
 
 // Convert date time to DLMS bytes.
@@ -1337,7 +1336,8 @@ class procedure TGXCommon.SetDateTime(buff : TGXByteBuffer; value: TValue);
 var
   Y, M, D, Hour, Min, Sec, Ms : Word;
   tm: TDateTime;
-  skip, deviation: Integer;
+  deviation: Integer;
+  skip: TDateTimeSkipsSet;
   status: TClockStatus;
 begin
   status := TClockStatus.ctNone;
@@ -1345,22 +1345,22 @@ begin
   if value.IsType<TDate> Then
   begin
     tm := TDateTime(value.AsType<TDate>);
-    skip := Integer(TDateTimeSkips.dkNone);
+    skip.SetOnly(TDateTimeSkips.dkNone);
   end
   else if value.IsType<TTime> Then
   begin
     tm := TDateTime(value.AsType<TTime>);
-    skip := Integer(TDateTimeSkips.dkNone);
+    skip.SetOnly(TDateTimeSkips.dkNone);
   end
   else if value.IsType<TDateTime> Then
   begin
     tm := value.AsType<TDateTime>;
-    skip := Integer(TDateTimeSkips.dkNone);
+    skip.SetOnly(TDateTimeSkips.dkNone);
   end
   else if value.IsType<TGXDateTime> Then
   begin
     tm := value.AsType<TGXDateTime>.Time;
-    skip := Integer(value.AsType<TGXDateTime>.Skip);
+    skip.SetOnly(value.AsType<TGXDateTime>.Skip);
     deviation := value.AsType<TGXDateTime>.TimeZone;
     status := value.AsType<TGXDateTime>.Status;
   end
@@ -1371,70 +1371,61 @@ begin
   DecodeTime(tm, Hour, Min, Sec, Ms);
 
   // Add year.
-  if skip and Integer(TDateTimeSkips.dkYear) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkYear) Then
     buff.SetUInt16($FFFF)
   else
     buff.SetUInt16(Y);
 
   // Add month
-  if skip and Integer(TDateTimeSkips.dkMonth) <> 0 Then
-    buff.SetUInt8($FE)
+  if skip.Contains(TDateTimeSkips.dkMonth) Then
+    buff.SetUInt8($FF)
   else
     buff.SetUInt8(M);
 
   // Add day
-  if skip and Integer(TDateTimeSkips.dkDay) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkDay) Then
     buff.setUInt8($FF)
   else
     buff.setUInt8(D);
 
   // Add week day.
-  if skip and Integer(TDateTimeSkips.dkDayOfWeek) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkDayOfWeek) Then
   // Week day is not specified.
     buff.SetUInt8($FF)
   else
-  begin
-  {$IFDEF VER260}
-    //If Sunday.
-    if System.SysUtils.DayOfWeek(tm) = 1 Then
-      buff.SetUInt8(7)
-    else
-      buff.SetUInt8(System.SysUtils.DayOfWeek(tm) - 1);
-  {$ELSE}
-    buff.SetUInt8(System.SysUtils.DayOfTheWeek(tm));
-  {$ENDIF}
-  end;
+    buff.SetUInt8(DateUtils.DayOfTheWeek(tm));
+
     // Add time.
-  if skip and Integer(TDateTimeSkips.dkHour) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkHour) Then
     buff.SetUInt8($FF)
   else
     buff.SetUInt8(Hour);
 
-  if skip and Integer(TDateTimeSkips.dkMinute) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkMinute) Then
     buff.SetUInt8($FF)
   else
     buff.SetUInt8(Min);
 
-  if skip and Integer(TDateTimeSkips.dkSecond) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkSecond) Then
     buff.setUInt8($FF)
   else
     buff.SetUInt8(Sec);
 
   // Hundredths of second is not used.
-  if skip and Integer(TDateTimeSkips.dkMs) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkMs) Then
     buff.SetUInt8($FF)
   else
     buff.SetUInt8(Round(Ms / 10));
 
   // devitation not used.
-  if skip and Integer(TDateTimeSkips.dkDeviation) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkDeviation) Then
     buff.SetUInt16($8000)
   else
     // Add devitation.
     buff.setUInt16(deviation);
 
   // Add clock_status
-  if skip and Integer(TDateTimeSkips.dkDeviation) <> 0 Then
+  if skip.Contains(TDateTimeSkips.dkStatus) Then
     // Status is not used.
     buff.SetUInt8($FF)
   else

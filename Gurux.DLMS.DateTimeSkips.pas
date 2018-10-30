@@ -43,6 +43,48 @@ type
       dkStatus = $200
       );
 
+  TDateTimeSkipsSet = record
+    strict private
+      FSkips: Integer;
+
+    private
+      property AsInteger: Integer read FSkips;
+
+    public
+      procedure SetOnly(ASkip: TDateTimeSkips); overload;
+      procedure SetOnly(ASkip: TDateTimeSkipsSet); overload;
+      procedure Add(ASkip: TDateTimeSkips); overload;
+      function Contains(ASkip: TDateTimeSkips): Boolean;
+      function IsEmpty: Boolean;
+    end;
+
 implementation
+
+{ TDateTimeSkipsSet }
+
+procedure TDateTimeSkipsSet.Add(ASkip: TDateTimeSkips);
+begin
+  FSkips := FSkips or Ord(ASkip);
+end;
+
+function TDateTimeSkipsSet.Contains(ASkip: TDateTimeSkips): Boolean;
+begin
+  Result := (FSkips and Ord(ASkip)) > 0;
+end;
+
+function TDateTimeSkipsSet.IsEmpty: Boolean;
+begin
+  Result := (FSkips = 0);
+end;
+
+procedure TDateTimeSkipsSet.SetOnly(ASkip: TDateTimeSkipsSet);
+begin
+  FSkips := ASkip.AsInteger;
+end;
+
+procedure TDateTimeSkipsSet.SetOnly(ASkip: TDateTimeSkips);
+begin
+  FSkips := Ord(ASkip);
+end;
 
 end.

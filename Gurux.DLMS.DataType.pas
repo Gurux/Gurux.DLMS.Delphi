@@ -39,51 +39,27 @@ type
 
 TDataType =
 (
-  //Data type is Array.
-  // DLMS/COSEM type is: array.
-  dtArray = 1,
-  //Data type is Binary coded decimal.
-  // DLMS/COSEM type is: bcd.
-  dtBinaryCodedDesimal = 13,
-  //Data type is Bit string.
-  // DLMS/COSEM type is: bit-string.
-  dtBitString = 4,
-  //Data type is Boolean.
-  // DLMS/COSEM type is: boolean.
-  dtBoolean = 3,
-  //Data type is Compact array.
-  // DLMS/COSEM type is: compact array.
-  dtCompactArray = 19,
-  //Data type is Date.
-  // DLMS/COSEM type is: date.
-  dtDate = 26,
-  //Data type is DateTime.
-  // DLMS/COSEM type is: date_time.
-  dtDateTime = 25,
-  //Data type is Enum.
-  // DLMS/COSEM type is: enum.
-  dtEnum = 22,
-  //Data type is Float32.
-  // DLMS/COSEM type is: float 32.
-  dtFloat32 = 23,
-  //Data type is Float64.
-  // DLMS/COSEM type is: float 64.
-  dtFloat64 = 24,
-  //Data type is Int16.
-  // DLMS/COSEM type is: long.
-  dtInt16 = $10,
-  //Data type is Int32.
-  // DLMS/COSEM type is: double-long.
-  dtInt32 = 5,
-  //Data type is Int64.
-  // DLMS/COSEM type is: Integer64.
-  dtInt64 = 20,
-  //Data type is Int8.
-  // DLMS/COSEM type is: integer.
-  dtInt8 = 15,
   //By default, no data type is set.
   // DLMS/COSEM type is: null-data.
   dtNone = 0,
+  //Data type is Array.
+  // DLMS/COSEM type is: array.
+  dtArray = 1,
+  //Data type is Structure.
+  // DLMS/COSEM type is: structure.
+  dtStructure = 2,
+  //Data type is Boolean.
+  // DLMS/COSEM type is: boolean.
+  dtBoolean = 3,
+  //Data type is Bit string.
+  // DLMS/COSEM type is: bit-string.
+  dtBitString = 4,
+  //Data type is Int32.
+  // DLMS/COSEM type is: double-long.
+  dtInt32 = 5,
+  //Data type is UInt32.
+  // DLMS/COSEM type is: double-longunsigned.
+  dtUInt32 = 6,
   //Data type is Octet string.
   // DLMS/COSEM type is: octet-string.
   dtOctetString = 9,
@@ -93,24 +69,48 @@ TDataType =
   //Data type is UTF8 String.
   // DLMS/COSEM type is: utf8-string.
   dtStringUTF8 = 12,
-  //Data type is Structure.
-  // DLMS/COSEM type is: structure.
-  dtStructure = 2,
-  //Data type is Time.
-  // DLMS/COSEM type is: time.
-  dtTime = $1b,
+  //Data type is Binary coded decimal.
+  // DLMS/COSEM type is: bcd.
+  dtBinaryCodedDesimal = 13,
+  //Data type is Int8.
+  // DLMS/COSEM type is: integer.
+  dtInt8 = 15,
+  //Data type is Int16.
+  // DLMS/COSEM type is: long.
+  dtInt16 = $10,
+  //Data type is UInt8.
+  // DLMS/COSEM type is: unsigned.
+  dtUInt8 = $11,
   //Data type is UInt16.
   // DLMS/COSEM type is: long-unsigned.
   dtUInt16 = $12,
-  //Data type is UInt32.
-  // DLMS/COSEM type is: double-longunsigned.
-  dtUInt32 = 6,
+  //Data type is Compact array.
+  // DLMS/COSEM type is: compact array.
+  dtCompactArray = 19,
+  //Data type is Int64.
+  // DLMS/COSEM type is: Integer64.
+  dtInt64 = 20,
   //Data type is UInt64.
   // DLMS/COSEM type is: long64-unsigned.
   dtUInt64 = $15,
-  //Data type is UInt8.
-  // DLMS/COSEM type is: unsigned.
-  dtUInt8 = $11
+  //Data type is Enum.
+  // DLMS/COSEM type is: enum.
+  dtEnum = 22,
+  //Data type is Float32.
+  // DLMS/COSEM type is: float 32.
+  dtFloat32 = 23,
+  //Data type is Float64.
+  // DLMS/COSEM type is: float 64.
+  dtFloat64 = 24,
+  //Data type is DateTime.
+  // DLMS/COSEM type is: date_time.
+  dtDateTime = 25,
+  //Data type is Date.
+  // DLMS/COSEM type is: date.
+  dtDate = 26,
+  //Data type is Time.
+  // DLMS/COSEM type is: time.
+  dtTime = $1b
 );
 
 implementation

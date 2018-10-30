@@ -489,8 +489,8 @@ begin
       data.SetUInt32(FSettings.Limits.WindowSizeRX);
      end;
     // If default HDLC parameters are not used.
-    if data.size() <> 3 Then
-      data.SetUInt8(2, data.size() - 3) // Length.
+    if data.size <> 3 Then
+      data.SetUInt8(2, data.size - 3) // Length.
     else
       FreeAndNil(data);
 

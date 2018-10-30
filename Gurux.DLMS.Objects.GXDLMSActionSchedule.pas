@@ -233,7 +233,7 @@ begin
           tm.Time := IncMonth(tm.Time, M - 1);
           tm.Time := IncDay(tm.Time, D - 1);
         end;
-        tm.Skip := TDateTimeSkips(Integer(tm.Skip) or Integer(date.Skip));
+        tm.Skip.SetOnly(date.Skip);
         FExecutionTime.Add(tm);
         FreeAndNil(date);
       end;

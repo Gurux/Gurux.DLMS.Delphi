@@ -62,9 +62,9 @@ type
 begin
   SetLength(Result, 12);
   Move(systemTitle[0], Result[0], Length(systemTitle));
-  Result[8] := FrameCounter shr 24;
-  Result[9] := FrameCounter shr 16;
-  Result[10] := FrameCounter shr 8;
+  Result[8] := Byte(FrameCounter shr 24);
+  Result[9] := Byte(FrameCounter shr 16);
+  Result[10] := Byte(FrameCounter shr 8);
   Result[11] := Byte(FrameCounter);
 end;
 
@@ -88,7 +88,8 @@ begin
   tmp[3] := Byte(param.InvocationCounter);
 
 {$IFDEF DEBUG}
-  WriteLn('Encrypted data:' + TGXByteBuffer.ToHexString(plainText));
+  // Will resolve in I/O error if no console to output to.
+  // WriteLn('Encrypted data:' + TGXByteBuffer.ToHexString(plainText));
 {$ENDIF}
 
   aad := GetAuthenticatedData(param.Security, param.AuthenticationKey, plainText);
@@ -135,7 +136,7 @@ begin
   begin
     data2 := TGXByteBuffer.Create();
     data2.SetUInt8(param.Tag);
-    data2.SetUInt8(data.Size);
+    TGXCommon.SetObjectCount(data.Size,data2);
     data2.SetArray(data);
     Result := data2.ToArray;
     FreeAndNil(data2);

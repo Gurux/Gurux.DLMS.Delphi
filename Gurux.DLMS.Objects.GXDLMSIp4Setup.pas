@@ -125,6 +125,8 @@ TGXDLMSIp4Setup = class(TGXDLMSObject)
   function GetValue(e: TValueEventArgs): TValue;override;
   procedure SetValue(e: TValueEventArgs);override;
   function Invoke(e: TValueEventArgs): TBytes;override;
+  public
+    destructor Destroy; override;
 end;
 
 implementation
@@ -142,6 +144,16 @@ end;
 constructor TGXDLMSIp4Setup.Create(ln: string; sn: System.UInt16);
 begin
   inherited Create(TObjectType.otIp4Setup, ln, 0);
+end;
+
+destructor TGXDLMSIp4Setup.Destroy;
+var
+  i: Integer;
+begin
+  if Assigned(FIPOptions) then
+    for i := 0 to Length(FIPOptions) - 1 do
+      FIPOptions[i].Free;
+  inherited;
 end;
 
 function TGXDLMSIp4Setup.GetValues() : TArray<TValue>;
@@ -352,7 +364,7 @@ end;
 
 function TGXDLMSIp4Setup.ToAddressString(value: TValue): String;
 var
-  tmp: LongWord;
+  tmp: Integer;
 begin
   tmp := value.AsInteger;
   Result := IntToStr((tmp shr 24) and $FF) + '.' +

@@ -61,6 +61,8 @@ TGXDLMSMessageHandler = class(TGXDLMSObject)
   function GetValue(e: TValueEventArgs): TValue;override;
   procedure SetValue(e: TValueEventArgs);override;
   function Invoke(e: TValueEventArgs): TBytes;override;
+  public
+    destructor Destroy; override;
 end;
 
 implementation
@@ -80,6 +82,36 @@ begin
   inherited Create(TObjectType.otMessageHandler, ln, 0);
   FListeningWindow := TList<TPair<TGXDateTime, TGXDateTime>>.Create();
   FSendersAndActions := TList<TPair<String, TPair<Integer, TGXDLMSScriptAction>>>.Create();
+end;
+
+destructor TGXDLMSMessageHandler.Destroy;
+var
+  it : TPair<TGXDateTime, TGXDateTime>;
+  itA: TPair<String, TPair<Integer, TGXDLMSScriptAction>>;
+begin
+  if Assigned(FListeningWindow) then
+  begin
+    while FListeningWindow.Count <> 0 do
+    begin
+      it := FListeningWindow[0];
+      FListeningWindow.Remove(it);
+      FreeAndNil(it.Key);
+      FreeAndNil(it.Value);
+    end;
+    FreeAndNil(FListeningWindow);
+  end;
+
+  if Assigned(FSendersAndActions) then
+  begin
+    while FSendersAndActions.Count <> 0 do
+    begin
+      itA := FSendersAndActions[0];
+      FSendersAndActions.Remove(itA);
+      itA.Value.Value.Free; // TGXDLMSScriptAction
+    end;
+    FSendersAndActions.Free;
+  end;
+  inherited;
 end;
 
 function TGXDLMSMessageHandler.GetValues() : TArray<TValue>;

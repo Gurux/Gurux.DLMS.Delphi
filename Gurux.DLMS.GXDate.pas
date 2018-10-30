@@ -36,16 +36,15 @@ interface
 uses Gurux.DLMS.GXDateTime;
 
 type
-TGXDate = class(TGXDateTime)
-    constructor Create(year: Integer; month: Integer; day: Integer); overload;
-
-end;
+  TGXDate = class(TGXDateTime)
+    constructor Create(year: Integer; month: Integer; day: Integer; dow: Integer = $FF); overload;
+  end;
 
 implementation
 
-constructor TGXDate.Create(year: Integer; month: Integer; day: Integer);
+constructor TGXDate.Create(year: Integer; month: Integer; day: Integer; dow: Integer);
 begin
-  inherited Create(year, month, day, -1, -1, -1, -1);
+  inherited Create(year, month, day, $FF, $FF, $FF, $FF, dow);
 end;
 
 end.

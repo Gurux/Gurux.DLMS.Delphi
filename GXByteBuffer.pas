@@ -51,6 +51,21 @@ private
   FPosition : Integer;
 
   class function ToHexValue(Value : char) : Byte; static;
+
+  class function SwapBuffer(value : array of Byte) : TBytes; static;
+
+   // value : Buffer position.
+  procedure SetPosition(value : Integer);
+
+  //Result :  Buffer position.
+  function GetPosition() : Integer; overload;
+
+  //Result : Buffer size.
+  function GetSize() : Integer; overload;
+
+  // value : Buffer size.
+  procedure SetSize(value : Integer); overload;
+
 public
   // Constructor.
   constructor Create(); overload;
@@ -84,18 +99,11 @@ public
   // Clear buffer but don't release memory.
   procedure Clear;
 
+   // Buffer position.
+  property Position: Integer read GetPosition write SetPosition;
 
-  // value : Buffer position.
-  procedure Position(value : Integer); overload;
-
-  //Result :  Buffer position.
-  function Position() : Integer; overload;
-
-  //Result : Buffer size.
-  function Size() : Integer; overload;
-
-  // value : Buffer size.
-  procedure Size(value : Integer); overload;
+  // Buffer size.
+  property Size: Integer read GetSize write SetSize;
 
   // return Amount of non read bytes in the buffer.
   function Available() : Integer;
@@ -363,7 +371,7 @@ begin
       begin
         SetLength(FData, cap);
         if (size > cap) then
-          Size(cap);
+          SetSize(cap);
       end;
   end;
 end;
@@ -378,28 +386,28 @@ begin
 end;
 
 // value : Buffer position.
-procedure TGXByteBuffer.Position(value : Integer);
+procedure TGXByteBuffer.SetPosition(value : Integer);
 begin
-  if (value < 0) or (value > Size()) then
+  if (value < 0) or (value > Size) then
     raise EArgumentException.Create('position');
 
   FPosition := value;
 end;
 
 //Result :  Buffer position.
-function TGXByteBuffer.Position() : Integer;
+function TGXByteBuffer.GetPosition() : Integer;
 begin
   Result := FPosition;
 end;
 
 //Result :  Buffer size.
-function TGXByteBuffer.Size() : Integer;
+function TGXByteBuffer.GetSize() : Integer;
 begin
   Result := FSize;
 end;
 
  // value : Buffer size.
-procedure TGXByteBuffer.Size(value : Integer);
+procedure TGXByteBuffer.SetSize(value : Integer);
 begin
   if (value < 0) or (value > capacity()) then
   begin
@@ -444,9 +452,9 @@ begin
   if count <> 0 then
   begin
     System.Move(FData[srcPos], FData[destPos], count);
-    Size(destPos + count);
+    SetSize(destPos + count);
     if (FPosition > FSize) then
-      Position(size);
+      Position := size;
   end;
 end;
 
@@ -454,10 +462,10 @@ end;
 procedure TGXByteBuffer.Trim();
 begin
   if size = position then
-    Size(0)
+    SetSize(0)
   else
     Move(position, 0, size - position);
-  Position(0);
+  SetPosition(0);
 end;
 
 procedure TGXByteBuffer.Zero(index: Integer; count: Integer);
@@ -545,32 +553,30 @@ end;
 procedure TGXByteBuffer.SetFloat(value : Single);
 begin
   SetFloat(FSize, value);
-  FSize := FSize + 4;
 end;
 
 procedure TGXByteBuffer.SetFloat(index : Integer; value : Single);
 var
-  Bytes: array[0..3] of Byte absolute value;
+  tmp: array[0..3] of Byte absolute value;
 begin
-  SetArray(index, Bytes);
+  SetArray(index, SwapBuffer(tmp));
 end;
 
 procedure TGXByteBuffer.SetDouble(value : Double);
 begin
   setDouble(size, value);
-  FSize := FSize + 8;
 end;
 
 procedure TGXByteBuffer.SetDouble(index : Integer; value : Double);
 var
- Bytes: array[0..7] of Byte absolute value;
+  tmp: array[0..7] of Byte absolute value;
 begin
-  SetArray(index, Bytes);
+  SetArray(index, SwapBuffer(tmp));
 end;
 
 function TGXByteBuffer.GetUInt8 : Byte;
 begin
-  Result := GetUInt8(position());
+  Result := GetUInt8(FPosition);
   FPosition := FPosition + 1;
 end;
 
@@ -589,7 +595,7 @@ end;
 
 function TGXByteBuffer.GetUInt16() : Word;
 begin
-  Result := GetUInt16(Position());
+  Result := GetUInt16(FPosition);
   FPosition := FPosition + 2;
 end;
 
@@ -608,13 +614,13 @@ end;
 
 function TGXByteBuffer.GetUInt32(): Longword;
 begin
-  Result := GetUInt32(position());
+  Result := GetUInt32(FPosition);
   FPosition := FPosition + 4;
 end;
 
 function TGXByteBuffer.GetInt32() : Integer;
 begin
-  Result := GetInt32(position());
+  Result := GetInt32(FPosition);
   FPosition := FPosition + 4;
 end;
 
@@ -639,15 +645,30 @@ begin
   Result := Result or (FData[index + 3] and $FF);
 end;
 
+
 function TGXByteBuffer.GetFloat(): Single;
+var
+ tmp: array[0..3] of Byte absolute Result;
 begin
-  System.Move(FData[FPosition], Result, 4);
+  tmp[0] := FData[FPosition + 3];
+  tmp[1] := FData[FPosition + 2];
+  tmp[2] := FData[FPosition + 1];
+  tmp[3] := FData[FPosition];
   FPosition := FPosition + 4;
 end;
 
 function TGXByteBuffer.GetDouble(): Double;
+var
+ tmp: array[0..7] of Byte absolute Result;
 begin
-  System.Move(FData[FPosition], Result, 8);
+  tmp[0] := FData[FPosition + 7];
+  tmp[1] := FData[FPosition + 6];
+  tmp[2] := FData[FPosition + 5];
+  tmp[3] := FData[FPosition + 4];
+  tmp[4] := FData[FPosition + 3];
+  tmp[5] := FData[FPosition + 2];
+  tmp[6] := FData[FPosition + 1];
+  tmp[7] := FData[FPosition];
   FPosition := FPosition + 8;
 end;
 
@@ -804,7 +825,7 @@ end;
 procedure TGXByteBuffer.SetArray(value : TGXByteBuffer);
 begin
   if value <> Nil then
-    SetArray(value, value.Size() - value.Position());
+    SetArray(value, value.Size - value.Position);
 end;
 
 //Set new value to byte array.
@@ -935,6 +956,18 @@ begin
   end
   else
     Result := Ord(Value) - Ord('0');
+end;
+
+class function TGXByteBuffer.SwapBuffer(value : array of Byte) : TBytes;
+var
+  count, pos: Integer;
+begin
+  count := Length(value);
+  SetLength(Result, count);
+  for pos := 0 to count - 1 do
+  begin
+     Result[pos] := value[count - pos - 1];
+  end;
 end;
 
 class function TGXByteBuffer.ToHexString(bytes : TBytes): String;

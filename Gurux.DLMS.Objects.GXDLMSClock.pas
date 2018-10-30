@@ -93,7 +93,7 @@ end;
 
 constructor TGXDLMSClock.Create(ln: string; sn: System.UInt16);
 begin
-  inherited Create(TObjectType.otClock, ln, 0);
+  inherited Create(TObjectType.otClock, ln, sn);
 end;
 
 destructor TGXDLMSClock.Destroy;

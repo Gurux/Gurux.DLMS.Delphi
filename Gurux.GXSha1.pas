@@ -227,8 +227,8 @@ begin
   block[16 - 2] := (total_bits shr 32);
   Transform(@block, digest, transforms);
   reply.Capacity(20);
-  reply.Position(0);
-  reply.Size(0);
+  reply.Position := 0;
+  reply.Size := 0;
   for pos := 0 to 4 do
     reply.SetUInt32(PCardinal(Cardinal(digest) + (pos * SizeOf(Cardinal)))^);
   Result := reply.ToArray();

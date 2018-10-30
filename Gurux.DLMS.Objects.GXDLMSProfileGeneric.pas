@@ -81,7 +81,7 @@ TGXDLMSProfileGeneric = class(TGXDLMSObject)
   property CaptureObjects: TObjectList<TGXDLMSCaptureObject> read FCaptureObjects write FCaptureObjects;
 
   // How often values are captured.
-  property CapturePeriod: Integer read FCapturePeriod;
+  property CapturePeriod: Integer read FCapturePeriod write FCapturePeriod;
 
   // How columns are sorted.
   property SortMethod: TSortMethod read FSortMethod;
@@ -267,7 +267,7 @@ begin
   end
   else if index = 4 then
   begin
-    Result := TDataType.dtInt8;
+    Result := TDataType.dtUInt32;
   end
   else if index = 5 then
   begin

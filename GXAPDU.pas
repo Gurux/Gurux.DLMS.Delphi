@@ -311,7 +311,7 @@ begin
     if tag <> 0 Then//Skip if used.
     begin
       len := data.GetUInt8();
-      data.Position(data.Position + len);
+      data.Position := (data.Position + len);
     end;
   end
   else if tag = Byte(TCommand.InitiateRequest) Then
@@ -349,7 +349,7 @@ begin
       if tag <> 0 Then//Skip if used.
       begin
         len := data.GetUInt8();
-        data.Position(data.Position + len);
+        data.Position := (data.Position + len);
       end;
   end
   else if tag = Integer(TCommand.ConfirmedServiceError) Then
@@ -465,7 +465,7 @@ begin
     tag := data.GetUInt8();
     if tag = Integer(TCommand.GloInitiateResponse) Then
     begin
-        data.Position( data.Position - 1);
+        data.Position := (data.Position - 1);
         p := TAesGcmParameter.Create(settings.SourceSystemTitle, settings.Cipher.BlockCipherKey, settings.Cipher.AuthenticationKey);
         tmp := TGXDLMSChippering.DecryptAesGcm(p, data);
         data.Clear();
@@ -475,7 +475,7 @@ begin
     end
     else if tag = Integer(TCommand.GloInitiateRequest) Then
     begin
-        data.Position(data.Position - 1);
+        data.Position := (data.Position - 1);
         p := TAesGcmParameter.Create(settings.SourceSystemTitle, settings.Cipher.BlockCipherKey, settings.Cipher.AuthenticationKey);
         tmp := TGXDLMSChippering.DecryptAesGcm(p, data);
         data.Clear();
@@ -737,7 +737,7 @@ begin
         if buff.Position < buff.Size Then
         begin
             len := buff.GetUInt8();
-            buff.Position(buff.Position + len);
+            buff.Position := (buff.Position + len);
         end;
       end;
       end;

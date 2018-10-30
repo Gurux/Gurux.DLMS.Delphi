@@ -161,7 +161,7 @@ begin
   System.Move(data.GetData()[0], block[data.position], rem_len);
   if data.size - data.position < 64 Then
   begin
-    data.position(data.size);
+    data.position := data.size;
     Exit;
   end;
   new_len := len^ - rem_len;
