@@ -67,7 +67,12 @@ Gurux.DLMS.Objects.GXDLMSPushSetup,
 Gurux.DLMS.Objects.GXDLMSMessageHandler,
 Gurux.DLMS.Objects.GXDLMSAssociationLogicalName,
 Gurux.DLMS.Objects.GXDLMSAssociationShortName,
-Gurux.DLMS.Objects.GXDLMSProfileGeneric;
+Gurux.DLMS.Objects.GXDLMSProfileGeneric,
+Gurux.DLMS.Objects.GXDLMSAccount,
+Gurux.DLMS.Objects.GXDLMSCredit,
+Gurux.DLMS.Objects.GXDLMSCharge,
+Gurux.DLMS.Objects.GXDLMSTokenGateway,
+Gurux.DLMS.Objects.GXDLMSParameterMonitor;
 
 type
 TGXObjectFactory = class
@@ -168,6 +173,16 @@ begin
     Result := TGXDLMSPushSetup.Create()
   else if tp = TObjectType.otMessageHandler Then
     Result := TGXDLMSMessageHandler.Create()
+  else if tp = TObjectType.otAccount Then
+    Result := TGXDLMSAccount.Create()
+  else if tp = TObjectType.otCredit Then
+    Result := TGXDLMSCredit.Create()
+  else if tp = TObjectType.otCharge Then
+     Result := TGXDLMSCharge.Create()
+  else if tp = TObjectType.otTokenGateway Then
+    Result := TGXDLMSTokenGateway.Create()
+  else if tp = TObjectType.otParameterMonitor Then
+    Result := TGXDLMSParameterMonitor.Create()
   else
     Result := TGXDLMSObject.Create(tp);
 end;

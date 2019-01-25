@@ -54,6 +54,7 @@ type
       procedure SetOnly(ASkip: TDateTimeSkips); overload;
       procedure SetOnly(ASkip: TDateTimeSkipsSet); overload;
       procedure Add(ASkip: TDateTimeSkips); overload;
+      procedure Add(ASkip: TDateTimeSkipsSet); overload;
       function Contains(ASkip: TDateTimeSkips): Boolean;
       function IsEmpty: Boolean;
     end;
@@ -65,6 +66,11 @@ implementation
 procedure TDateTimeSkipsSet.Add(ASkip: TDateTimeSkips);
 begin
   FSkips := FSkips or Ord(ASkip);
+end;
+
+procedure TDateTimeSkipsSet.Add(ASkip: TDateTimeSkipsSet);
+begin
+  FSkips := FSkips or ASkip.AsInteger;
 end;
 
 function TDateTimeSkipsSet.Contains(ASkip: TDateTimeSkips): Boolean;

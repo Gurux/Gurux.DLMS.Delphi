@@ -37,6 +37,7 @@ interface
 uses GXCommon, DateUtils, SysUtils, Rtti, System.Generics.Collections,
 Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
 Gurux.DLMS.SingleActionScheduleType, Gurux.DLMS.GXDateTime,
+Gurux.DLMS.GXDate, Gurux.DLMS.GXTime,
 Gurux.DLMS.DateTimeSkips, GXByteBuffer;
 
 type
@@ -154,7 +155,7 @@ end;
 function TGXDLMSActionSchedule.GetValue(e: TValueEventArgs): TValue;
 var
   stream : TGXByteBuffer;
-  it : TGXDateTime;
+  it, tmp : TGXDateTime;
 begin
   if (e.Index = 1) then
   begin
@@ -188,8 +189,12 @@ begin
         begin
           stream.Add(Integer(TDataType.dtStructure));
           stream.Add(2); //Count
-          TGXCommon.SetData(stream, TDataType.dtOctetString, it.Time); //Time
-          TGXCommon.SetData(stream, TDataType.dtOctetString, it.Time); //Date
+          tmp := TGXTime.Create(it);
+          TGXCommon.SetData(stream, TDataType.dtOctetString, tmp); //Time
+          FreeAndNil(tmp);
+          tmp := TGXDate.Create(it);
+          TGXCommon.SetData(stream, TDataType.dtOctetString, tmp); //Date
+          FreeAndNil(tmp);
         end
     end;
     Result := TValue.From(stream.ToArray());
@@ -226,14 +231,26 @@ begin
       begin
         tm := TGXCommon.ChangeType(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtTime).AsType<TGXDateTime>;
         date := TGXCommon.ChangeType(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>, TDataType.dtDate).AsType<TGXDateTime>;
-        DecodeDate(date.Time, Y, M, D);
-        if Y <> 2 then
+        if Not date.Skip.Contains(TDateTimeSkips.dkYear) Then
         begin
-          tm.Time := IncYear(tm.Time, Y - 1);
+          DecodeDate(date.Time, Y, M, D);
+          if Not date.Skip.Contains(TDateTimeSkips.dkYear) Then
+            tm.Time := IncYear(tm.Time, Y - 1);
+          if Not date.Skip.Contains(TDateTimeSkips.dkMonth) Then
           tm.Time := IncMonth(tm.Time, M - 1);
-          tm.Time := IncDay(tm.Time, D - 1);
+          if Not date.Skip.Contains(TDateTimeSkips.dkDay) Then
+            tm.Time := IncDay(tm.Time, D - 1);
         end;
-        tm.Skip.SetOnly(date.Skip);
+        if date.Skip.Contains(TDateTimeSkips.dkYear) Then
+          tm.Skip.Add(TDateTimeSkips.dkYear);
+        if date.Skip.Contains(TDateTimeSkips.dkMonth) Then
+          tm.Skip.Add(TDateTimeSkips.dkMonth);
+        if date.Skip.Contains(TDateTimeSkips.dkDay) Then
+          tm.Skip.Add(TDateTimeSkips.dkDay);
+        if date.Skip.Contains(TDateTimeSkips.dkDayOfWeek) Then
+          tm.Skip.Add(TDateTimeSkips.dkDayOfWeek);
+        if date.Skip.Contains(TDateTimeSkips.dkDeviation) Then
+          tm.Skip.Add(TDateTimeSkips.dkDeviation);
         FExecutionTime.Add(tm);
         FreeAndNil(date);
       end;

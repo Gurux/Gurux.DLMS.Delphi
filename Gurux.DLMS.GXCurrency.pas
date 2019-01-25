@@ -30,43 +30,27 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.GXTime;
+unit Gurux.DLMS.GXCurrency;
 
 interface
-uses Gurux.DLMS.GXDateTime;
+uses Gurux.DLMS.Currency;
 
 type
-  TGXTime = class(TGXDateTime)
-    constructor Create(hour: Integer; minute: Integer; second: Integer; millisecond: Integer); overload;
-    constructor Create(value: TGXDateTime); overload;
-    constructor Create(AValue: TDateTime = -1); overload;
-  end;
+  //Used currency.
+  TGXCurrency = class
+   private
+   FName: String;
+   FScale: BYTE;
+   FUnit: TCurrency;
 
+   public
+   //Currency name.
+   property Name: String read FName write FName;
+   //Currency scale.
+   property Scale: BYTE read FScale write FScale;
+   //Currency unit.
+   property &Unit: TCurrency read FUnit write FUnit;
+   end;
 implementation
 
-uses SysUtils, Gurux.DLMS.DateTimeSkips;
-
-constructor TGXTime.Create(hour: Integer; minute: Integer; second: Integer; millisecond: Integer);
-begin
-  inherited Create($FFFF, $FF, $FF, hour, minute, second, millisecond, $FF);
-end;
-
-constructor TGXTime.Create(value: TGXDateTime);
-var
-  hour, minute, second, millisecond : Word;
-begin
-  DecodeTime(value.Time, hour, minute, second, millisecond);
-  inherited Create($FFFF, $FF, $FF, hour, minute, second, millisecond, $FF);
-   Skip.Add(value.Skip);
-end;
-
-constructor TGXTime.Create(AValue: TDateTime = -1);
-begin
-  inherited Create(AValue);
-  Skip.Add(TDateTimeSkips.dkYear);
-  Skip.Add(TDateTimeSkips.dkMonth);
-  Skip.Add(TDateTimeSkips.dkDay);
-  Skip.Add(TDateTimeSkips.dkDayOfWeek);
-  Skip.Add(TDateTimeSkips.dkDeviation);
-end;
 end.

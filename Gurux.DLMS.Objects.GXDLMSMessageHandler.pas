@@ -206,17 +206,15 @@ begin
   end
   else if e.Index = 2 Then
   begin
-      ListeningWindow.Clear();
-      if e.Value.IsType<TArray<TValue>>() Then
-      begin
-          for it in e.Value.AsType<TArray<TValue>> do
-          begin
-              tmp := it.AsType<TArray<TValue>>();
-              starttm := TGXCommon.ChangeType(tmp[0].AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
-              endtm := TGXCommon.ChangeType(tmp[1].AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
-              ListeningWindow.Add(TPair<TGXDateTime, TGXDateTime>.Create(starttm, endtm));
-          end;
-      end;
+    ListeningWindow.Clear();
+    if e.Value.IsType<TArray<TValue>>() Then
+      for it in e.Value.AsType<TArray<TValue>> do
+        begin
+          tmp := it.AsType<TArray<TValue>>();
+          starttm := TGXCommon.ChangeType(tmp[0].AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
+          endtm := TGXCommon.ChangeType(tmp[1].AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
+          ListeningWindow.Add(TPair<TGXDateTime, TGXDateTime>.Create(starttm, endtm));
+        end;
   end
   else if e.Index = 3 Then
   begin

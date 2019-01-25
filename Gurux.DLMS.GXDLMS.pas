@@ -311,9 +311,9 @@ class procedure TGXDLMS.AddLLCBytes(settings: TGXDLMSSettings; data: TGXByteBuff
 begin
   data.Move(0, 3, data.Size);
   if settings.isServer Then
-    data.SetArray(LLCReplyBytes)
+    System.Move(LLCReplyBytes, data.GetData()[0], 3)
   else
-    data.SetArray(LLCSendBytes)
+    System.Move(LLCSendBytes, data.GetData()[0], 3);
 end;
 
 class procedure TGXDLMS.MultipleBlocks(p : TGXDLMSLNParameters; reply: TGXByteBuffer; ciphering: Boolean);
@@ -689,12 +689,7 @@ begin
             begin
                 list.Add(GetHdlcFrame(p.Settings, frame, bb));
                 if bb.Position <> bb.Size Then
-                begin
-                  if (p.Settings.isServer) or (p.Command = TCommand.SetRequest) Then
-                    frame := 0
-                  else
-                    frame := p.Settings.NextSend(false);
-                end;
+                  frame := p.Settings.NextSend(false);
             end
             else if (p.Settings.InterfaceType = TInterfaceType.PDU) Then
             begin
@@ -757,12 +752,7 @@ begin
               begin
                   list.add(GetHdlcFrame(p.Settings, frame, bb));
                   if bb.position <> bb.Size Then
-                  begin
-                    if p.Settings.IsServer Then
-                      frame := 0
-                    else
-                      frame := p.Settings.NextSend(false);
-                  end;
+                    frame := p.Settings.NextSend(false);
               end
               else if p.Settings.InterfaceType = TInterfaceType.PDU Then
               begin

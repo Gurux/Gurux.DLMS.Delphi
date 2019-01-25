@@ -572,10 +572,8 @@ begin
     Exit;
   end;
   startIndex := index;
-
   arr := TList<TValue>.Create();
   try
-
     pos := 0;
     // Position where last row was found. Cache uses this info.
     for pos := info.Index to info.Count - 1 do
@@ -600,11 +598,9 @@ begin
     end;
     info.Index := pos;
     Result := TValue.From(arr.ToArray());
-
   finally
     FreeAndNil(arr);
   end;
-
 end;
 
 // Get time from DLMS data.
@@ -1160,6 +1156,12 @@ begin
       arr := value.asType<TBytes>;
       setObjectCount(8 * Length(arr), buff);
       buff.SetArray(arr);
+    end
+    else if value.IsType<BYTE> then
+    begin
+      val := value.asType<BYTE>;
+      setObjectCount(8, buff);
+      buff.SetUint8(val);
     end
     else
       raise Exception.Create('BitString must give as string.');

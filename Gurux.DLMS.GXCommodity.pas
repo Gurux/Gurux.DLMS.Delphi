@@ -30,43 +30,43 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.GXTime;
+unit Gurux.DLMS.GXCommodity;
 
 interface
-uses Gurux.DLMS.GXDateTime;
+uses Gurux.DLMS.GXDLMSObject;
 
 type
-  TGXTime = class(TGXDateTime)
-    constructor Create(hour: Integer; minute: Integer; second: Integer; millisecond: Integer); overload;
-    constructor Create(value: TGXDateTime); overload;
-    constructor Create(AValue: TDateTime = -1); overload;
-  end;
+  {
+  Online help:
+  http://www.gurux.fi/Gurux.DLMS.Objects.GXDLMSCharge
+  }
+  TGXCommodity = class
+   private
+   {
+     Executed object.
+     }
+    FTarget: TGXDLMSObject;
 
+    {
+     Attribute index.
+     }
+   FIndex: Byte;
+
+   public
+    {
+     Executed object.
+     Online help:
+     http://www.gurux.fi/Gurux.DLMS.Objects.GXDLMSCharge
+     }
+    property Target: TGXDLMSObject read FTarget write FTarget;
+
+    {
+     Attribute index.
+     Online help:
+     http://www.gurux.fi/Gurux.DLMS.Objects.GXDLMSCharge
+     }
+   property Index: Byte read FIndex write FIndex;
+   end;
 implementation
 
-uses SysUtils, Gurux.DLMS.DateTimeSkips;
-
-constructor TGXTime.Create(hour: Integer; minute: Integer; second: Integer; millisecond: Integer);
-begin
-  inherited Create($FFFF, $FF, $FF, hour, minute, second, millisecond, $FF);
-end;
-
-constructor TGXTime.Create(value: TGXDateTime);
-var
-  hour, minute, second, millisecond : Word;
-begin
-  DecodeTime(value.Time, hour, minute, second, millisecond);
-  inherited Create($FFFF, $FF, $FF, hour, minute, second, millisecond, $FF);
-   Skip.Add(value.Skip);
-end;
-
-constructor TGXTime.Create(AValue: TDateTime = -1);
-begin
-  inherited Create(AValue);
-  Skip.Add(TDateTimeSkips.dkYear);
-  Skip.Add(TDateTimeSkips.dkMonth);
-  Skip.Add(TDateTimeSkips.dkDay);
-  Skip.Add(TDateTimeSkips.dkDayOfWeek);
-  Skip.Add(TDateTimeSkips.dkDeviation);
-end;
 end.

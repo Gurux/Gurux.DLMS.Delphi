@@ -229,6 +229,29 @@
         <DCCReference Include="Gurux.DLMS.Objects.GXDLMSScript.pas"/>
         <DCCReference Include="Gurux.DLMS.SerialnumberCounter.pas"/>
         <DCCReference Include="Gurux.DLMS.IGXDLMSClient.pas"/>
+        <DCCReference Include="Gurux.DLMS.ConnectionState.pas"/>
+        <DCCReference Include="Gurux.DLMS.Objects.GXDLMSCredit.pas"/>
+        <DCCReference Include="Gurux.DLMS.Objects.GXDLMSCharge.pas"/>
+        <DCCReference Include="Gurux.DLMS.Objects.GXDLMSTokenGateway.pas"/>
+        <DCCReference Include="Gurux.DLMS.Objects.GXDLMSAccount.pas"/>
+        <DCCReference Include="Gurux.DLMS.PaymentMode.pas"/>
+        <DCCReference Include="Gurux.DLMS.AccountStatus.pas"/>
+        <DCCReference Include="Gurux.DLMS.AccountCreditStatus.pas"/>
+        <DCCReference Include="Gurux.DLMS.GXCreditChargeConfiguration.pas"/>
+        <DCCReference Include="Gurux.DLMS.GXTokenGatewayConfiguration.pas"/>
+        <DCCReference Include="Gurux.DLMS.CreditCollectionConfiguration.pas"/>
+        <DCCReference Include="Gurux.DLMS.GXCurrency.pas"/>
+        <DCCReference Include="Gurux.DLMS.Currency.pas"/>
+        <DCCReference Include="Gurux.DLMS.CreditType.pas"/>
+        <DCCReference Include="Gurux.DLMS.CreditConfiguration.pas"/>
+        <DCCReference Include="Gurux.DLMS.CreditStatus.pas"/>
+        <DCCReference Include="Gurux.DLMS.ChargeType.pas"/>
+        <DCCReference Include="Gurux.DLMS.GXUnitCharge.pas"/>
+        <DCCReference Include="Gurux.DLMS.GXCommodity.pas"/>
+        <DCCReference Include="Gurux.DLMS.GXChargePerUnitScaling.pas"/>
+        <DCCReference Include="Gurux.DLMS.GXChargeTable.pas"/>
+        <DCCReference Include="Gurux.DLMS.Objects.GXDLMSParameterMonitor.pas"/>
+        <DCCReference Include="Gurux.DLMS.Objects.GXDLMSGSMDiagnostic.pas"/>
         <RcItem Include="OBISCodes.txt">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>Text</ResourceType>

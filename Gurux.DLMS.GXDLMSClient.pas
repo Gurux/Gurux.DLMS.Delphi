@@ -56,7 +56,8 @@ Gurux.DLMS.GXDLMSConverter, Gurux.DLMS.SetRequestType,
 Gurux.DLMS.GetCommandType, Gurux.DLMS.GXDLMSCaptureObject,
 Gurux.DLMS.GXReplyData, Gurux.DLMS.IGXDLMSClient,
 Gurux.DLMS.SerialnumberCounter,
-Gurux.DLMS.GXDLMSGateway;
+Gurux.DLMS.GXDLMSGateway,
+Gurux.DLMS.ConnectionState;
 
 type
   CaptureObject = TGXDLMSCaptureObject;
@@ -64,7 +65,7 @@ type
 TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
   protected
     FSettings: TGXDLMSSettings;
-
+    FAutoIncreaseInvokeID : Boolean;
   private
     function GetPassword: TBytes;
     procedure SetPassword(Value: TBytes);
@@ -159,6 +160,8 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
     property Limits: TGXDLMSLimits read get_Limits;
     property ClientAddress : Integer read get_ClientAddress write set_ClientAddress;
     property ServerAddress : Integer read get_ServerAddress write set_ServerAddress;
+    property AutoIncreaseInvokeID : Boolean read FAutoIncreaseInvokeID write FAutoIncreaseInvokeID;
+
     //Gateway settings.
     property Gateway : TGXDLMSGateway read GetGateway write SetGateway;
 
@@ -191,6 +194,7 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
     procedure ParseUAResponse(Data : TGXByteBuffer);
     function AARQRequest() : TArray<TBytes>;
     procedure ParseAAREResponse(Data : TGXByteBuffer);
+    function ReleaseRequest() : TArray<TBytes>;
     function DisconnectRequest() : TBytes;
     function GetObjectsRequest() : TBytes;
     function GetApplicationAssociationRequest(): TArray<TBytes>;
@@ -454,7 +458,7 @@ function TGXDLMSClient.SNRMRequest() : TBytes;
 var
   data: TGXByteBuffer;
 begin
-  FSettings.Connected := false;
+  FSettings.Connected := TConnectionState.csNone;
   // SNRM request is not used in network connections.
   if InterfaceType = TInterfaceType.WRAPPER Then
       Exit;
@@ -534,6 +538,7 @@ begin
         end;
     end;
   end;
+  FSettings.Connected := TConnectionState.csHdlc;
 end;
 
 function TGXDLMSClient.AARQRequest() : TArray<TBytes>;
@@ -546,7 +551,7 @@ begin
   buff := Nil;
   FSettings.NegotiatedConformance := TConformance(0);
   FSettings.ResetBlockIndex();
-  FSettings.Connected := false;
+  FSettings.Connected := TConnectionState(Integer(FSettings.Connected) and not Integer(TConnectionState.csDlms));
   FSettings.StoCChallenge := Nil;
   TGXDLMS.CheckInit(FSettings);
   buff := TGXByteBuffer.Create();
@@ -581,8 +586,53 @@ var
 begin
   ret := TGXAPDU.ParsePDU(FSettings, FSettings.Cipher, Data);
   FSettings.IsAuthenticationRequired := (ret = TSourceDiagnostic.AuthenticationRequired);
-  //Some meters need disconnect even authentication is required.
-  FSettings.Connected := true;
+  if FSettings.IsAuthenticationRequired = false Then
+    FSettings.Connected := TConnectionState(Integer(FSettings.Connected) or Integer(TConnectionState.csDlms));
+end;
+
+function TGXDLMSClient.ReleaseRequest() : TArray<TBytes>;
+var
+  bb : TGXByteBuffer;
+  ln : TGXDLMSLNParameters;
+  sn : TGXDLMSSNParameters;
+begin
+  // If connection is not established, there is no need to send
+  // release request.
+  if FSettings.Connected = TConnectionState.csNone Then
+    Exit;
+
+  bb := TGXByteBuffer.Create(2);
+  try
+    bb.setUInt8(0);
+    bb.setUInt8($80);
+    bb.setUInt8(01);
+    bb.setUInt8(00);
+
+    TGXAPDU.generateUserInformation(FSettings, FSettings.Cipher, Nil, bb);
+    bb.SetUInt8(0, (bb.Size - 1));
+    if UseLogicalNameReferencing Then
+    begin
+      ln := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.ReleaseRequest,
+            0, bb, Nil, $ff);
+      try
+       Result := TGXDLMS.GetLnMessages(ln);
+      finally
+        ln.Free;
+      end;
+    end
+    else
+    begin
+      sn := TGXDLMSSNParameters.Create(FSettings, TCommand.ReleaseRequest, $ff, $ff, Nil, bb);
+      try
+        Result := TGXDLMS.GetSnMessages(sn);
+      finally
+        sn.Free;
+      end;
+    end;
+    FSettings.Connected := TConnectionState(Integer(FSettings.Connected) and not Integer(TConnectionState.csDlms));
+  finally
+    bb.Free;
+  end;
 end;
 
 function TGXDLMSClient.DisconnectRequest() : TBytes;
@@ -593,7 +643,7 @@ begin
   FSettings.MaxPduSize := $FFFF;
   // If connection is not established, there is no need to send
   // DisconnectRequest.
-  if Not FSettings.Connected Then
+  if FSettings.Connected = TConnectionState.csNone Then
     Exit;
 
   if FSettings.InterfaceType = TInterfaceType.HDLC Then
@@ -609,6 +659,8 @@ begin
       bb.Free;
     end;
   end;
+  FSettings.Connected := TConnectionState.csNone;
+  FSettings.ResetFrameSequence();
 end;
 
 // Get challenge request if HLS authentication is used.
@@ -692,12 +744,18 @@ begin
     challenge := TGXByteBuffer.Create(tmp);
     try
       equals := challenge.Compare(value);
+      FSettings.Connected := TConnectionState(Integer(FSettings.Connected) or Integer(TConnectionState.csDlms));
     finally
       FreeAndNil(challenge);
     end;
   end;
   if Not equals Then
+  begin
+    FSettings.Connected := TConnectionState(Integer(FSettings.Connected) and Not Integer(TConnectionState.csDlms));
     raise TGXDLMSException.Create('Invalid password. Server to Client challenge do not match.');
+  end
+  else
+
 end;
 
 function TGXDLMSClient.Method(item: TGXDLMSObject; index: Integer; data: TValue): TArray<TBytes>;
@@ -724,6 +782,9 @@ begin
       raise EArgumentException.Create('Invalid parameter');
 
   FSettings.ResetBlockIndex();
+  if FAutoIncreaseInvokeID Then
+    FSettings.InvokeID := ((FSettings.InvokeID + 1) and $F);
+
   if (dt = TDataType.dtNone) and Not value.IsEmpty Then
     dt := TGXDLMSConverter.GetDLMSDataType(value);
 
@@ -837,6 +898,9 @@ begin
     raise TGXDLMSException.Create('Invalid parameter. Unknown value type.');
 
   FSettings.ResetBlockIndex();
+  if FAutoIncreaseInvokeID Then
+    FSettings.InvokeID := ((FSettings.InvokeID + 1) and $F);
+
   if (dt = TDataType.dtNone) and Not value.IsEmpty Then
   begin
     dt := TGXDLMSConverter.GetDLMSDataType(value);
@@ -1016,6 +1080,8 @@ begin
     raise TGXDLMSException.Create('Invalid parameter');
 
   FSettings.ResetBlockIndex();
+   if FAutoIncreaseInvokeID Then
+    FSettings.InvokeID := ((FSettings.InvokeID + 1) and $F);
   attributeDescriptor := TGXByteBuffer.Create();
   p := Nil;
   try
@@ -1223,6 +1289,7 @@ begin
           raise;
         end;
 
+        comp.Parent := FSettings.Objects;
         if (Not onlyKnownObjects) or (comp.ClassType <> TGXDLMSObject) then
           FSettings.Objects.Add(comp)
         else
@@ -1275,6 +1342,7 @@ begin
         raise;
       end;
 
+      comp.Parent := FSettings.Objects;
       if (comp.ClassType <> TGXDLMSObject) or Not onlyKnownObjects then
         FSettings.Objects.Add(comp)
       else
@@ -1589,6 +1657,11 @@ begin
     otTcpUdpSetup: Result := 'GXDLMSTcpUdpSetup';
     otTunnel: Result := 'GXDLMSTunnel';
     otUtilityTables: Result := 'GXDLMSUtilityTables';
+    otAccount: Result := 'GXDLMSAccount';
+    otCredit: Result := 'GXDLMSCredit';
+    otCharge: Result := 'GXDLMSCharge';
+    otTokenGateway: Result := 'GXDLMSTokenGateway';
+    otGSMDiagnostic: Result := 'GXDLMSGSMDiagnostic';
     else
       Result := 'Manufacturer specific';
   end;

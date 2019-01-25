@@ -183,9 +183,35 @@ contains
   Gurux.DLMS.Secure.GXDLMSSecureClient in 'Gurux.DLMS.Secure.GXDLMSSecureClient.pas',
   Gurux.DLMS.Objects.GXDLMSScript in 'Gurux.DLMS.Objects.GXDLMSScript.pas',
   Gurux.DLMS.SerialnumberCounter in 'Gurux.DLMS.SerialnumberCounter.pas',
-  Gurux.DLMS.IGXDLMSClient in 'Gurux.DLMS.IGXDLMSClient.pas';
+  Gurux.DLMS.IGXDLMSClient in 'Gurux.DLMS.IGXDLMSClient.pas',
+  Gurux.DLMS.ConnectionState in 'Gurux.DLMS.ConnectionState.pas',
+  Gurux.DLMS.Objects.GXDLMSCredit in 'Gurux.DLMS.Objects.GXDLMSCredit.pas',
+  Gurux.DLMS.Objects.GXDLMSCharge in 'Gurux.DLMS.Objects.GXDLMSCharge.pas',
+  Gurux.DLMS.Objects.GXDLMSTokenGateway in 'Gurux.DLMS.Objects.GXDLMSTokenGateway.pas',
+  Gurux.DLMS.Objects.GXDLMSAccount in 'Gurux.DLMS.Objects.GXDLMSAccount.pas',
+  Gurux.DLMS.PaymentMode in 'Gurux.DLMS.PaymentMode.pas',
+  Gurux.DLMS.AccountStatus in 'Gurux.DLMS.AccountStatus.pas',
+  Gurux.DLMS.AccountCreditStatus in 'Gurux.DLMS.AccountCreditStatus.pas',
+  Gurux.DLMS.GXCreditChargeConfiguration in 'Gurux.DLMS.GXCreditChargeConfiguration.pas',
+  Gurux.DLMS.GXTokenGatewayConfiguration in 'Gurux.DLMS.GXTokenGatewayConfiguration.pas',
+  Gurux.DLMS.CreditCollectionConfiguration in 'Gurux.DLMS.CreditCollectionConfiguration.pas',
+  Gurux.DLMS.GXCurrency in 'Gurux.DLMS.GXCurrency.pas',
+  Gurux.DLMS.Currency in 'Gurux.DLMS.Currency.pas',
+  Gurux.DLMS.CreditType in 'Gurux.DLMS.CreditType.pas',
+  Gurux.DLMS.CreditConfiguration in 'Gurux.DLMS.CreditConfiguration.pas',
+  Gurux.DLMS.CreditStatus in 'Gurux.DLMS.CreditStatus.pas',
+  Gurux.DLMS.ChargeType in 'Gurux.DLMS.ChargeType.pas',
+  Gurux.DLMS.GXUnitCharge in 'Gurux.DLMS.GXUnitCharge.pas',
+  Gurux.DLMS.GXCommodity in 'Gurux.DLMS.GXCommodity.pas',
+  Gurux.DLMS.GXChargePerUnitScaling in 'Gurux.DLMS.GXChargePerUnitScaling.pas',
+  Gurux.DLMS.GXChargeTable in 'Gurux.DLMS.GXChargeTable.pas',
+  Gurux.DLMS.Objects.GXDLMSParameterMonitor in 'Gurux.DLMS.Objects.GXDLMSParameterMonitor.pas',
+  Gurux.DLMS.Objects.GXDLMSGSMDiagnostic in 'Gurux.DLMS.Objects.GXDLMSGSMDiagnostic.pas';
 
 end.
+
+
+
 
 
 

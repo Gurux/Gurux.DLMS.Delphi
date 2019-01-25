@@ -183,6 +183,8 @@ begin
   end
   else if e.Index = 5 then
   begin
+    FreeAndNil(FCaptureTime);
+
     if e.Value.IsType<TBytes> Then
       e.Value := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtDateTime);
 

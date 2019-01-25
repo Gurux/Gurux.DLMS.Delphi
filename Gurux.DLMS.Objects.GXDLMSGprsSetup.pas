@@ -234,10 +234,10 @@ begin
         TGXCommon.SetData(data, TDataType.dtUInt8, 0);
         TGXCommon.SetData(data, TDataType.dtUInt8, 0);
       end;
+      Result := TValue.From(data.ToArray());
     finally
       data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');

@@ -269,7 +269,15 @@ TObjectType =
 
   //In an object of type UtilityTables each "Table"  = ANSI C12.19:1997 table data
   //is represented as an instance, and identified by its logical name.
-  otUtilityTables = 26
+  otUtilityTables = 26,
+
+  otAccount = 111,
+
+  otCredit = 112,
+
+  otCharge = 113,
+
+  otTokenGateway = 115
 );
 implementation
 

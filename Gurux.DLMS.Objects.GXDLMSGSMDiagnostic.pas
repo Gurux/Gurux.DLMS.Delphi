@@ -42,12 +42,14 @@ uses
   Gurux.DLMS.ObjectType,
   Gurux.DLMS.DataType,
   Gurux.DLMS.GXDLMSObject,
-  Gurux.DLMS.GXDateTime;
+  Gurux.DLMS.GXDateTime,
+  GXByteBuffer;
 
 type
   TRegStatus = ( rsNot, rsRegHome, rsSearching, rsDenied, rsUnknown, rsRoaming );
 
   TPSStatus = ( pssInactive, pssGPRS, pssEDGE, pssUMTS, pssHSDPA );
+
   TPSStatusHelper = record helper for TPSStatus
     function AsString: String;
   end;
@@ -118,6 +120,7 @@ type
     function GetAttributeCount: Integer;override;
     function GetMethodCount: Integer;override;
     function GetDataType(index: Integer): TDataType;override;
+    function GetValue(e: TValueEventArgs): TValue;override;
     procedure SetValue(e: TValueEventArgs);override;
     function Invoke(e: TValueEventArgs): TBytes;override;
   end;
@@ -218,8 +221,73 @@ end;
 
 function TGXDLMSGSMDiagnostic.GetValues: TArray<TValue>;
 begin
-  Result := TArray<TValue>.Create(FLogicalName, FOperator, TValue.From(FStatus), TValue.From(FCSAttachment), TValue.From(FPSStatus),
-                FCellInfo, FAdjacentCells, FCaptureTime);
+  Result := TArray<TValue>.Create(FLogicalName, FOperator, TValue.From(FStatus),
+    TValue.From(FCSAttachment), TValue.From(FPSStatus),
+    FCellInfo, FAdjacentCells, FCaptureTime);
+end;
+
+function TGXDLMSGSMDiagnostic.GetValue(e: TValueEventArgs): TValue;
+var
+ bb: TGXByteBuffer;
+ it: TAdjacentCellInfo;
+begin
+  case e.Index Of
+    1: Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
+    2: Result := TValue.From(TGXCommon.GetBytes(FOperator));
+    3: Result := Integer(FStatus);
+    4: Result := Integer(FCSAttachment);
+    5: Result := Integer(FPSStatus);
+    6:
+    try
+        bb := TGXByteBuffer.Create;
+        bb.SetUInt8(Integer(TDataType.dtStructure));
+        if Version = 0 Then
+        begin
+          bb.SetUInt8(4);
+          TGXCommon.SetData(bb, TDataType.dtUInt16, FCellInfo.CellId);
+        end
+        else
+        begin
+          bb.SetUInt8(7);
+          TGXCommon.SetData(bb, TDataType.dtUInt32, FCellInfo.CellId);
+        end;
+        TGXCommon.SetData(bb, TDataType.dtUInt16, FCellInfo.LocationId);
+        TGXCommon.SetData(bb, TDataType.dtUInt8, BYTE(FCellInfo.SignalQuality));
+        TGXCommon.SetData(bb, TDataType.dtUInt8, BYTE(FCellInfo.Ber));
+        {if Version > 0 Then
+        begin
+          TGXCommon.SetData(bb, TDataType.dtUInt16, Integer(FCellInfo.MobileCountryCode));
+          TGXCommon.SetData(bb, TDataType.dtUInt16, Integer(FCellInfo.MobileNetworkCode));
+          TGXCommon.SetData(bb, TDataType.dtUInt32, Integer(FCellInfo.ChannelNumber));
+        end;
+        }Result := TValue.From(bb.ToArray());
+    finally
+      FreeAndNil(bb);
+    end;
+    7:
+    try
+      bb := TGXByteBuffer.Create;
+      bb.SetUInt8(Integer(TDataType.dtArray));
+      bb.SetUInt8(FAdjacentCells.Count);
+      for it in FAdjacentCells do
+      begin
+        bb.SetUInt8(Integer(TDataType.dtStructure));
+        bb.SetUInt8(2);
+        if Version = 0 Then
+          TGXCommon.SetData(bb, TDataType.dtUInt16, it.CellId)
+        else
+          TGXCommon.SetData(bb, TDataType.dtUInt32, it.CellId);
+
+        TGXCommon.SetData(bb, TDataType.dtUInt8, it.SignalQuality.FSignalQuality);
+      end;
+      Result := TValue.From(bb.ToArray());
+    finally
+      FreeAndNil(bb);
+    end;
+    8: Result := FCaptureTime;
+    else
+      raise Exception.Create('GetValue failed. Invalid attribute index.');
+  end;
 end;
 
 procedure TGXDLMSGSMDiagnostic.SetValue(e: TValueEventArgs);

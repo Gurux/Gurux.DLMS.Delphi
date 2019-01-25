@@ -42,7 +42,7 @@ type
 TGXDLMSModemConfiguration = class(TGXDLMSObject)
   FCommunicationSpeed: TBaudRate;
   FInitialisationStrings : TObjectList<TGXDLMSModemInitialisation>;
-  FModemProfile : Tarray<string>;
+  FModemProfile : TArray<string>;
   function DefaultProfiles() : TArray<string>;
 
   destructor Destroy;override;

@@ -38,13 +38,34 @@ uses Gurux.DLMS.GXDateTime;
 type
   TGXDate = class(TGXDateTime)
     constructor Create(year: Integer; month: Integer; day: Integer; dow: Integer = $FF); overload;
+    constructor Create(value: TGXDateTime); overload;
+    constructor Create(AValue: TDateTime = -1); overload;
   end;
 
 implementation
+
+uses SysUtils, Gurux.DLMS.DateTimeSkips;
 
 constructor TGXDate.Create(year: Integer; month: Integer; day: Integer; dow: Integer);
 begin
   inherited Create(year, month, day, $FF, $FF, $FF, $FF, dow);
 end;
 
+constructor TGXDate.Create(value: TGXDateTime);
+var
+  Y, M, D : Word;
+begin
+  DecodeDate(value.Time, Y, M, D);
+  inherited Create(Y, M, D, $FF, $FF, $FF, $FF, $FF);
+  Skip.Add(value.Skip);
+end;
+
+constructor TGXDate.Create(AValue: TDateTime = -1);
+begin
+  inherited Create(AValue);
+  Skip.Add(TDateTimeSkips.dkHour);
+  Skip.Add(TDateTimeSkips.dkMinute);
+  Skip.Add(TDateTimeSkips.dkSecond);
+  Skip.Add(TDateTimeSkips.dkMs);
+end;
 end.

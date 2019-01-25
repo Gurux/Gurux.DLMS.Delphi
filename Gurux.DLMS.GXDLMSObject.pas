@@ -40,7 +40,8 @@ Gurux.DLMS.AccessMode, Gurux.DLMS.GXDLMSException, Gurux.DLMS.MethodAccessMode,
 Gurux.DLMS.DataType, Gurux.DLMS.ErrorCode, Gurux.DLMS.Priority, Gurux.DLMS.ServiceClass,
 Gurux.DLMS.Conformance, Gurux.DLMS.SecuritySuite, Gurux.DLMS.Authentication,
 Gurux.DLMS.InterfaceType, Gurux.DLMS.GXDLMSLimits, Gurux.DLMS.GXCiphering,
-Gurux.DLMS.HdlcFrameType, Gurux.DLMS.GXDateTime, Gurux.DLMS.GXDLMSGateway;
+Gurux.DLMS.HdlcFrameType, Gurux.DLMS.GXDateTime, Gurux.DLMS.GXDLMSGateway,
+Gurux.DLMS.ConnectionState;
 
 const
 // Server frame sequence starting number.
@@ -66,9 +67,8 @@ TGXDLMSObject = class
   FShortName : Word;
   FLogicalName : String;
   FVersion : Integer;
-  FSourceLogicalName : String;
-  FSourceObjectType : TObjectType;
   FReadTimes : TDictionary<byte, TDateTime>;
+  FParent: TGXDLMSObjectCollection;
 
   function GetValue(e: TValueEventArgs): TValue;virtual;
   procedure SetValue(e: TValueEventArgs);virtual;
@@ -109,6 +109,9 @@ TGXDLMSObject = class
 
   property Version : Integer read FVersion write FVersion;
   property Name: Variant read get_Name;
+
+  property Parent: TGXDLMSObjectCollection read FParent write FParent;
+
   function ToString: string; override;
 
 
@@ -214,6 +217,7 @@ end;
   constructor Create(settings: TGXDLMSSettings; target: TGXDLMSObject; index: Integer; selector: Integer; parameters: TValue);overload;
   // Constructor.
   constructor Create(target: TGXDLMSObject; index: Integer;selector: Integer; parameters: TValue);overload;
+  destructor Destroy; override;
 end;
 
 TGXDLMSSettings = class
@@ -243,7 +247,7 @@ private
   FDedicatedKey:  TBytes;
   FAuthentication: TAuthentication;
   FPassword: TBytes;
-  FConnected: Boolean;
+  FConnected: TConnectionState;
   FInterfaceType: TInterfaceType;
   FClientAddress: Integer;
   FServerAddress: Integer;
@@ -340,7 +344,7 @@ private
   property Limits : TGXDLMSLimits read FLimits;
 
   // Connected.
-  property Connected: Boolean read FConnected write FConnected;
+  property Connected: TConnectionState read FConnected write FConnected;
 
   // Used interface.
   property InterfaceType: TInterfaceType read FInterfaceType write FInterfaceType;
@@ -607,7 +611,6 @@ begin
       Result := Format('%d', [buff[0]])+ '.' + Format('%d', [buff[1]]) + '.' +
       Format('%d', [buff[2]])+ '.' + Format('%d', [buff[3]]) + '.' +
       Format('%d', [buff[4]])+ '.' + Format('%d', [buff[5]]);
-      Exit;
     end;
 end;
 
@@ -838,6 +841,12 @@ begin
   FIndex := index;
   FSelector := selector;
   FParameters := parameters;
+end;
+
+destructor TValueEventArgs.Destroy;
+begin
+  inherited;
+  FValue := Nil;
 end;
 
 constructor TGXDLMSSettings.Create(server : Boolean);

@@ -242,14 +242,15 @@ begin
   end
   else if e.Index = 2 Then
   begin
-      if e.Value.IsEmpty Then
-        FTime := TGXDateTime.Create(TGXDateTime.MinDateTime)
-      else
-      begin
-        if e.Value.IsType<TBytes> Then
-          e.Value := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtDateTime);
-        FTime := e.Value.AsType<TGXDateTime>;
-      end;
+    FreeAndNil(FTime);
+    if e.Value.IsEmpty Then
+      FTime := TGXDateTime.Create(TGXDateTime.MinDateTime)
+    else
+    begin
+      if e.Value.IsType<TBytes> Then
+        e.Value := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtDateTime);
+      FTime := e.Value.AsType<TGXDateTime>;
+    end;
   end
   else if e.Index = 3 Then
   begin
@@ -261,6 +262,7 @@ begin
   end
   else if e.Index = 5 Then
   begin
+    FreeAndNil(FBegin);
     if e.Value.IsEmpty Then
       FBegin := TGXDateTime.Create(TGXDateTime.MinDateTime)
     else
@@ -272,6 +274,7 @@ begin
   end
   else if e.Index = 6 Then
   begin
+    FreeAndNil(FEnd);
     if e.Value.IsEmpty Then
       FEnd := TGXDateTime.Create(TGXDateTime.MinDateTime)
     else

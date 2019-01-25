@@ -371,10 +371,11 @@ begin
       if e.Value.IsType<TBytes> Then
       begin
         tm := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
-        e.Value := tm;
-      end;
-      FCaptureTime := e.Value.AsType<TGXDateTime>.LocalTime;
-      FreeAndNil(tm);
+        FCaptureTime := tm.LocalTime;
+        FreeAndNil(tm);
+      end
+      else
+        FCaptureTime := e.Value.AsType<TGXDateTime>.LocalTime;
     end;
   end
   else if e.Index = 7 Then
@@ -386,10 +387,11 @@ begin
       if e.Value.IsType<TBytes> Then
       begin
         tm := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
-        e.Value := tm;
-      end;
-      FStartTimeCurrent := e.Value.AsType<TGXDateTime>.LocalTime;
-      FreeAndNil(tm);
+        FStartTimeCurrent := tm.LocalTime;
+        FreeAndNil(tm);
+      end
+      else
+        FStartTimeCurrent := e.Value.AsType<TGXDateTime>.LocalTime;
     end;
   end
   else if e.Index = 8 Then
