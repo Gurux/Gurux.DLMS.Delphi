@@ -200,10 +200,6 @@ public
 
   // Append the given byte array into this buffer.
   // value : Data to append.
-  procedure SetArray(value : TByteDynArray); overload;
-
-  // Append the given byte array into this buffer.
-  // value : Data to append.
   procedure SetArray(value : array of Byte); overload;
 
   procedure AddString(value : String);
@@ -215,12 +211,6 @@ public
   // value : The value to be added.
   procedure SetArray(index : Integer; value : TBytes); overload;
 
-  // Push the given byte array into this buffer at the current position, and
-  // then increments the position.
-  // index : Byte index.
-  // value : The value to be added.
-  procedure SetArray(index : Integer; value : TByteDynArray); overload;
-
   // Append the given byte array into this buffer.
   // index : Byte index.
   // value : Data to append.
@@ -231,12 +221,6 @@ public
   // index : Byte index.
   // count : Byte count.
   procedure SetArray(value : TBytes; index : Integer; count : Integer); overload;
-
-  // Set new value to byte array.
-  // value : Byte array to add.
-  // index : Byte index.
-  // count : Byte count.
-  procedure SetArray(value : TByteDynArray; index : Integer; count : Integer);overload;
 
   // Set new value to byte array.
   // value : Byte array to add.
@@ -733,13 +717,6 @@ end;
 
 // Append the given byte array into this buffer.
 // value : Data to append.
-procedure TGXByteBuffer.SetArray(value : TByteDynArray);
-begin
-  SetArray(value, 0, Length(value));
-end;
-
-// Append the given byte array into this buffer.
-// value : Data to append.
 procedure TGXByteBuffer.SetArray(value : array of Byte);
 begin
   SetArray(value, 0, Length(value));
@@ -762,19 +739,6 @@ end;
 // then increments the position.
 // index : Byte index.
 // value : The value to be added.
-procedure TGXByteBuffer.SetArray(index : Integer; value : TByteDynArray);
-var
-  len : Integer;
-begin
-  len := Length(value);
-  Move(index, len, size - index);
-  SetArray(value, index, Length(value));
-end;
-
-  // Push the given byte array into this buffer at the current position, and
-// then increments the position.
-// index : Byte index.
-// value : The value to be added.
 procedure TGXByteBuffer.SetArray(index : Integer; value : array of byte);
 var
   len : Integer;
@@ -791,19 +755,6 @@ end;
 procedure TGXByteBuffer.SetArray(value : TBytes; index : Integer; count : Integer);
 begin
   if ((value <> Nil) and (count <> 0)) then
-  begin
-    if (size + count > capacity()) then
-      Capacity(size + count + ARRAY_CAPACITY);
-
-    System.Move(value[index], FData[size], count);
-    FSize := FSize + count;
-  end;
-end;
-
-
-procedure TGXByteBuffer.SetArray(value : TByteDynArray; index : Integer; count : Integer);
-begin
-  if count <> 0 then
   begin
     if (size + count > capacity()) then
       Capacity(size + count + ARRAY_CAPACITY);

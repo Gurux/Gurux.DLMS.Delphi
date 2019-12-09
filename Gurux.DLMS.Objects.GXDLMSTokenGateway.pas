@@ -279,7 +279,6 @@ procedure TGXDLMSTokenGateway.SetValue(e: TValueEventArgs);
 var
   it : TValue;
   list: TList<string>;
-  count: Integer;
 begin
   case e.Index Of
     1: FLogicalName := TGXCommon.ToLogicalName(e.Value);

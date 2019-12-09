@@ -226,14 +226,11 @@ function TGXDateTime.ToString: string;
 var
   format: TList<string>;
   formatSettings : TFormatSettings;
-  tmp : Integer;
 begin
 {$IFDEF MSWINDOWS}
   if FSkip.IsEmpty then
   begin
-    tmp := Integer(FSkip);
     formatSettings := TFormatSettings.Create();
-
     format := TList<string>.Create();
     try
       format.AddRange(formatSettings.ShortDateFormat.Split(['/']));

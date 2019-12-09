@@ -467,6 +467,7 @@ var
   logFile : string;
 begin
   logFile := socket.Host.Replace('.', '_') + '_' + socket.Port.ToString() + '.xml';
+  try
   //You can save association view, but make sure that it is not change.
   //Save Association view to the cache so it is not needed to retreave every time.
   {
@@ -486,6 +487,9 @@ begin
   // Read historical data.
   GetProfileGenerics();
   Save(logFile);
+  finally
+    Close();
+  end;
 end;
 
 class function TGXProgram.GetValueAsString(value : TValue) : string;
@@ -758,6 +762,13 @@ begin
   begin
     Writeln('Disconnecting from the meter.');
     reply := TGXReplyData.Create();
+    //Release is call only for secured connections.
+    //All meters are not supporting Release and it's causing problems.
+    if ((Client.InterfaceType = TInterfaceType.WRAPPER) or
+    ((Client.InterfaceType = TInterfaceType.HDLC) and (Client.Ciphering.Security = TSecurity.None))) Then
+    begin
+      ReadDataBlock(Client.ReleaseRequest(), reply);
+    end;
     ReadDLMSPacket(Client.DisconnectRequest(), reply);
     socket.Close;
   end;
@@ -942,7 +953,7 @@ begin
         if Client.GetData(Result, reply) Then
           break;
       end;
-    Until Length(Result) > 2000;
+    Until False;
     if FTrace = tlVerbose then
       WriteTrace('-> ' + TimeToStr(Time) + chr(9) + TGXByteBuffer.ToHexString(Result));
 

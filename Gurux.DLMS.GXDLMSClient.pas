@@ -601,12 +601,17 @@ begin
   if FSettings.Connected = TConnectionState.csNone Then
     Exit;
 
-  bb := TGXByteBuffer.Create(2);
+  bb := TGXByteBuffer.Create(4);
   try
     bb.setUInt8(0);
     bb.setUInt8($80);
     bb.setUInt8(01);
     bb.setUInt8(00);
+    //Increase IC.
+    if ((FSettings.Cipher <> Nil) and (FSettings.Cipher.IsCiphered())) Then
+    begin
+      FSettings.Cipher.InvocationCounter := FSettings.Cipher.InvocationCounter + 1;
+    end;
 
     TGXAPDU.generateUserInformation(FSettings, FSettings.Cipher, Nil, bb);
     bb.SetUInt8(0, (bb.Size - 1));

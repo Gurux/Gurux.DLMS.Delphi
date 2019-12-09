@@ -277,7 +277,9 @@ TObjectType =
 
   otCharge = 113,
 
-  otTokenGateway = 115
+  otTokenGateway = 115,
+
+  otCompactData = 62
 );
 implementation
 

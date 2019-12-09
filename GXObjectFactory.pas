@@ -72,7 +72,8 @@ Gurux.DLMS.Objects.GXDLMSAccount,
 Gurux.DLMS.Objects.GXDLMSCredit,
 Gurux.DLMS.Objects.GXDLMSCharge,
 Gurux.DLMS.Objects.GXDLMSTokenGateway,
-Gurux.DLMS.Objects.GXDLMSParameterMonitor;
+Gurux.DLMS.Objects.GXDLMSParameterMonitor,
+Gurux.DLMS.Objects.GXDLMSCompactData;
 
 type
 TGXObjectFactory = class
@@ -183,6 +184,8 @@ begin
     Result := TGXDLMSTokenGateway.Create()
   else if tp = TObjectType.otParameterMonitor Then
     Result := TGXDLMSParameterMonitor.Create()
+  else if tp = TObjectType.otCompactData Then
+    Result := TGXDLMSCompactData.Create()
   else
     Result := TGXDLMSObject.Create(tp);
 end;

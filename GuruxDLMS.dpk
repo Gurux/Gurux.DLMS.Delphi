@@ -6,7 +6,7 @@ package GuruxDLMS;
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
-{$DEBUGINFO ON}
+{$DEBUGINFO OFF}
 {$EXTENDEDSYNTAX ON}
 {$IMPORTEDDATA ON}
 {$IOCHECKS ON}
@@ -206,9 +206,17 @@ contains
   Gurux.DLMS.GXChargePerUnitScaling in 'Gurux.DLMS.GXChargePerUnitScaling.pas',
   Gurux.DLMS.GXChargeTable in 'Gurux.DLMS.GXChargeTable.pas',
   Gurux.DLMS.Objects.GXDLMSParameterMonitor in 'Gurux.DLMS.Objects.GXDLMSParameterMonitor.pas',
-  Gurux.DLMS.Objects.GXDLMSGSMDiagnostic in 'Gurux.DLMS.Objects.GXDLMSGSMDiagnostic.pas';
+  Gurux.DLMS.Objects.GXDLMSGSMDiagnostic in 'Gurux.DLMS.Objects.GXDLMSGSMDiagnostic.pas',
+  Gurux.DLMS.Objects.GXDLMSCompactData in 'Gurux.DLMS.Objects.GXDLMSCompactData.pas',
+  Gurux.DLMS.CaptureMethod in 'Gurux.DLMS.CaptureMethod.pas',
+  Gurux.DLMS.GXDLMSTarget in 'Gurux.DLMS.GXDLMSTarget.pas',
+  Gurux.DLMS.TokenDelivery in 'Gurux.DLMS.TokenDelivery.pas',
+  Gurux.DLMS.TokenStatusCode in 'Gurux.DLMS.TokenStatusCode.pas',
+  Gurux.DLMS.GXDLMSGateway in 'Gurux.DLMS.GXDLMSGateway.pas';
 
 end.
+
+
 
 
 

@@ -489,8 +489,8 @@ begin
           tmp := item.GetArrayElement(3).AsType<TValue>;
           UpdateAccessRights(obj, tmp.AsType<TArray<TValue>>);
           ObjectList.Add(obj);
+          obj.Version := version;
         end;
-        obj.Version := version;
       end
     end;
   end

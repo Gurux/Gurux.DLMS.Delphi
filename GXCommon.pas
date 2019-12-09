@@ -574,7 +574,6 @@ begin
   startIndex := index;
   arr := TList<TValue>.Create();
   try
-    pos := 0;
     // Position where last row was found. Cache uses this info.
     for pos := info.Index to info.Count - 1 do
     begin
