@@ -56,6 +56,8 @@ strict private
   end;
 
 implementation
+uses Gurux.DLMS.DataType, Gurux.DLMS.GXDateTime;
+
 class function TGXDLMSChippering.GetNonse(FrameCounter: UInt32; systemTitle: TBytes): TBytes;
 type
   TArrayOfArrayOfByte = array of array of Byte;
@@ -78,52 +80,34 @@ var
 begin
   param.CountTag := nil;
   data := TGXByteBuffer.Create();
-  if (param.&Type = TCountType.Packet) then
-    data.SetUInt8((Byte(param.Security)));
-
-  SetLength(tmp, 4);
-  tmp[0] := ((param.InvocationCounter shr 24) and $FF);
-  tmp[1] := ((param.InvocationCounter shr 16) and $FF);
-  tmp[2] := ((param.InvocationCounter shr 8) and $FF);
-  tmp[3] := Byte(param.InvocationCounter);
-
-{$IFDEF DEBUG}
-  // Will resolve in I/O error if no console to output to.
-  // WriteLn('Encrypted data:' + TGXByteBuffer.ToHexString(plainText));
-{$ENDIF}
-
-  aad := GetAuthenticatedData(param.Security, param.AuthenticationKey, plainText);
-  gcm := TGXDLMSChipperingStream.Create(param.Security, True, param.BlockCipherKey, aad, GetNonse(param.InvocationCounter,
-        param.SystemTitle), nil);
-  if (param.Security <> TSecurity.Authentication) then
-    gcm.Write(plainText);
-  ciphertext := gcm.FlushFinalBlock;
-  if (param.Security = TSecurity.Authentication) then
-  begin
+  try
     if (param.&Type = TCountType.Packet) then
-      data.SetArray(tmp);
-    if (Integer(param.&Type) and Integer(TCountType.Data)) <> 0 then
-      data.SetArray(plainText);
-    if (Integer(param.&Type) and Integer(TCountType.Tag)) <> 0 then
-    begin
-      param.CountTag := gcm.GetTag;
-      data.SetArray(param.CountTag);
-    end;
-  end
-  else
-    if param.Security = TSecurity.Encryption then
-    begin
-      if param.&Type = TCountType.Packet Then
-        data.SetArray(tmp);
-      data.SetArray(ciphertext);
-    end
-    else
-      if (param.Security = TSecurity.AuthenticationEncryption) then
+      data.SetUInt8((Byte(param.Security)));
+
+    SetLength(tmp, 4);
+    tmp[0] := ((param.InvocationCounter shr 24) and $FF);
+    tmp[1] := ((param.InvocationCounter shr 16) and $FF);
+    tmp[2] := ((param.InvocationCounter shr 8) and $FF);
+    tmp[3] := Byte(param.InvocationCounter);
+
+  {$IFDEF DEBUG}
+    // Will resolve in I/O error if no console to output to.
+    // WriteLn('Encrypted data:' + TGXByteBuffer.ToHexString(plainText));
+  {$ENDIF}
+
+    aad := GetAuthenticatedData(param.Security, param.AuthenticationKey, plainText);
+    gcm := TGXDLMSChipperingStream.Create(param.Security, True, param.BlockCipherKey, aad, GetNonse(param.InvocationCounter,
+          param.SystemTitle), nil);
+    try
+      if (param.Security <> TSecurity.Authentication) then
+        gcm.Write(plainText);
+      ciphertext := gcm.FlushFinalBlock;
+      if (param.Security = TSecurity.Authentication) then
       begin
         if (param.&Type = TCountType.Packet) then
           data.SetArray(tmp);
         if (Integer(param.&Type) and Integer(TCountType.Data)) <> 0 then
-          data.SetArray(ciphertext);
+          data.SetArray(plainText);
         if (Integer(param.&Type) and Integer(TCountType.Tag)) <> 0 then
         begin
           param.CountTag := gcm.GetTag;
@@ -131,20 +115,49 @@ begin
         end;
       end
       else
-        raise Exception.Create('security');
-  if (param.&Type = TCountType.Packet) then
-  begin
-    data2 := TGXByteBuffer.Create();
-    data2.SetUInt8(param.Tag);
-    TGXCommon.SetObjectCount(data.Size,data2);
-    data2.SetArray(data);
-    Result := data2.ToArray;
-    FreeAndNil(data2);
-  end
-  else
-    Result := data.ToArray;
-  FreeAndNil(data);
-  FreeAndNil(gcm);
+        if param.Security = TSecurity.Encryption then
+        begin
+          if param.&Type = TCountType.Packet Then
+            data.SetArray(tmp);
+          data.SetArray(ciphertext);
+        end
+        else
+          if (param.Security = TSecurity.AuthenticationEncryption) then
+          begin
+            if (param.&Type = TCountType.Packet) then
+              data.SetArray(tmp);
+            if (Integer(param.&Type) and Integer(TCountType.Data)) <> 0 then
+              data.SetArray(ciphertext);
+            if (Integer(param.&Type) and Integer(TCountType.Tag)) <> 0 then
+            begin
+              param.CountTag := gcm.GetTag;
+              data.SetArray(param.CountTag);
+            end;
+          end
+          else
+            raise Exception.Create('security');
+      if (param.&Type = TCountType.Packet) then
+      begin
+        data2 := TGXByteBuffer.Create();
+        try
+          data2.SetUInt8(param.Tag);
+          TGXCommon.SetObjectCount(data.Size,data2);
+          data2.SetArray(data);
+          Result := data2.ToArray;
+        finally
+          FreeAndNil(data2);
+        end;
+      end
+      else
+        Result := data.ToArray;
+    finally
+      FreeAndNil(gcm);
+    end;
+  finally
+    FreeAndNil(data);
+  end;
+
+
 end;
 
 class function TGXDLMSChippering.GetAuthenticatedData(security: TSecurity; AuthenticationKey: TBytes;
@@ -156,11 +169,14 @@ var
   if (security = TSecurity.Authentication) then
   begin
     tmp2 := TGXByteBuffer.Create();
-    tmp2.Add(Byte(security));
-    tmp2.SetArray(AuthenticationKey);
-    tmp2.SetArray(plainText);
-    Result := tmp2.ToArray;
-    FreeAndNil(tmp2);
+    try
+      tmp2.Add(Byte(security));
+      tmp2.SetArray(AuthenticationKey);
+      tmp2.SetArray(plainText);
+      Result := tmp2.ToArray;
+    finally
+      FreeAndNil(tmp2);
+    end;
     Exit;
   end
   else
@@ -173,10 +189,13 @@ var
       if (security = TSecurity.AuthenticationEncryption) then
       begin
         tmp2 := TGXByteBuffer.Create();
-        tmp2.Add(Byte(security));
-        tmp2.SetArray(AuthenticationKey);
-        Result := tmp2.ToArray;
-        FreeAndNil(tmp2);
+        try
+          tmp2.Add(Byte(security));
+          tmp2.SetArray(AuthenticationKey);
+          Result := tmp2.ToArray;
+        finally
+          FreeAndNil(tmp2);
+        end;
       end;
 end;
 
@@ -190,13 +209,17 @@ var
   cmd: TCommand;
   encryptedData, tag, ciphertext, aad, iv: TBytes;
   gcm: TGXDLMSChipperingStream;
+  tmp: TBytes;
+  t: TGXByteBuffer;
+  transactionId: UInt64;
+  tm: TGXDateTime;
 begin
   if (data = Nil) or (data.Size < 2) Then
     raise EArgumentException.Create('cryptedData');
 
   cmd := TCommand(data.GetUInt8());
   case cmd of
-    TCommand.GeneralGloCiphering:
+    TCommand.GeneralGloCiphering, TCommand.GeneralDedCiphering:
     begin
       len := TGXCommon.GetObjectCount(data);
       if len <> 0 Then
@@ -207,6 +230,7 @@ begin
         tag := Nil;
       end;
     end;
+    TCommand.GeneralCiphering,
     TCommand.GloInitiateRequest,
     TCommand.GloInitiateResponse,
     TCommand.GloReadRequest,
@@ -219,10 +243,84 @@ begin
     TCommand.GloSetResponse,
     TCommand.GloMethodRequest,
     TCommand.GloMethodResponse,
-    TCommand.GloEventNotificationRequest:
+    TCommand.GloEventNotificationRequest,
+    TCommand.DedInitiateRequest,
+    TCommand.DedInitiateResponse,
+    TCommand.DedGetRequest,
+    TCommand.DedGetResponse,
+    TCommand.DedSetRequest,
+    TCommand.DedSetResponse,
+    TCommand.DedMethodRequest,
+    TCommand.DedMethodResponse,
+    TCommand.DedEventNotificationRequest,
+    TCommand.DedReadRequest,
+    TCommand.DedReadResponse,
+    TCommand.DedWriteRequest,
+    TCommand.DedWriteResponse:
       //Do nothing.
     else
       raise EArgumentException.Create('cryptedData');
+  end;
+  if cmd = TCommand.GeneralCiphering Then
+  begin
+    len := TGXCommon.GetObjectCount(data);
+    SetLength(tmp, len);
+    data.Get(tmp);
+    t := TGXByteBuffer.Create(tmp);
+    transactionId := t.GetUInt64();
+    len := TGXCommon.GetObjectCount(data);
+    SetLength(tmp, len);
+    data.Get(tmp);
+    p.SystemTitle := tmp;
+    len := TGXCommon.GetObjectCount(data);
+    SetLength(tmp, len);
+    data.Get(tmp);
+    p.RecipientSystemTitle := tmp;
+    // Get date time.
+    len := TGXCommon.GetObjectCount(data);
+    if len <> 0 Then
+    begin
+      SetLength(tmp, len);
+      data.Get(tmp);
+      tm := TGXCommon.ChangeType(tmp, TDataType.dtDateTime).AsType<TGXDateTime>;
+      p.DateTime := tm.LocalTime;
+      FreeAndNil(tm);
+    end;
+    // other-information
+    len := data.GetUInt8();
+    if len <> 0 Then
+    begin
+      SetLength(tmp, len);
+      data.Get(tmp);
+      p.OtherInformation := tmp;
+    end;
+    // KeyInfo OPTIONAL
+    //len :=
+    data.GetUInt8();
+    // AgreedKey CHOICE tag.
+    data.GetUInt8();
+    // key-parameters
+    //len :=
+    data.GetUInt8();
+    p.KeyParameters := data.GetUInt8();
+    if p.KeyParameters = 1 Then
+    begin
+        // KeyAgreement.ONE_PASS_DIFFIE_HELLMAN
+        // key-ciphered-data
+        len := TGXCommon.GetObjectCount(data);
+        SetLength(tmp, len);
+        data.Get(tmp);
+        p.KeyCipheredData := tmp;
+    end
+    else if p.KeyParameters = 2 Then
+    begin
+        // KeyAgreement.STATIC_UNIFIED_MODEL
+        len := TGXCommon.GetObjectCount(data);
+        if len <> 0 Then
+          raise EArgumentException.Create('Invalid key parameters');
+    end
+    else
+      raise EArgumentException.Create('key-parameters');
   end;
   //len :=
   TGXCommon.GetObjectCount(data);
@@ -260,9 +358,12 @@ begin
   aad := GetAuthenticatedData(p.Security, p.AuthenticationKey, ciphertext);
   iv := GetNonse(p.InvocationCounter, p.SystemTitle);
   gcm := TGXDLMSChipperingStream.Create(p.Security, true, p.BlockCipherKey, aad, iv, tag);
-  gcm.Write(ciphertext);
-  ciphertext := gcm.FlushFinalBlock();
-  FreeAndNil(gcm);
+  try
+    gcm.Write(ciphertext);
+    ciphertext := gcm.FlushFinalBlock();
+  finally
+    FreeAndNil(gcm);
+  end;
   if p.Security = TSecurity.AuthenticationEncryption Then
   begin
       // Check tag.

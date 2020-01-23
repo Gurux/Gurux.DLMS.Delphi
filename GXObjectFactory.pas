@@ -34,7 +34,15 @@ unit GXObjectFactory;
 
 interface
 
-uses SysUtils, Gurux.DLMS.ObjectType, Gurux.DLMS.GXDLMSObject,
+uses Gurux.DLMS.ObjectType, Gurux.DLMS.GXDLMSObject;
+
+type
+TGXObjectFactory = class
+    class function CreateObject(tp : TObjectType) : TGXDLMSObject;static;
+end;
+implementation
+
+uses SysUtils,
 Gurux.DLMS.Objects.GXDLMSData, Gurux.DLMS.Objects.GXDLMSRegister,
 Gurux.DLMS.Objects.GXDLMSClock, Gurux.DLMS.Objects.GXDLMSRegisterMonitor,
 Gurux.DLMS.Objects.GXDLMSActivityCalendar,
@@ -75,119 +83,115 @@ Gurux.DLMS.Objects.GXDLMSTokenGateway,
 Gurux.DLMS.Objects.GXDLMSParameterMonitor,
 Gurux.DLMS.Objects.GXDLMSCompactData;
 
-type
-TGXObjectFactory = class
-    class function CreateObject(tp : TObjectType) : TGXDLMSObject;static;
-end;
-implementation
-
 // Reserved for internal use.
 class function TGXObjectFactory.CreateObject(tp : TObjectType) : TGXDLMSObject;
 begin
-  if tp = TObjectType.otActionSchedule Then
-    Result := TGXDLMSActionSchedule.Create()
-  else if tp = TObjectType.otActivityCalendar Then
-    Result := TGXDLMSActivityCalendar.Create()
-  else if tp = TObjectType.otAssociationLogicalName Then
-    Result := TGXDLMSAssociationLogicalName.Create()
-  else if tp = TObjectType.otAssociationShortName Then
-    Result := TGXDLMSAssociationShortName.Create()
-  else if tp = TObjectType.otAutoAnswer Then
-      Result := TGXDLMSAutoAnswer.Create()
-  else if tp = TObjectType.otAutoConnect Then
-      Result := TGXDLMSAutoConnect.Create()
-  else if tp = TObjectType.otClock Then
-      Result := TGXDLMSClock.Create()
-  else if tp = TObjectType.otData Then
-      Result := TGXDLMSData.Create()
-  else if tp = TObjectType.otDemandRegister Then
-     Result := TGXDLMSDemandRegister.Create()
-  else if tp = TObjectType.otSecuritySetup Then
-     Result := TGXDLMSSecuritySetup.Create()
-  else if tp = TObjectType.otMacAddressSetup Then
-     Result := TGXDLMSMacAddressSetup.Create()
-  else if tp = TObjectType.otEVENT Then
-      Result := TGXDLMSObject.Create(tp)
-  else if tp = TObjectType.otExtendedRegister Then
-      Result := TGXDLMSExtendedRegister.Create()
-  else if tp = TObjectType.otGprsSetup Then
-      Result := TGXDLMSGprsSetup.Create()
-  else if tp = TObjectType.otGSMDiagnostic Then
-      Result := TGXDLMSGSMDiagnostic.Create()
-  else if tp = TObjectType.otIecHdlcSetup Then
-      Result := TGXDLMSHdlcSetup.Create()
-  else if tp = TObjectType.otIecLocalPortSetup Then
-      Result := TGXDLMSIECOpticalPortSetup.Create()
-  else if tp = TObjectType.otIecTwistedPairSetup Then
-      Result := TGXDLMSObject.Create(tp)
-  else if tp = TObjectType.otIp4Setup Then
-      Result := TGXDLMSIp4Setup.Create()
-  else if tp = TObjectType.otMBusSlavePortSetup Then
-      Result := TGXDLMSMBusSlavePortSetup.Create()
-  else if tp = TObjectType.otImageTransfer Then
-      Result := TGXDLMSImageTransfer.Create()
-  else if tp = TObjectType.otDisconnectControl Then
-      Result := TGXDLMSDisconnectControl.Create()
-  else if tp = TObjectType.otLimiter Then
-      Result := TGXDLMSLimiter.Create()
-  else if tp = TObjectType.otMBusClient Then
-      Result := TGXDLMSMBusClient.Create()
-  else if tp = TObjectType.otModemConfiguration Then
-      Result := TGXDLMSModemConfiguration.Create()
-  else if tp = TObjectType.otPppSetup Then
-      Result := TGXDLMSPppSetup.Create()
-  else if tp = TObjectType.otProfileGeneric Then
-    Result := TGXDLMSProfileGeneric.Create()
-  else if tp = TObjectType.otRegister Then
-      Result := TGXDLMSRegister.Create()
-  else if tp = TObjectType.otRegisterActivation Then
-      Result := TGXDLMSRegisterActivation.Create()
-  else if tp = TObjectType.otRegisterMonitor Then
-      Result := TGXDLMSRegisterMonitor.Create()
-  else if tp = TObjectType.otRegisterTable Then
-      Result := TGXDLMSObject.Create(tp)
-  else if tp = TObjectType.otRemoteAnalogueControl Then
-      Result := TGXDLMSObject.Create(tp)
-  else if tp = TObjectType.otRemoteDigitalControl Then
-      Result := TGXDLMSObject.Create(tp)
-  else if tp = TObjectType.otSapAssignment Then
-      Result := TGXDLMSSapAssignment.Create()
-  else if tp = TObjectType.otSchedule Then
-      Result := TGXDLMSObject.Create(tp)
-  else if tp = TObjectType.otScriptTable Then
-      Result := TGXDLMSScriptTable.Create()
-  else if tp = TObjectType.otSmtpSetup Then
-      Result := TGXDLMSObject.Create(tp)
-  else if tp = TObjectType.otSpecialDaysTable Then
-      Result := TGXDLMSSpecialDaysTable.Create()
-  else if tp = TObjectType.otStatusMapping Then
-    Result := TGXDLMSObject.Create(tp)
-  else if tp = TObjectType.otTcpUdpSetup Then
-    Result := TGXDLMSTcpUdpSetup.Create()
-  else if tp = TObjectType.otTunnel Then
-    Result := TGXDLMSObject.Create(tp)
-  else if tp = TObjectType.otUtilityTables Then
-    Result := TGXDLMSObject.Create(tp)
-   else if tp = TObjectType.otMBusMasterPortSetup Then
-     Result := TGXDLMSMBusMasterPortSetup.Create()
-  else if tp = TObjectType.otPushSetup Then
-    Result := TGXDLMSPushSetup.Create()
-  else if tp = TObjectType.otMessageHandler Then
-    Result := TGXDLMSMessageHandler.Create()
-  else if tp = TObjectType.otAccount Then
-    Result := TGXDLMSAccount.Create()
-  else if tp = TObjectType.otCredit Then
-    Result := TGXDLMSCredit.Create()
-  else if tp = TObjectType.otCharge Then
-     Result := TGXDLMSCharge.Create()
-  else if tp = TObjectType.otTokenGateway Then
-    Result := TGXDLMSTokenGateway.Create()
-  else if tp = TObjectType.otParameterMonitor Then
-    Result := TGXDLMSParameterMonitor.Create()
-  else if tp = TObjectType.otCompactData Then
-    Result := TGXDLMSCompactData.Create()
+  case tp of
+  TObjectType.otActionSchedule:
+    Result := TGXDLMSActionSchedule.Create();
+  TObjectType.otActivityCalendar:
+    Result := TGXDLMSActivityCalendar.Create();
+  TObjectType.otAssociationLogicalName:
+    Result := TGXDLMSAssociationLogicalName.Create();
+  TObjectType.otAssociationShortName :
+    Result := TGXDLMSAssociationShortName.Create();
+  TObjectType.otAutoAnswer :
+      Result := TGXDLMSAutoAnswer.Create();
+  TObjectType.otAutoConnect :
+      Result := TGXDLMSAutoConnect.Create();
+  TObjectType.otClock :
+      Result := TGXDLMSClock.Create();
+  TObjectType.otData :
+      Result := TGXDLMSData.Create();
+  TObjectType.otDemandRegister :
+     Result := TGXDLMSDemandRegister.Create();
+  TObjectType.otSecuritySetup :
+     Result := TGXDLMSSecuritySetup.Create();
+  TObjectType.otMacAddressSetup :
+     Result := TGXDLMSMacAddressSetup.Create();
+  TObjectType.otEVENT :
+      Result := TGXDLMSObject.Create(tp);
+  TObjectType.otExtendedRegister :
+      Result := TGXDLMSExtendedRegister.Create();
+  TObjectType.otGprsSetup :
+      Result := TGXDLMSGprsSetup.Create();
+  TObjectType.otGSMDiagnostic :
+      Result := TGXDLMSGSMDiagnostic.Create();
+  TObjectType.otIecHdlcSetup :
+      Result := TGXDLMSHdlcSetup.Create();
+  TObjectType.otIecLocalPortSetup :
+      Result := TGXDLMSIECOpticalPortSetup.Create();
+  TObjectType.otIecTwistedPairSetup :
+      Result := TGXDLMSObject.Create(tp);
+  TObjectType.otIp4Setup :
+      Result := TGXDLMSIp4Setup.Create();
+  TObjectType.otMBusSlavePortSetup :
+      Result := TGXDLMSMBusSlavePortSetup.Create();
+  TObjectType.otImageTransfer :
+      Result := TGXDLMSImageTransfer.Create();
+  TObjectType.otDisconnectControl :
+      Result := TGXDLMSDisconnectControl.Create();
+  TObjectType.otLimiter :
+      Result := TGXDLMSLimiter.Create();
+  TObjectType.otMBusClient :
+      Result := TGXDLMSMBusClient.Create();
+  TObjectType.otModemConfiguration :
+      Result := TGXDLMSModemConfiguration.Create();
+  TObjectType.otPppSetup :
+      Result := TGXDLMSPppSetup.Create();
+  TObjectType.otProfileGeneric:
+    Result := TGXDLMSProfileGeneric.Create();
+  TObjectType.otRegister :
+      Result := TGXDLMSRegister.Create();
+  TObjectType.otRegisterActivation :
+      Result := TGXDLMSRegisterActivation.Create();
+  TObjectType.otRegisterMonitor :
+      Result := TGXDLMSRegisterMonitor.Create();
+  TObjectType.otRegisterTable :
+      Result := TGXDLMSObject.Create(tp);
+  TObjectType.otRemoteAnalogueControl :
+      Result := TGXDLMSObject.Create(tp);
+  TObjectType.otRemoteDigitalControl :
+      Result := TGXDLMSObject.Create(tp);
+  TObjectType.otSapAssignment :
+      Result := TGXDLMSSapAssignment.Create();
+  TObjectType.otSchedule :
+      Result := TGXDLMSObject.Create(tp);
+  TObjectType.otScriptTable :
+      Result := TGXDLMSScriptTable.Create();
+  TObjectType.otSmtpSetup :
+      Result := TGXDLMSObject.Create(tp);
+  TObjectType.otSpecialDaysTable :
+      Result := TGXDLMSSpecialDaysTable.Create();
+  TObjectType.otStatusMapping :
+    Result := TGXDLMSObject.Create(tp);
+  TObjectType.otTcpUdpSetup:
+    Result := TGXDLMSTcpUdpSetup.Create();
+  TObjectType.otTunnel :
+    Result := TGXDLMSObject.Create(tp);
+  TObjectType.otUtilityTables :
+    Result := TGXDLMSObject.Create(tp);
+   TObjectType.otMBusMasterPortSetup :
+     Result := TGXDLMSMBusMasterPortSetup.Create();
+  TObjectType.otPushSetup:
+    Result := TGXDLMSPushSetup.Create();
+  TObjectType.otMessageHandler :
+    Result := TGXDLMSMessageHandler.Create();
+  TObjectType.otAccount :
+    Result := TGXDLMSAccount.Create();
+  TObjectType.otCredit :
+    Result := TGXDLMSCredit.Create();
+  TObjectType.otCharge :
+     Result := TGXDLMSCharge.Create();
+  TObjectType.otTokenGateway :
+    Result := TGXDLMSTokenGateway.Create();
+  TObjectType.otParameterMonitor :
+    Result := TGXDLMSParameterMonitor.Create();
+  //TODO: TObjectType.otCompactData :
+  //TODO:   Result := TGXDLMSCompactData.Create();
   else
     Result := TGXDLMSObject.Create(tp);
+  end;
 end;
 
 end.

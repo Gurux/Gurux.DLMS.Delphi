@@ -431,9 +431,14 @@ begin
       for item in e.Value.AsType<TArray<TValue>> do
       begin
         sp := TGXDLMSSeasonProfile.Create();
-        sp.Name := TGXCommon.ChangeType(item.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
-        sp.Start := TGXCommon.ChangeType(item.GetArrayElement(1).AsType<TValue>.AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
-        sp.WeekName := TGXCommon.ChangeType(item.GetArrayElement(2).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
+        try
+          sp.Name := TGXCommon.ChangeType(item.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
+          sp.Start := TGXCommon.ChangeType(item.GetArrayElement(1).AsType<TValue>.AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
+          sp.WeekName := TGXCommon.ChangeType(item.GetArrayElement(2).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
+        except
+          sp.Free;
+          raise;
+        end;
         FSeasonProfileActive.Add(sp);
       end;
     end;
@@ -446,14 +451,19 @@ begin
       for item in e.Value.AsType<TArray<TValue>> do
       begin
         wp := TGXDLMSWeekProfile.Create();
-        wp.Name := TGXCommon.ChangeType(item.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
-        wp.Monday := item.GetArrayElement(1).AsType<TValue>.AsInteger;
-        wp.Tuesday := item.GetArrayElement(2).AsType<TValue>.AsInteger;
-        wp.Wednesday := item.GetArrayElement(3).AsType<TValue>.AsInteger;
-        wp.Thursday := item.GetArrayElement(4).AsType<TValue>.AsInteger;
-        wp.Friday := item.GetArrayElement(5).AsType<TValue>.AsInteger;
-        wp.Saturday := item.GetArrayElement(6).AsType<TValue>.AsInteger;
-        wp.Sunday := item.GetArrayElement(7).AsType<TValue>.AsInteger;
+        try
+          wp.Name := TGXCommon.ChangeType(item.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
+          wp.Monday := item.GetArrayElement(1).AsType<TValue>.AsInteger;
+          wp.Tuesday := item.GetArrayElement(2).AsType<TValue>.AsInteger;
+          wp.Wednesday := item.GetArrayElement(3).AsType<TValue>.AsInteger;
+          wp.Thursday := item.GetArrayElement(4).AsType<TValue>.AsInteger;
+          wp.Friday := item.GetArrayElement(5).AsType<TValue>.AsInteger;
+          wp.Saturday := item.GetArrayElement(6).AsType<TValue>.AsInteger;
+          wp.Sunday := item.GetArrayElement(7).AsType<TValue>.AsInteger;
+        except
+          wp.Free;
+          raise;
+        end;
         FWeekProfileTableActive.Add(wp);
       end;
     end;
@@ -464,19 +474,29 @@ begin
     if Not e.Value.IsEmpty Then
     begin
     for item in e.Value.AsType<TArray<TValue>> do
-    begin
-      dp := TGXDLMSDayProfile.Create();
-      dp.DayId := item.GetArrayElement(0).AsType<TValue>.AsInteger;
-      for it in item.GetArrayElement(1).AsType<TValue>.AsType<TArray<TValue>> do
       begin
-        ac := TGXDLMSDayProfileAction.Create();
-        ac.StartTime := TGXCommon.ChangeType(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtTime).AsType<TGXDateTime>;
-        ac.ScriptLogicalName := TGXCommon.ToLogicalName(it.GetArrayElement(1));
-        ac.ScriptSelector := it.GetArrayElement(2).AsType<TValue>.AsInteger;
-        dp.DaySchedules.Add(ac);
+        dp := TGXDLMSDayProfile.Create();
+        try
+          dp.DayId := item.GetArrayElement(0).AsType<TValue>.AsInteger;
+          for it in item.GetArrayElement(1).AsType<TValue>.AsType<TArray<TValue>> do
+          begin
+            ac := TGXDLMSDayProfileAction.Create();
+            try
+              ac.StartTime := TGXCommon.ChangeType(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtTime).AsType<TGXDateTime>;
+              ac.ScriptLogicalName := TGXCommon.ToLogicalName(it.GetArrayElement(1));
+              ac.ScriptSelector := it.GetArrayElement(2).AsType<TValue>.AsInteger;
+            except
+              ac.Free;
+              raise;
+            end;
+            dp.DaySchedules.Add(ac);
+          end;
+          FDayProfileTableActive.Add(dp);
+        except
+          dp.Free;
+          raise;
+        end;
       end;
-      FDayProfileTableActive.Add(dp);
-    end;
     end;
   end
   else if e.Index = 6 Then
@@ -494,9 +514,14 @@ begin
       for item in e.Value.AsType<TArray<TValue>> do
       begin
         sp := TGXDLMSSeasonProfile.Create();
-        sp.Name := TGXCommon.ChangeType(item.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
-        sp.Start := TGXCommon.ChangeType(item.GetArrayElement(1).AsType<TValue>.AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
-        sp.WeekName := TGXCommon.ChangeType(item.GetArrayElement(2).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
+        try
+          sp.Name := TGXCommon.ChangeType(item.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
+          sp.Start := TGXCommon.ChangeType(item.GetArrayElement(1).AsType<TValue>.AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
+          sp.WeekName := TGXCommon.ChangeType(item.GetArrayElement(2).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
+        except
+          sp.Free;
+          raise;
+        end;
         FSeasonProfilePassive.Add(sp);
       end;
     end;
@@ -509,15 +534,20 @@ begin
       for item in e.Value.AsType<TArray<TValue>> do
       begin
         wp := TGXDLMSWeekProfile.Create();
-        wp.Name := TGXCommon.ChangeType(item.GetArrayElement(0).AsType<TValue>.AsType<TBytes>,
-                  TDataType.dtString).ToString();
-        wp.Monday := item.GetArrayElement(1).AsType<TValue>.AsInteger;
-        wp.Tuesday := item.GetArrayElement(2).AsType<TValue>.AsInteger;
-        wp.Wednesday := item.GetArrayElement(3).AsType<TValue>.AsInteger;
-        wp.Thursday := item.GetArrayElement(4).AsType<TValue>.AsInteger;
-        wp.Friday := item.GetArrayElement(5).AsType<TValue>.AsInteger;
-        wp.Saturday := item.GetArrayElement(6).AsType<TValue>.AsInteger;
-        wp.Sunday := item.GetArrayElement(7).AsType<TValue>.AsInteger;
+        try
+          wp.Name := TGXCommon.ChangeType(item.GetArrayElement(0).AsType<TValue>.AsType<TBytes>,
+                    TDataType.dtString).ToString();
+          wp.Monday := item.GetArrayElement(1).AsType<TValue>.AsInteger;
+          wp.Tuesday := item.GetArrayElement(2).AsType<TValue>.AsInteger;
+          wp.Wednesday := item.GetArrayElement(3).AsType<TValue>.AsInteger;
+          wp.Thursday := item.GetArrayElement(4).AsType<TValue>.AsInteger;
+          wp.Friday := item.GetArrayElement(5).AsType<TValue>.AsInteger;
+          wp.Saturday := item.GetArrayElement(6).AsType<TValue>.AsInteger;
+          wp.Sunday := item.GetArrayElement(7).AsType<TValue>.AsInteger;
+        except
+          wp.Free;
+          raise;
+        end;
         FWeekProfileTablePassive.Add(wp);
       end;
     end;
@@ -530,14 +560,24 @@ begin
       for item in e.Value.AsType<TArray<TValue>> do
       begin
         dp := TGXDLMSDayProfile.Create();
-        dp.DayId := item.GetArrayElement(0).AsType<TValue>.AsInteger;
-        for it in item.GetArrayElement(1).AsType<TValue>.AsType<TArray<TValue>> do
-        begin
-          ac := TGXDLMSDayProfileAction.Create();
-          ac.StartTime := TGXCommon.ChangeType(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtTime).AsType<TGXDateTime>;
-          ac.ScriptLogicalName := TGXCommon.ToLogicalName(it.GetArrayElement(1));
-          ac.ScriptSelector := it.GetArrayElement(2).AsType<TValue>.AsInteger;
-          dp.DaySchedules.Add(ac);
+        try
+          dp.DayId := item.GetArrayElement(0).AsType<TValue>.AsInteger;
+          for it in item.GetArrayElement(1).AsType<TValue>.AsType<TArray<TValue>> do
+          begin
+            ac := TGXDLMSDayProfileAction.Create();
+            try
+              ac.StartTime := TGXCommon.ChangeType(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtTime).AsType<TGXDateTime>;
+              ac.ScriptLogicalName := TGXCommon.ToLogicalName(it.GetArrayElement(1));
+              ac.ScriptSelector := it.GetArrayElement(2).AsType<TValue>.AsInteger;
+            except
+              ac.Free;
+              raise;
+            end;
+            dp.DaySchedules.Add(ac);
+          end;
+        except
+          dp.Free;
+          raise;
         end;
         FDayProfileTablePassive.Add(dp);
       end;

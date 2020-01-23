@@ -181,6 +181,8 @@ end;
     FInvokeId: LongWord;
     //DLMS settings.
     FSettings: TGXDLMSSettings;
+    //GBT Window size.
+    FWindowSize: BYTE;
   public
     // Target COSEM object.
     property Target: TGXDLMSObject read FTarget write FTarget;
@@ -213,6 +215,9 @@ end;
     //DLMS settings.
     property Settings: TGXDLMSSettings read FSettings;
 
+    //GBT window size.
+    property WindowSize: BYTE read FWindowSize write FWindowSize;
+
   // Constructor.
   constructor Create(settings: TGXDLMSSettings; target: TGXDLMSObject; index: Integer; selector: Integer; parameters: TValue);overload;
   // Constructor.
@@ -237,7 +242,7 @@ private
   FObjects: TGXDLMSObjectCollection;
   FUseCustomChallenge: Boolean;
   FInvokeID: Byte;
-  FLongInvokeID : WORD;
+  FLongInvokeID : UInt32;
   FProposedConformance:   TConformance;
   FNegotiatedConformance:   TConformance;
   FIsAuthenticationRequired : Boolean;
@@ -261,7 +266,11 @@ private
   FBlockIndex : LongWord;
   FStartingBlockIndex : LongWord;
   FGateway : TGXDLMSGateway;
-
+  FProtocolVersion: string;
+  FUserId: Integer;
+  FQualityOfService: Byte;
+  FWindowSize: BYTE;
+  FBlockNumberAck: BYTE;
   // Ciphering.
   FCipher : TGXCiphering;
 
@@ -291,14 +300,17 @@ private
   // Resets block index to default value.
   procedure ResetBlockIndex;
 
-  /// Increases block index.
+  // Increases block index.
   procedure IncreaseBlockIndex;
+  // Update invoke ID.
+  procedure UpdateInvokeId(value: BYTE);
+
 
   // Invoke ID.
   property InvokeID: Byte read FInvokeID write SetInvokeID;
 
   // Invoke ID.
-  property LongInvokeID: WORD read FLongInvokeID write FLongInvokeID;
+  property LongInvokeID: UInt32 read FLongInvokeID write FLongInvokeID;
 
   // When connection is made client tells what kind of services it want's to use.
   property ProposedConformance: TConformance read FProposedConformance write FProposedConformance;
@@ -318,7 +330,7 @@ private
   //Constructor.
   constructor Create(
   //Is Logical or short name referencing used.
-  server : Boolean);
+  AIsServer : Boolean);
 
   destructor Destroy; override;
 
@@ -400,6 +412,19 @@ private
 
   //Gateway settings.
   property Gateway : TGXDLMSGateway read FGateway write FGateway;
+
+  //Protocol version.
+  property ProtocolVersion : string read FProtocolVersion write FProtocolVersion;
+
+  //User ID.
+  property UserId : Integer read FUserId write FUserId;
+
+  //Quality of service.
+  property QualityOfService : Byte read FQualityOfService write FQualityOfService;
+
+  property WindowSize : Byte read FWindowSize write FWindowSize;
+  property BlockNumberAck : Byte read FBlockNumberAck write FBlockNumberAck;
+
 
 end;
 
@@ -550,22 +575,15 @@ end;
 
 constructor TGXDLMSObject.Create(objectType: TObjectType);
 begin
-  inherited Create;
+  Create;
   FObjectType := objectType;
-  FReadTimes := TDictionary<byte, TDateTime>.Create;
-  FAttributes := TGXAttributeCollection.Create;
-  FMethodAttributes := TGXAttributeCollection.Create;
 end;
 
 constructor TGXDLMSObject.Create(objectType: TObjectType; ln: string; sn: Word);
 var
   items: TArray<string>;
 begin
-  inherited Create;
-  FReadTimes := TDictionary<byte, TDateTime>.Create;
-  FAttributes := TGXAttributeCollection.Create;
-  FMethodAttributes := TGXAttributeCollection.Create;
-  FObjectType := objectType;
+  Create(objectType);
   FShortName := sn;
   if (ln <> '') then
   begin
@@ -849,8 +867,9 @@ begin
   FValue := Nil;
 end;
 
-constructor TGXDLMSSettings.Create(server : Boolean);
+constructor TGXDLMSSettings.Create(AIsServer : Boolean);
 begin;
+  inherited Create;
   FMaxPduSize := $FFFF;
   FInvokeID := 1;
   FLongInvokeID := 1;
@@ -862,7 +881,7 @@ begin;
   FServiceClass := TServiceClass.scConfirmed;
   FMaxServerPDUSize := DefaultMaxReceivePduSize;
   MaxPduSize := DefaultMaxReceivePduSize;
-  FIsServer := server;
+  FIsServer := AIsServer;
   FObjects := TGXDLMSObjectCollection.Create();
   FLimits := TGXDLMSLimits.Create();
   FProposedConformance := TGXDLMSSettings.GetInitialConformance(false);
@@ -872,10 +891,10 @@ end;
 
 destructor TGXDLMSSettings.Destroy;
 begin
-  inherited;
   FreeAndNil(FLimits);
   FreeAndNil(FObjects);
   FreeAndNil(FCipher);
+  inherited;
 end;
 
 class function TGXDLMSSettings.GetInitialConformance(useLogicalNameReferencing: Boolean): TConformance;
@@ -1024,10 +1043,25 @@ begin
     FBlockIndex := FStartingBlockIndex;
 end;
 
-/// Increases block index.
+// Increases block index.
 procedure TGXDLMSSettings.IncreaseBlockIndex;
 begin
     FBlockIndex := FBlockIndex + 1;
+end;
+
+// Update invoke ID.
+procedure TGXDLMSSettings.UpdateInvokeId(value: BYTE);
+begin
+  if value and $80 <> 0 Then
+    FPriority := TPriority.prHigh
+  else
+    FPriority := TPriority.prNormal;
+
+  if value and $40 <> 0 Then
+    FServiceClass := TServiceClass.scConfirmed
+  else
+    FServiceClass := TServiceClass.scUnConfirmed;
+  FInvokeID := value and $F;
 end;
 end.
 

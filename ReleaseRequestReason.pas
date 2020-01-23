@@ -30,22 +30,22 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.Objects.SingleReadResponse;
+unit ReleaseRequestReason;
 
 interface
-
 type
-//Enumerates single read response types.
-TSingleReadResponse = (
-  // Normal data.
-  srData = 0,
-  // Error has occured on read.
-  srDataAccessError = 1,
-  // Return data as blocks.
-  srDataBlockResult = 2,
-  // Return block number.
-  srBlockNumber = 3
+// RequestTypes enumerates the replies of the server to a client's request,
+// indicating the request type.
+TReleaseRequestReason =
+(
+  // Client closes connection as normal.
+  Normal = 0,
+  // Client closes connection as urgent.
+  Urgent = 1,
+  // Client closes connection user defined reason.
+  UserDefined = 30
 );
+
 implementation
 
 end.

@@ -4,7 +4,7 @@
     </PropertyGroup>
     <ItemGroup>
         <Projects Include="Gurux.DLMS.Client.Example.Delphi.dproj">
-            <Dependencies/>
+            <Dependencies>..\GuruxDLMS.dproj</Dependencies>
         </Projects>
         <Projects Include="..\GuruxDLMS.dproj">
             <Dependencies/>
@@ -17,13 +17,13 @@
             <Default.Personality/>
         </BorlandProject>
     </ProjectExtensions>
-    <Target Name="Gurux_DLMS_Client_Example_Delphi">
+    <Target Name="Gurux_DLMS_Client_Example_Delphi" DependsOnTargets="GuruxDLMS">
         <MSBuild Projects="Gurux.DLMS.Client.Example.Delphi.dproj"/>
     </Target>
-    <Target Name="Gurux_DLMS_Client_Example_Delphi:Clean">
+    <Target Name="Gurux_DLMS_Client_Example_Delphi:Clean" DependsOnTargets="GuruxDLMS:Clean">
         <MSBuild Projects="Gurux.DLMS.Client.Example.Delphi.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="Gurux_DLMS_Client_Example_Delphi:Make">
+    <Target Name="Gurux_DLMS_Client_Example_Delphi:Make" DependsOnTargets="GuruxDLMS:Make">
         <MSBuild Projects="Gurux.DLMS.Client.Example.Delphi.dproj" Targets="Make"/>
     </Target>
     <Target Name="GuruxDLMS">

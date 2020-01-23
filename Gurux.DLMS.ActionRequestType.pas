@@ -35,21 +35,22 @@ unit Gurux.DLMS.ActionRequestType;
 interface
 
 type
-  //Enumerates Action request types.
-  TActionRequestType = (
-    // Normal action.
-    Normal = 1,
-    // Next block.
-    NextBlock = 2,
-    // Action with list.
-    WithList = 3,
-    // Action with first block.
-    WithFirstBlock = 4,
-    // Action with list and first block.
-    WithListAndFirstBlock = 5,
-    // Action with block.
-    WithBlock = 6
-  );
+// Enumerates Action request types.
+TActionRequestType =
+(
+  // Normal action.
+  arNormal = 1,
+  // Next block.
+  arNextBlock = 2,
+  // Action with list.
+  arWithList = 3,
+  // Action with first block.
+  arWithFirstBlock = 4,
+  // Action with list and first block.
+  arWithListAndFirstBlock = 5,
+  // Action with block.
+  arWithBlock = 6
+);
 
 implementation
 

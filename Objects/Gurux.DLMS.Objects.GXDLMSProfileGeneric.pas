@@ -126,7 +126,7 @@ end;
 
 constructor TGXDLMSProfileGeneric.Create(ln: string; sn: System.UInt16);
 begin
-  inherited Create(TObjectType.otProfileGeneric, ln, 0);
+  inherited Create(TObjectType.otProfileGeneric, ln, sn);
   FCaptureObjects := TObjectList<TGXDLMSCaptureObject>.Create();
   FBuffer := TList<TValue>.Create();
   FFreeObjects := TObjectList<TObject>.Create();
@@ -157,10 +157,10 @@ end;
 //Release added objects.
 destructor TGXDLMSProfileGeneric.Destroy;
 begin
-  inherited;
   FreeAndNil(FFreeObjects);
   FreeAndNil(FBuffer);
   FreeAndNil(FCaptureObjects);
+  inherited;
 end;
 
 function TGXDLMSProfileGeneric.GetValues() : TArray<TValue>;
@@ -414,7 +414,12 @@ begin
           begin
             lastDate := IncSecond(lastDate, FCapturePeriod);
             tmp2 := TGXDateTime.Create(lastDate);
-            row.SetArrayElement(pos, tmp2);
+            try
+              row.SetArrayElement(pos, tmp2);
+            except
+              tmp2.Free;
+              raise;
+            end;
             FFreeObjects.Add(tmp2);
           end
         end;
@@ -477,8 +482,11 @@ begin
       begin
         obj := TGXObjectFactory.CreateObject(ot);
         obj.LogicalName := ln;
-      end;
-      item := TGXDLMSCaptureObject.Create(obj, attributeIndex, dataIndex);
+        item := TGXDLMSCaptureObject.Create(obj, attributeIndex, dataIndex, True);
+      end
+      else
+        item := TGXDLMSCaptureObject.Create(obj, attributeIndex, dataIndex);
+
       FCaptureObjects.Add(item);
     end;
   end

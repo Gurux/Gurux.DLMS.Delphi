@@ -22,7 +22,7 @@
 // and/or modify it under the terms of the GNU General Public License 
 // as published by the Free Software Foundation; version 2 of the License.
 // Gurux Device Framework is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of 
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
 // See the GNU General Public License for more details.
 //
@@ -384,8 +384,8 @@ implementation
 
 destructor TGXDLMSChipperingStream.Destroy;
 begin
-  inherited;
   FreeAndNil(FOutput);
+  inherited;
 end;
 
 constructor TGXDLMSChipperingStream.Create(security: TSecurity; encrypt: Boolean;
@@ -671,12 +671,12 @@ begin
   tmp[3] := 0;
   for pos := 0 to 15 do
   begin
-      m := TLongWordArray(FM[pos + pos, (value[pos] and $0f)]);
+      m := TLongWordArray(FM[pos + pos, (value[pos] and $0F)]);
       tmp[0] := tmp[0] xor m[0];
       tmp[1] := tmp[1] xor m[1];
       tmp[2] := tmp[2] xor m[2];
       tmp[3] := tmp[3] xor m[3];
-      m := TLongWordArray(FM[pos + pos + 1][(value[pos] and $f0) Shr 4]);
+      m := TLongWordArray(FM[pos + pos + 1][(value[pos] and $F0) Shr 4]);
       tmp[0] := tmp[0] xor m[0];
       tmp[1] := tmp[1] xor m[1];
       tmp[2] := tmp[2] xor m[2];
@@ -891,11 +891,11 @@ class function TGXDLMSChipperingStream.GaloisMultiply(value: Byte):Byte;
 begin
   if (value shr 7) <> 0 Then
   begin
-    value := (value shl 1);
-    Result := (value xor $1b);
+    value := Byte(value shl 1);
+    Result := Byte(value xor $1b);
   end
   else
-    Result := (value shl 1);
+    Result := Byte(value shl 1);
 end;
 
 class procedure TGXDLMSChipperingStream.Aes1Encrypt(buff: TGXByteBuffer; offset: WORD; secret: TGXByteBuffer);
@@ -908,7 +908,7 @@ begin
   for round := 0 to 9 do
   begin
       for i := 0 to 15 do
-        data[i + offset] := SBox[(data[i + offset] xor  key[i])];
+        data[i + offset] := SBox[(data[i + offset] xor  key[i]) and $FF];
 
       // cip_shift rows
       buf1 := data[1 + offset];

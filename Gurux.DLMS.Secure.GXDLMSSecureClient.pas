@@ -60,7 +60,7 @@ TGXDLMSSecureClient = class(TGXDLMSClient)
 				//Password if authentication is used.
 				Password : TBytes;
         //Interface type. Default is general.
-				intefaceType : TInterfaceType);overload;
+				interfaceType : TInterfaceType);overload;
 
     constructor Create(
         //Is Logical or short name referencing used.
@@ -74,13 +74,17 @@ TGXDLMSSecureClient = class(TGXDLMSClient)
 				//Password if authentication is used.
 				Password : string;
         //Interface type. Default is general.
-				intefaceType : TInterfaceType);overload;
+				interfaceType : TInterfaceType);overload;
 end;
 
 implementation
 
 destructor TGXDLMSSecureClient.Destroy;
 begin
+  {
+   FCiphering is destroyed by the destroying FSettings in the base class.
+   inherited destory FSettings, FSettings destorys FCiphering.
+  }
   inherited;
 end;
 
@@ -96,6 +100,7 @@ end;
 constructor TGXDLMSSecureClient.Create;
 begin
   inherited;
+  { The inherited constructor does not create the FCiphering }
   FCiphering := TGXCiphering.Create(TEncoding.ASCII.GetBytes('ABCDEFGH'));
   FSettings.Cipher := FCiphering;
 end;
@@ -111,9 +116,9 @@ constructor TGXDLMSSecureClient.Create(
     //Password if authentication is used.
     Password : string;
     //Interface type. Default is general.
-    intefaceType : TInterfaceType);
+    interfaceType : TInterfaceType);
 begin
-  inherited Create (UseLogicalNameReferencing, ClientAddress, ServerAddress, Authentication, Password, intefaceType) ;
+  inherited Create (UseLogicalNameReferencing, ClientAddress, ServerAddress, Authentication, Password, interfaceType) ;
   FCiphering := TGXCiphering.Create(TEncoding.ASCII.GetBytes('ABCDEFGH'));
   FSettings.Cipher := FCiphering;
 end;
@@ -129,9 +134,9 @@ constructor TGXDLMSSecureClient.Create(
     //Password if authentication is used.
     Password: TBytes;
     //Interface type. Default is general.
-    intefaceType : TInterfaceType);
+    interfaceType : TInterfaceType);
 begin
-  inherited Create(UseLogicalNameReferencing, ClientAddress, ServerAddress, Authentication, Password, intefaceType);
+  inherited Create(UseLogicalNameReferencing, ClientAddress, ServerAddress, Authentication, Password, interfaceType);
   FCiphering := TGXCiphering.Create(TEncoding.ASCII.GetBytes('ABCDEFGH'));
   FSettings.Cipher := FCiphering;
 end;

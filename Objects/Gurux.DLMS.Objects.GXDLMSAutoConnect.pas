@@ -232,35 +232,43 @@ begin
   else if e.Index = 5 Then
   begin
     data := TGXByteBuffer.Create();
-    data.Add(Integer(TDataType.dtArray));
-    //Add count
-    TGXCommon.SetObjectCount(CallingWindow.Count, data);
-    for it in CallingWindow do
-    begin
-      data.Add(Integer(TDataType.dtStructure));
-      data.Add(2); //Count
-      TGXCommon.SetData(data, TDataType.dtOctetString, it.Key); //start_time
-      TGXCommon.SetData(data, TDataType.dtOctetString, it.Value); //end_time
+    try
+      data.Add(Integer(TDataType.dtArray));
+      //Add count
+      TGXCommon.SetObjectCount(CallingWindow.Count, data);
+      for it in CallingWindow do
+      begin
+        data.Add(Integer(TDataType.dtStructure));
+        data.Add(2); //Count
+        TGXCommon.SetData(data, TDataType.dtOctetString, it.Key); //start_time
+        TGXCommon.SetData(data, TDataType.dtOctetString, it.Value); //end_time
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else if e.Index = 6 Then
   begin
     data := TGXByteBuffer.Create();
-    data.Add(Integer(TDataType.dtArray));
-    if FDestinations = Nil Then
-    begin
-      //Add count
-      TGXCommon.SetObjectCount(0, data);
-    end
-    else
-    begin
-      //Add count
-      TGXCommon.SetObjectCount(Length(Destinations), data);
-      for str in Destinations do
-          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(str))); //destination
+    try
+      data.Add(Integer(TDataType.dtArray));
+      if FDestinations = Nil Then
+      begin
+        //Add count
+        TGXCommon.SetObjectCount(0, data);
+      end
+      else
+      begin
+        //Add count
+        TGXCommon.SetObjectCount(Length(Destinations), data);
+        for str in Destinations do
+            TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.GetBytes(str))); //destination
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');

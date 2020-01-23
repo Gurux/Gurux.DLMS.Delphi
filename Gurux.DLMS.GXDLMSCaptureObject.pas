@@ -45,6 +45,7 @@ private
   FAttributeIndex: Byte;
   // Data index of DLMS object in the profile generic table.
   FDataIndex: Byte;
+  FFreeTargetOnDestroy: Boolean;
 public
     //Attribute Index of DLMS object in the profile generic table.
     property Target: TGXDLMSObject read FTarget write FTarget;
@@ -54,7 +55,8 @@ public
     // Data index of DLMS object in the profile generic table.
     property DataIndex: Byte read FDataIndex write FDataIndex;
     constructor Create();overload;
-    constructor Create(ATarget: TGXDLMSObject; AAttributeIndex: Byte; ADataIndex: Byte);overload;
+    constructor Create(ATarget: TGXDLMSObject; AAttributeIndex: Byte; ADataIndex: Byte; AOwnsTarget: Boolean = False);overload;
+    destructor Destroy; override;
 end;
 
 implementation
@@ -63,11 +65,19 @@ constructor TGXDLMSCaptureObject.Create();
 begin
 end;
 
-constructor TGXDLMSCaptureObject.Create(ATarget: TGXDLMSObject; AAttributeIndex: Byte; ADataIndex: Byte);
+constructor TGXDLMSCaptureObject.Create(ATarget: TGXDLMSObject; AAttributeIndex: Byte; ADataIndex: Byte; AOwnsTarget: Boolean = False);
 begin
   FTarget := ATarget;
   FAttributeIndex := AAttributeIndex;
   FDataIndex := ADataIndex;
+  FFreeTargetOnDestroy := AOwnsTarget;
+end;
+
+destructor TGXDLMSCaptureObject.Destroy;
+begin
+  if FFreeTargetOnDestroy then
+    FTarget.Free;
+  inherited;
 end;
 
 end.

@@ -35,19 +35,20 @@ unit Gurux.DLMS.SetRequestType;
 interface
 
 type
-  //Enumerates Set request types.
-  TSetRequestType = (
-    // Normal Set.
-    Normal = 1,
-    // Set with first data block.
-    FirstDataBlock = 2,
-    // Set with data block.
-    WithDataBlock = 3,
-    // Set with list .
-    WithList = 4,
-    // Set with list and first data block.
-    WithListAndWithFirstDatablock = 5
-  );
+// Enumerates Set request types.
+TSetRequestType =
+(
+  // Normal Set.
+  stNormal = 1,
+  // Set with first data block.
+  stFirstDataBlock = 2,
+  // Set with data block.
+  stWithDataBlock = 3,
+  // Set with list.
+  stWithList = 4,
+  // Set with list and first data block.
+  stWithListAndWithFirstDatablock = 5
+);
 
 implementation
 

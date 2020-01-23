@@ -42,6 +42,8 @@ TGXDLMSLNParameters = class
   FSettings: TGXDLMSSettings;
   // DLMS Command.
   FCommand: TCommand;
+  // Ciphered Command.
+  FCipheredCommand: TCommand;
   // Request type.
   FRequestType: Byte;
   // Attribute descriptor.
@@ -74,8 +76,15 @@ TGXDLMSLNParameters = class
   // <param name="ACommandType">Command type.</param>
   // <param name="AAttributeDescriptor">Attribute descriptor,</param>
   // <param name="AData">Data,</param>
-  constructor Create(ASettings: TGXDLMSSettings; invokeId: Cardinal; ACommand: TCommand; ACommandType: Byte;
-           AAttributeDescriptor: TGXByteBuffer; AData: TGXByteBuffer; AStatus: Byte);
+  constructor Create(
+      ASettings: TGXDLMSSettings;
+      invokeId: Cardinal;
+      ACommand: TCommand;
+      ACommandType: Byte;
+      AAttributeDescriptor: TGXByteBuffer;
+      AData: TGXByteBuffer;
+      AStatus: Byte;
+      ACipheredCommand:TCommand);
 
   // DLMS settings.
   property Settings: TGXDLMSSettings read FSettings write FSettings;
@@ -112,12 +121,13 @@ end;
 implementation
   constructor TGXDLMSLNParameters.Create(ASettings: TGXDLMSSettings; invokeId: Cardinal;
   ACommand: TCommand; ACommandType: Byte; AAttributeDescriptor: TGXByteBuffer;
-  AData: TGXByteBuffer; AStatus: Byte);
+  AData: TGXByteBuffer; AStatus: Byte; ACipheredCommand:TCommand);
   begin
     FSettings := ASettings;
     FInvokeId := invokeId;
     FBlockIndex := ASettings.BlockIndex;
     FCommand := ACommand;
+    FCipheredCommand := ACipheredCommand;
     FRequestType := ACommandType;
     FAttributeDescriptor := AAttributeDescriptor;
     FData := AData;

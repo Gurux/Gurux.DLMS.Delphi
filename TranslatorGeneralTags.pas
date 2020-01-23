@@ -30,41 +30,43 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.GXDLMSActionSet;
+unit TranslatorGeneralTags;
 
 interface
-
-uses SysUtils, Gurux.DLMS.GXDLMSActionItem;
-
 type
-
-TGXDLMSActionSet = class
-  private
-  FActionUp : TGXDLMSActionItem;
-  FActionDown : TGXDLMSActionItem;
-
-  public
-  constructor Create; overload;
-  destructor Destroy;override;
-
-  property ActionUp: TGXDLMSActionItem read FActionUp;
-  property ActionDown: TGXDLMSActionItem read FActionDown;
-end;
-
+TTranslatorGeneralTags =
+(
+  ApplicationContextName = $A1,
+  NegotiatedQualityOfService = $BE00,
+  ProposedDlmsVersionNumber = $BE01,
+  ProposedMaxPduSize = $BE02,
+  ProposedConformance = $BE03,
+  VaaName = $BE04,
+  NegotiatedConformance = $BE05,
+  NegotiatedDlmsVersionNumber = $BE06,
+  NegotiatedMaxPduSize = $BE07,
+  ConformanceBit = $BE08,
+  ProposedQualityOfService = $BE09,
+  SenderACSERequirements = $8A,
+  ResponderACSERequirement = $88,
+  RespondingMechanismName = $89,
+  CallingMechanismName = $8B,
+  CallingAuthentication = $AC,
+  RespondingAuthentication = $80,
+  AssociationResult = $A2,
+  ResultSourceDiagnostic = $A3,
+  ACSEServiceUser = $A301,
+  ACSEServiceProvider = $A302,
+  CallingAPTitle = $A6,
+  RespondingAPTitle = $A4,
+  DedicatedKey = $A8,
+  CallingAeInvocationId = $A9,
+  CalledAeInvocationId = $A5,
+  CallingAeQualifier = $A7,
+  CharString = $AA,
+  UserInformation = $AB,
+  RespondingAeInvocationId = $AD
+);
 implementation
-
-constructor TGXDLMSActionSet.Create;
-begin
-  inherited;
-  FActionUp := TGXDLMSActionItem.Create;
-  FActionDown := TGXDLMSActionItem.Create;
-end;
-
-destructor TGXDLMSActionSet.Destroy;
-begin
-  FreeAndNil(FActionUp);
-  FreeAndNil(FActionDown);
-  inherited;
-end;
 
 end.

@@ -61,63 +61,76 @@ begin
     begin
       len := Length(data);
       s := TGXByteBuffer.Create();
-      r := TGXByteBuffer.Create();
-      if len Mod 16 <> 0 Then
-        len := len + (16 - (Length(data) Mod 16));
+      try
+        r := TGXByteBuffer.Create();
+        try
+          if len Mod 16 <> 0 Then
+            len := len + (16 - (Length(data) Mod 16));
 
-      if Length(secret) > Length(data) Then
-      begin
-        len := Length(secret);
-        if len Mod 16 <> 0 Then
-          len := len + (16 - (Length(secret) Mod 16));
+          if Length(secret) > Length(data) Then
+          begin
+            len := Length(secret);
+            if len Mod 16 <> 0 Then
+              len := len + (16 - (Length(secret) Mod 16));
+          end;
+          s.SetArray(secret);
+          s.Zero(s.Size, len - s.Size);
+
+          r.SetArray(data);
+          r.Zero(r.Size, len - r.Size);
+          for pos := 0 to len div 16 - 1 do
+            TGXDLMSChipperingStream.Aes1Encrypt(r, pos * 16, s);
+          Result := r.ToArray;
+          SetLength(Result, 16);
+        finally
+          FreeAndNil(r);
+        end;
+      finally
+       FreeAndNil(s);
       end;
-      s.SetArray(secret);
-      s.Zero(s.Size, len - s.Size);
-
-      r.SetArray(data);
-      r.Zero(r.Size, len - r.Size);
-      for pos := 0 to Floor(len / 16) - 1 do
-        TGXDLMSChipperingStream.Aes1Encrypt(r, pos * 16, &s);
-      Result := r.ToArray;
-      SetLength(Result, 16);
-      FreeAndNil(s);
-      FreeAndNil(r);
       Exit;
     end;
     // Get server Challenge.
     challenge := TGXByteBuffer.Create();
-    // Get shared secret
-    if settings.Authentication = TAuthentication.atHighGMAC Then
-      challenge.SetArray(data)
-    else
-    begin
-      challenge.SetArray(data);
-      challenge.SetArray(secret);
+    try
+      // Get shared secret
+      if settings.Authentication = TAuthentication.atHighGMAC Then
+        challenge.SetArray(data)
+      else
+      begin
+        challenge.SetArray(data);
+        challenge.SetArray(secret);
+      end;
+      tmp := challenge.ToArray();
+      if settings.Authentication = TAuthentication.atHighMD5 Then
+        Result := TGXMD5.Encrypt(tmp)
+      else if settings.Authentication = TAuthentication.atHighSHA1 Then
+        Result := TGXSha1.Encrypt(challenge)
+      else if settings.Authentication = TAuthentication.atHighSHA256 Then
+        Result := TGXSha256.Encrypt(challenge)
+      else if settings.Authentication = TAuthentication.atHighGMAC Then
+      begin
+        //SC is always Security.Authentication.
+        p := TAesGcmParameter.Create(0, TSecurity.Authentication, ic,
+            secret, cipher.BlockCipherKey, cipher.AuthenticationKey);
+        try
+          p.&Type := TCountType.Tag;
+          challenge.Clear();
+          challenge.SetUInt8(Byte(TSecurity.Authentication));
+          challenge.SetUInt32(p.InvocationCounter);
+          challenge.SetArray(TGXDLMSChippering.EncryptAesGcm(p, tmp));
+          Result := challenge.ToArray();
+        finally
+          FreeAndNil(p);
+        end;
+      end
+      else
+        Result := data;
+    finally
+      FreeAndNil(challenge);
     end;
-    tmp := challenge.ToArray();
-    if settings.Authentication = TAuthentication.atHighMD5 Then
-      Result := TGXMD5.Encrypt(tmp)
-    else if settings.Authentication = TAuthentication.atHighSHA1 Then
-      Result := TGXSha1.Encrypt(challenge)
-    else if settings.Authentication = TAuthentication.atHighSHA256 Then
-      Result := TGXSha256.Encrypt(challenge)
-    else if settings.Authentication = TAuthentication.atHighGMAC Then
-    begin
-      //SC is always Security.Authentication.
-      p := TAesGcmParameter.Create(0, TSecurity.Authentication, ic,
-          secret, cipher.BlockCipherKey, cipher.AuthenticationKey);
-      p.&Type := TCountType.Tag;
-      challenge.Clear();
-      challenge.SetUInt8(Byte(TSecurity.Authentication));
-      challenge.SetUInt32(p.InvocationCounter);
-      challenge.SetArray(TGXDLMSChippering.EncryptAesGcm(p, tmp));
-      Result := challenge.ToArray();
-      FreeAndNil(p);
-    end
-    else
-      Result := data;
 
-    FreeAndNil(challenge);
+
 end;
 
 class function TGXSecure.GenerateChallenge() : TBytes;

@@ -46,8 +46,10 @@ type
     FDaylightSavingsBegin, FDaylightSavingsEnd : Boolean;
     FStatus : TClockStatus;
     FTimeZone : Integer;
+    FAlreadyReversed: Boolean;
     function GetLocalTime : TDateTime;
   public
+    procedure ReverseTZ;
     //Minimum date time value.
     class function MinDateTime : TDateTime; static;
 
@@ -90,6 +92,14 @@ end;
 class function TGXDateTime.MinDateTime : TDateTime;
 begin
   Result := EncodeDate(1900, 01, 01); //01 Jan 1900 has a days value of 2.
+end;
+
+procedure TGXDateTime.ReverseTZ;
+begin
+  if FAlreadyReversed then
+    Exit;
+  FTimeZone := -FTimeZone;
+  FAlreadyReversed := True;
 end;
 
 constructor TGXDateTime.Create(AValue: TDateTime = -1);

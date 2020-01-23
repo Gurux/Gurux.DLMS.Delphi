@@ -279,7 +279,6 @@ end;
 
 destructor TGXDLMSAccount.Destroy;
 begin
-  inherited;
   FreeAndNil(FCreditReferences);
   FreeAndNil(FChargeReferences);
   FreeAndNil(FCreditChargeConfigurations);
@@ -287,6 +286,7 @@ begin
   FreeAndNil(FAccountActivationTime);
   FreeAndNil(FAccountClosureTime);
   FreeAndNil(FCurrency);
+  inherited;
 end;
 
 function TGXDLMSAccount.GetValues() : TArray<TValue>;
@@ -438,17 +438,19 @@ begin
   case index of
   1: Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
   2:
-    try
+    begin
       bb:= TGXByteBuffer.Create();
-      bb.SetUInt8(Integer(TDataType.dtStructure));
-      bb.SetUInt8(2);
-      bb.SetUInt8(Integer(TDataType.dtEnum));
-      bb.SetUInt8(Integer(FAccountStatus));
-      bb.SetUInt8(Integer(TDataType.dtEnum));
-      bb.SetUInt8(Integer(FPaymentMode));
-      Result:= TValue.From(bb.ToArray());
-    finally
-      FreeAndNil(bb);
+      try
+        bb.SetUInt8(Integer(TDataType.dtStructure));
+        bb.SetUInt8(2);
+        bb.SetUInt8(Integer(TDataType.dtEnum));
+        bb.SetUInt8(Integer(FAccountStatus));
+        bb.SetUInt8(Integer(TDataType.dtEnum));
+        bb.SetUInt8(Integer(FPaymentMode));
+        Result:= TValue.From(bb.ToArray());
+      finally
+        FreeAndNil(bb);
+      end;
     end;
   3: Result := FCurrentCreditInUse;
   4: Result := Byte(FCurrentCreditStatus);
@@ -457,88 +459,98 @@ begin
   7: Result := FClearanceThreshold;
   8: Result := FAggregatedDebt;
   9:
-  try
-    bb := TGXByteBuffer.Create();
-    bb.SetUInt8(Integer(TDataType.dtArray));
-    TGXCommon.SetObjectCount(FCreditReferences.Count, bb);
-    for str in FCreditReferences do
     begin
-      bb.SetUInt8(Integer(TDataType.dtOctetString));
-      bb.SetUInt8(6);
-      bb.SetArray(TGXDLMSObject.GetLogicalName(str));
-    end;
-    Result:= TValue.From(bb.ToArray());
-   finally
-      FreeAndNil(bb);
+      bb := TGXByteBuffer.Create();
+      try
+        bb.SetUInt8(Integer(TDataType.dtArray));
+        TGXCommon.SetObjectCount(FCreditReferences.Count, bb);
+        for str in FCreditReferences do
+        begin
+          bb.SetUInt8(Integer(TDataType.dtOctetString));
+          bb.SetUInt8(6);
+          bb.SetArray(TGXDLMSObject.GetLogicalName(str));
+        end;
+        Result:= TValue.From(bb.ToArray());
+      finally
+        FreeAndNil(bb);
+      end;
     end;
   10:
-  try
-    bb := TGXByteBuffer.Create();
-    bb.SetUInt8(Integer(TDataType.dtArray));
-    TGXCommon.SetObjectCount(FChargeReferences.Count, bb);
-    for str in chargeReferences do
     begin
-      bb.SetUInt8(Integer(TDataType.dtOctetString));
-      bb.SetUInt8(6);
-      bb.SetArray(TGXDLMSObject.GetLogicalName(str));
+      bb := TGXByteBuffer.Create();
+      try
+        bb.SetUInt8(Integer(TDataType.dtArray));
+        TGXCommon.SetObjectCount(FChargeReferences.Count, bb);
+        for str in chargeReferences do
+        begin
+          bb.SetUInt8(Integer(TDataType.dtOctetString));
+          bb.SetUInt8(6);
+          bb.SetArray(TGXDLMSObject.GetLogicalName(str));
+        end;
+        Result:= TValue.From(bb.ToArray());
+      finally
+      FreeAndNil(bb);
+      end;
     end;
-    Result:= TValue.From(bb.ToArray());
-  finally
-    FreeAndNil(bb);
-  end;
   11:
-  try
+  begin
     bb := TGXByteBuffer.Create();
-    bb.SetUInt8(Integer(TDataType.dtArray));
-    TGXCommon.SetObjectCount(FCreditChargeConfigurations.Count, bb);
-    for it in FCreditChargeConfigurations do
-    begin
-      bb.SetUInt8(Integer(TDataType.dtStructure));
-      bb.SetUInt8(3);
-      bb.SetUInt8(Integer(TDataType.dtOctetString));
-      bb.SetUInt8(6);
-      bb.SetArray(TGXDLMSObject.GetLogicalName(it.CreditReference));
-      bb.SetUInt8(Integer(TDataType.dtOctetString));
-      bb.SetUInt8(6);
-      bb.SetArray(TGXDLMSObject.GetLogicalName(it.ChargeReference));
-      TGXCommon.SetData(bb, TDataType.dtBITSTRING, Integer(it.CollectionConfiguration));
+    try
+      bb.SetUInt8(Integer(TDataType.dtArray));
+      TGXCommon.SetObjectCount(FCreditChargeConfigurations.Count, bb);
+      for it in FCreditChargeConfigurations do
+      begin
+        bb.SetUInt8(Integer(TDataType.dtStructure));
+        bb.SetUInt8(3);
+        bb.SetUInt8(Integer(TDataType.dtOctetString));
+        bb.SetUInt8(6);
+        bb.SetArray(TGXDLMSObject.GetLogicalName(it.CreditReference));
+        bb.SetUInt8(Integer(TDataType.dtOctetString));
+        bb.SetUInt8(6);
+        bb.SetArray(TGXDLMSObject.GetLogicalName(it.ChargeReference));
+        TGXCommon.SetData(bb, TDataType.dtBITSTRING, Integer(it.CollectionConfiguration));
+      end;
+      Result:= TValue.From(bb.ToArray());
+    finally
+      FreeAndNil(bb);
     end;
-    Result:= TValue.From(bb.ToArray());
-  finally
-    FreeAndNil(bb);
   end;
   12:
-  try
+  begin
     bb := TGXByteBuffer.Create();
-    bb.SetUInt8(Integer(TDataType.dtArray));
-    TGXCommon.SetObjectCount(FTokenGatewayConfigurations.Count, bb);
-    for it2 in FTokenGatewayConfigurations do
-    begin
-      bb.SetUInt8(Integer(TDataType.dtStructure));
-      bb.SetUInt8(2);
-      bb.SetUInt8(Integer(TDataType.dtOctetString));
-      bb.SetUInt8(6);
-      bb.SetArray(TGXDLMSObject.GetLogicalName(it2.CreditReference));
-      bb.SetUInt8(Integer(TDataType.dtUINT8));
-      bb.SetUInt8(it2.TokenProportion);
+    try
+      bb.SetUInt8(Integer(TDataType.dtArray));
+      TGXCommon.SetObjectCount(FTokenGatewayConfigurations.Count, bb);
+      for it2 in FTokenGatewayConfigurations do
+      begin
+        bb.SetUInt8(Integer(TDataType.dtStructure));
+        bb.SetUInt8(2);
+        bb.SetUInt8(Integer(TDataType.dtOctetString));
+        bb.SetUInt8(6);
+        bb.SetArray(TGXDLMSObject.GetLogicalName(it2.CreditReference));
+        bb.SetUInt8(Integer(TDataType.dtUINT8));
+        bb.SetUInt8(it2.TokenProportion);
+      end;
+      Result:= TValue.From(bb.ToArray());
+    finally
+      FreeAndNil(bb);
     end;
-    Result:= TValue.From(bb.ToArray());
-  finally
-    FreeAndNil(bb);
   end;
   13: Result := FAccountActivationTime;
   14: Result := FAccountClosureTime;
   15:
-  try
+  begin
     bb := TGXByteBuffer.Create();
-    bb.SetUInt8(Integer(TDataType.dtStructure));
-    bb.SetUInt8(3);
-    TGXCommon.SetData(bb, TDataType.dtStringUtf8, currency.Name);
-    TGXCommon.SetData(bb, TDataType.dtInt8, currency.Scale);
-    TGXCommon.SetData(bb, TDataType.dtEnum, Integer(currency.&Unit));
-    Result:= TValue.From(bb.ToArray());
-  finally
-    FreeAndNil(bb);
+    try
+      bb.SetUInt8(Integer(TDataType.dtStructure));
+      bb.SetUInt8(3);
+      TGXCommon.SetData(bb, TDataType.dtStringUtf8, currency.Name);
+      TGXCommon.SetData(bb, TDataType.dtInt8, currency.Scale);
+      TGXCommon.SetData(bb, TDataType.dtEnum, Integer(currency.&Unit));
+      Result:= TValue.From(bb.ToArray());
+    finally
+      FreeAndNil(bb);
+    end;
   end;
   16: Result := FLowCreditThreshold;
   17: Result := FNextCreditAvailableThreshold;
@@ -565,12 +577,14 @@ begin
   end;
   3: FCurrentCreditInUse := Integer(e.Value.AsInteger);
   4:
-  try
+  begin
     bb := TGXByteBuffer.Create();
-    TGXCommon.SetBitString(bb, e.Value);
-    FCurrentCreditStatus := TAccountCreditStatus(bb.GetUInt8(1));
-  finally
-    FreeAndNil(bb);
+    try
+      TGXCommon.SetBitString(bb, e.Value, true);
+      FCurrentCreditStatus := TAccountCreditStatus(bb.GetUInt8(1));
+    finally
+      FreeAndNil(bb);
+    end;
   end;
   5: FAvailableCredit := e.Value.AsInteger;
   6: FAmountToClear := e.Value.AsInteger;
@@ -595,24 +609,31 @@ begin
     end;
   end;
   11:
-  try
+  begin
     FCreditChargeConfigurations.Clear();
     if Not e.Value.IsEmpty Then
     begin
       bb := TGXByteBuffer.Create();
-      for it in e.Value.AsType<TArray<TValue>> do
-      begin
-        bb.Clear();
-        item := TGXCreditChargeConfiguration.Create();
-        item.CreditReference :=  TGXDLMSObject.ToLogicalName(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>);
-        item.ChargeReference :=  TGXDLMSObject.ToLogicalName(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>);
-        TGXCommon.SetBitString(bb, it.GetArrayElement(2).AsType<TValue>);
-        item.CollectionConfiguration := TCreditCollectionConfiguration(bb.GetUInt8(1));
-        FCreditChargeConfigurations.Add(item);
+      try
+        for it in e.Value.AsType<TArray<TValue>> do
+        begin
+          bb.Clear();
+          item := TGXCreditChargeConfiguration.Create();
+          try
+            item.CreditReference :=  TGXDLMSObject.ToLogicalName(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>);
+            item.ChargeReference :=  TGXDLMSObject.ToLogicalName(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>);
+            TGXCommon.SetBitString(bb, it.GetArrayElement(2).AsType<TValue>, True);
+            item.CollectionConfiguration := TCreditCollectionConfiguration(bb.GetUInt8(1));
+          except
+            item.Free;
+            raise;
+          end;
+            FCreditChargeConfigurations.Add(item);
+        end;
+      finally
+        FreeAndNil(bb);
       end;
     end;
-  finally
-    FreeAndNil(bb);
   end;
   12:
   begin
@@ -621,8 +642,13 @@ begin
     for it in e.Value.AsType<TArray<TValue>> do
     begin
       item2 := TGXTokenGatewayConfiguration.Create();
-      item2.CreditReference := TGXDLMSObject.ToLogicalName(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>);
-      item2.TokenProportion := it.GetArrayElement(1).AsType<TValue>.AsInteger;
+      try
+        item2.CreditReference := TGXDLMSObject.ToLogicalName(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>);
+        item2.TokenProportion := it.GetArrayElement(1).AsType<TValue>.AsInteger;
+      except
+        item2.Free;
+        raise;
+      end;
       FTokenGatewayConfigurations.Add(item2);
     end;
   end;

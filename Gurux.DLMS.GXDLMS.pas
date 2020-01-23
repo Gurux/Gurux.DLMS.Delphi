@@ -50,7 +50,8 @@ Gurux.DLMS.GXReplyData, Gurux.DLMS.HdlcFrameType, Gurux.DLMS.HdlcControlFrame,
 Gurux.DLMS.GXDateTime, GXDataInfo, Gurux.DLMS.SetResponseType,
 Gurux.DLMS.GetCommandType, Gurux.DLMS.ExceptionServiceError,
 Gurux.DLMS.ConfirmedServiceError, Gurux.DLMS.AesGcmParameter,
-Gurux.DLMS.GXDLMSConfirmedServiceError;
+Gurux.DLMS.GXDLMSConfirmedServiceError, Gurux.DLMS.TranslatorTags,
+TranslatorOutputType, AccessServiceCommandType;
 
 const
   CIPHERING_HEADER_SIZE = 7 + 12 + 3;
@@ -98,8 +99,13 @@ type
   class procedure HandleAccessResponse(settings: TGXDLMSSettings; reply: TGXReplyData);
   // Handle set response and update error status.
   class procedure HandleSetResponse(settings: TGXDLMSSettings; data: TGXReplyData);
- // Handle write response and update error status.
+  // Handle write response and update error status.
   class procedure HandleWriteResponse(data: TGXReplyData);
+  // Handle get response with list.
+  class procedure HandleGetResponseWithList(
+      settings: TGXDLMSSettings;
+      reply: TGXReplyData);
+
   // Handle get response and get data from block and/or update error status.
   class function HandleGetResponse(settings: TGXDLMSSettings; reply: TGXReplyData; index: Integer): Boolean;
   // Handle General block transfer message.
@@ -130,7 +136,7 @@ type
   class procedure HandleExceptionResponse(data: TGXReplyData);
   class procedure HandleConfirmedServiceError(data : TGXReplyData);
   class function HandleGloRequest(settings: TGXDLMSSettings; data: TGXReplyData; cmd: Byte) : Integer;
-  class procedure HandleGloResponse(settings: TGXDLMSSettings; data: TGXReplyData; index: Integer);
+  class procedure HandleGloDedResponse(settings: TGXDLMSSettings; data: TGXReplyData; index: Integer);
 
   protected
 
@@ -146,6 +152,7 @@ type
 end;
 
 implementation
+uses Gurux.DLMS.GXDLMSTranslator, TranslatorStandardTags, TranslatorSimpleTags;
 
 {$AUTOBOX ON}
 {$HINTS OFF}
@@ -219,9 +226,9 @@ begin
     if settings.UseLogicalNameReferencing Then
     begin
       p := TGXDLMSLNParameters.Create(settings, 0, cmd,
-        Byte(TGetCommandType.ctNextDataBlock), bb, Nil, $ff);
+        Byte(TGetCommandType.ctNextDataBlock), bb, Nil, $ff, TCommand.None);
       try
-        Result := GetLnMessages(TGXDLMSLNParameters(p))[0];
+        Result := GetLnMessages(p as TGXDLMSLNParameters)[0];
       finally
         p.Free;
       end;
@@ -229,9 +236,9 @@ begin
     else
     begin
       p := TGXDLMSSNParameters.Create(settings, cmd, 1,
-        Byte(TVariableAccessSpecification.vaBlockNumberAccess), bb, Nil);
+        Byte(TVariableAccessSpecification.BlockNumberAccess), bb, Nil);
       try
-        Result := GetSnMessages(TGXDLMSSNParameters(p))[0];
+        Result := GetSnMessages(p as TGXDLMSSNParameters)[0];
       finally
         p.Free;
       end;
@@ -501,15 +508,18 @@ begin
                 len := len - (3 + Length(p.settings.Gateway.PhysicalDeviceAddress));
 
             tmp := TGXByteBuffer.Create;
-            tmp.SetArray(reply);
-            //GXByteBuffer tmp = new GXByteBuffer(reply);
-            reply.Size := 0;
-            reply.SetUInt8(Integer(TCommand.GatewayRequest));
-            reply.SetUInt8(p.settings.Gateway.NetworkId);
-            reply.SetUInt8(Length(p.settings.Gateway.PhysicalDeviceAddress));
-            reply.SetArray(p.settings.Gateway.PhysicalDeviceAddress);
-            reply.SetArray(tmp);
-            FreeAndNil(tmp);
+            try
+              tmp.SetArray(reply);
+              reply.Size := 0;
+              reply.SetUInt8(Integer(TCommand.GatewayRequest));
+              reply.SetUInt8(p.settings.Gateway.NetworkId);
+              reply.SetUInt8(Length(p.settings.Gateway.PhysicalDeviceAddress));
+              reply.SetArray(p.settings.Gateway.PhysicalDeviceAddress);
+              reply.SetArray(tmp);
+            finally
+              FreeAndNil(tmp);
+            end;
+
           end;
 
           // Get request size can be bigger than PDU size.
@@ -543,14 +553,17 @@ begin
               len := len - (3 + Length(p.settings.Gateway.PhysicalDeviceAddress));
 
           tmp := TGXByteBuffer.Create;
-          tmp.SetArray(reply);
-          reply.Size := 0;
-          reply.SetUInt8(Integer(TCommand.GatewayRequest));
-          reply.SetUInt8(p.settings.Gateway.NetworkId);
-          reply.SetUInt8(Length(p.settings.Gateway.PhysicalDeviceAddress));
-          reply.SetArray(p.settings.Gateway.PhysicalDeviceAddress);
-          reply.SetArray(tmp);
-          FreeAndNil(tmp);
+          try
+            tmp.SetArray(reply);
+            reply.Size := 0;
+            reply.SetUInt8(Integer(TCommand.GatewayRequest));
+            reply.SetUInt8(p.settings.Gateway.NetworkId);
+            reply.SetUInt8(Length(p.settings.Gateway.PhysicalDeviceAddress));
+            reply.SetArray(p.settings.Gateway.PhysicalDeviceAddress);
+            reply.SetArray(tmp);
+          finally
+            FreeAndNil(tmp);
+          end;
         end;
       end;
 
@@ -563,36 +576,41 @@ begin
       if (p.command = TCommand.GeneralBlockTransfer) or (p.multipleBlocks and ((Integer(p.Settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer)) <> 0)) Then
       begin
         bb := TGXByteBuffer.Create();
-        bb.SetArray(reply);
-        reply.Clear();
-        reply.SetUInt8(Integer(TCommand.GeneralBlockTransfer));
-        value := 0;
-        // Is last block
-        if p.lastBlock then
-          value := $80
-        else if p.Streaming Then
-          value := $40;
+        try
+          bb.SetArray(reply);
+          reply.Clear();
+          reply.SetUInt8(Integer(TCommand.GeneralBlockTransfer));
+          value := 0;
+          // Is last block
+          if p.lastBlock then
+            value := $80
+          else if p.Streaming Then
+            value := $40;
 
-        value := value or p.WindowSize;
-        reply.SetUInt8(value);
-        // Set block number sent.
-        reply.SetUInt16(p.blockIndex);
-        p.blockIndex := p.blockIndex + 1;
-        // Set block number acknowledged
-        if (p.command <> TCommand.DataNotification) and (p.blockNumberAck <> 0) Then
-        begin
+          value := value or p.WindowSize;
+          reply.SetUInt8(value);
+          // Set block number sent.
+          reply.SetUInt16(p.blockIndex);
+          p.blockIndex := p.blockIndex + 1;
           // Set block number acknowledged
-          reply.SetUInt16(p.blockNumberAck);
-          p.blockNumberAck := p.blockNumberAck + 1;
-        end
-        else
-        begin
-          p.blockNumberAck := $FFFF;
-          reply.SetUInt16(0);
+          if (p.command <> TCommand.DataNotification) and (p.blockNumberAck <> 0) Then
+          begin
+            // Set block number acknowledged
+            reply.SetUInt16(p.blockNumberAck);
+            p.blockNumberAck := p.blockNumberAck + 1;
+          end
+          else
+          begin
+            p.blockNumberAck := $FFFF;
+            reply.SetUInt16(0);
+          end;
+          //Add data length.
+          TGXCommon.SetObjectCount(bb.Size, reply);
+          reply.SetArray(bb);
+        finally
+          bb.Free;
         end;
-        //Add data length.
-        TGXCommon.SetObjectCount(bb.Size, reply);
-        reply.SetArray(bb);
+
         p.blockNumberAck := p.blockNumberAck + 1;
         if p.command <> TCommand.GeneralBlockTransfer Then
         begin
@@ -605,15 +623,19 @@ begin
             len := len - (3 + Length(p.settings.Gateway.PhysicalDeviceAddress));
 
           tmp := TGXByteBuffer.Create;
-          tmp.SetArray(reply);
-          reply.Size := 0;
-          reply.SetUInt8(Integer(TCommand.GatewayRequest));
-          reply.SetUInt8(p.settings.Gateway.NetworkId);
-          reply.SetUInt8(Length(p.settings.Gateway.PhysicalDeviceAddress));
-          reply.SetArray(p.settings.Gateway.PhysicalDeviceAddress);
-          reply.SetArray(tmp);
-          FreeAndNil(tmp);
+          try
+            tmp.SetArray(reply);
+            reply.Size := 0;
+            reply.SetUInt8(Integer(TCommand.GatewayRequest));
+            reply.SetUInt8(p.settings.Gateway.NetworkId);
+            reply.SetUInt8(Length(p.settings.Gateway.PhysicalDeviceAddress));
+            reply.SetArray(p.settings.Gateway.PhysicalDeviceAddress);
+            reply.SetArray(tmp);
+          finally
+            FreeAndNil(tmp);
+          end;
         end;
+
     end;
   end;
   if p.Settings.InterfaceType = TInterfaceType.HDLC Then
@@ -895,11 +917,11 @@ begin
               TGXDLMS.AddLLCBytes(p.Settings, reply);
           end;
           if p.Command = TCommand.WriteRequest Then
-            p.RequestType := Byte(TVariableAccessSpecification.vaWriteDataBlockAccess)
+            p.RequestType := Byte(TVariableAccessSpecification.WriteDataBlockAccess)
           else if p.Command = TCommand.ReadRequest Then
-            p.RequestType := Byte(TVariableAccessSpecification.vaReadDataBlockAccess)
+            p.RequestType := Byte(TVariableAccessSpecification.ReadDataBlockAccess)
           else if p.Command = TCommand.ReadResponse Then
-            p.RequestType := Byte(TSingleReadResponse.srDataBlockResult)
+            p.RequestType := Byte(TSingleReadResponse.DataBlockResult)
           else
             raise EArgumentException.Create('Invalid command.');
 
@@ -1030,87 +1052,91 @@ var
   primaryAddress, secondaryAddress: TBytes;
 begin
   bb := TGXByteBuffer.Create();
-  len := 0;
-  if settings.IsServer Then
-  begin
-    primaryAddress := getAddressBytes(settings.ClientAddress, 0);
-    secondaryAddress := getAddressBytes(settings.ServerAddress,
-      settings.ServerAddressSize);
-  end
-  else
-  begin
-    primaryAddress := getAddressBytes(settings.ServerAddress,
+  try
+    len := 0;
+    if settings.IsServer Then
+    begin
+      primaryAddress := getAddressBytes(settings.ClientAddress, 0);
+      secondaryAddress := getAddressBytes(settings.ServerAddress,
         settings.ServerAddressSize);
-    secondaryAddress := getAddressBytes(settings.ClientAddress, 0);
-  end;
-  // Add BOP
-  bb.setUInt8(HDLCFrameStartEnd);
-  frameSize := Integer(settings.Limits.MaxInfoTX);
-  if (data <> Nil) and (data.Position = 0) Then
-    frameSize := frameSize - 3;
+    end
+    else
+    begin
+      primaryAddress := getAddressBytes(settings.ServerAddress,
+          settings.ServerAddressSize);
+      secondaryAddress := getAddressBytes(settings.ClientAddress, 0);
+    end;
+    // Add BOP
+    bb.setUInt8(HDLCFrameStartEnd);
+    frameSize := Integer(settings.Limits.MaxInfoTX);
+    if (data <> Nil) and (data.Position = 0) Then
+      frameSize := frameSize - 3;
 
-  len := 0;
-  // If no data
-  if (data = Nil) or (data.Size = 0) Then
-    bb.setUInt8($A0)
-  else if (data.Size - data.Position <= frameSize) Then
-  begin
-    len := data.Size - data.position;
-    // Is last packet.
-    bb.SetUInt8($A0 or (((7 + Length(primaryAddress) + Length(secondaryAddress) + len) shr 8) and $7));
-  end
-  else
-  begin
-    len := frameSize;
-    // More data to left.
-    bb.SetUInt8($A8 or ((len shr 8) and $7));
-  end;
-  // Frame len.
-  if (len = 0) Then
-    bb.setUInt8(5 + Length(primaryAddress) + Length(secondaryAddress) + len)
-  else
-    bb.setUInt8(7 + Length(primaryAddress) + Length(secondaryAddress) + len);
+    len := 0;
+    // If no data
+    if (data = Nil) or (data.Size = 0) Then
+      bb.setUInt8($A0)
+    else if (data.Size - data.Position <= frameSize) Then
+    begin
+      len := data.Size - data.position;
+      // Is last packet.
+      bb.SetUInt8($A0 or (((7 + Length(primaryAddress) + Length(secondaryAddress) + len) shr 8) and $7));
+    end
+    else
+    begin
+      len := frameSize;
+      // More data to left.
+      bb.SetUInt8($A8 or ((len shr 8) and $7));
+    end;
+    // Frame len.
+    if (len = 0) Then
+      bb.setUInt8(5 + Length(primaryAddress) + Length(secondaryAddress) + len)
+    else
+      bb.setUInt8(7 + Length(primaryAddress) + Length(secondaryAddress) + len);
 
-  // Add primary address.
-  bb.SetArray(primaryAddress);
-  // Add secondary address.
-  bb.SetArray(secondaryAddress);
+    // Add primary address.
+    bb.SetArray(primaryAddress);
+    // Add secondary address.
+    bb.SetArray(secondaryAddress);
 
-  // Add frame ID.
-  if frame = 0 Then
-    bb.setUInt8(settings.NextSend(true))
-  else
-    bb.setUInt8(frame);
+    // Add frame ID.
+    if frame = 0 Then
+      bb.setUInt8(settings.NextSend(true))
+    else
+      bb.setUInt8(frame);
 
-  // Add header CRC.
-  crc := TGXFCS16.CountFCS16(bb.GetData, 1, bb.Size - 1);
-  bb.SetUInt16(crc);
-  if len <> 0 Then
-  begin
-      // Add data.
-      bb.SetArray(data, len);
-      // Add data CRC.
-      crc := TGXFCS16.CountFCS16(bb.GetData, 1, bb.Size - 1);
-      bb.SetUInt16(crc);
+    // Add header CRC.
+    crc := TGXFCS16.CountFCS16(bb.GetData, 1, bb.Size - 1);
+    bb.SetUInt16(crc);
+    if len <> 0 Then
+    begin
+        // Add data.
+        bb.SetArray(data, len);
+        // Add data CRC.
+        crc := TGXFCS16.CountFCS16(bb.GetData, 1, bb.Size - 1);
+        bb.SetUInt16(crc);
+    end;
+    // Add EOP
+    bb.SetUInt8(HDLCFrameStartEnd);
+    // Remove sent data in server side.
+    if settings.isServer Then
+    begin
+        if data <> Nil Then
+        begin
+            if data.Size = data.Position Then
+                data.clear()
+            else
+            begin
+              data.move(data.Position, 0, data.Size - data.Position);
+              data.Position := 0;
+            end;
+        end;
+    end;
+    Result := bb.ToArray();
+  finally
+    FreeAndNil(bb);
   end;
-  // Add EOP
-  bb.SetUInt8(HDLCFrameStartEnd);
-  // Remove sent data in server side.
-  if settings.isServer Then
-  begin
-      if data <> Nil Then
-      begin
-          if data.Size = data.Position Then
-              data.clear()
-          else
-          begin
-            data.move(data.Position, 0, data.Size - data.Position);
-            data.Position := 0;
-          end;
-      end;
-  end;
-  Result := bb.ToArray();
-  FreeAndNil(bb);
+
 end;
 
 class function TGXDLMS.GetLLCBytes(server: Boolean; data: TGXByteBuffer) : Boolean;
@@ -1492,7 +1518,7 @@ begin
     if reply.MoreData = TRequestTypes.rtNone Then
     begin
         reply.Data.Position := 0;
-        reply.CommandType := byte(TSingleReadResponse.srData);
+        reply.CommandType := byte(TSingleReadResponse.Data);
         HandleReadResponse(settings, reply, index);
         settings.ResetBlockIndex();
     end;
@@ -1504,125 +1530,151 @@ class function TGXDLMS.HandleReadResponse(settings: TGXDLMSSettings; reply: TGXR
 var
   number, pos, cnt: Integer;
   values: TList<TValue>;
-  first: Boolean;
+  standardXml, first: Boolean;
   tp: TSingleReadResponse;
+  di: TGXDataInfo;
 begin
   values := nil;
   try
-  {
+  cnt := reply.TotalCount;
+  // If we are reading value first time or block is handed.
+  first := (reply.TotalCount = 0) or (reply.CommandType = BYTE(TSingleReadResponse.DataBlockResult));
+  if first Then
+  begin
     cnt := TGXCommon.GetObjectCount(reply.Data);
-    // Set total count if not set yet.
-    if reply.TotalCount = 0 Then
-      reply.TotalCount := cnt;
+    reply.TotalCount := cnt;
+  end;
+  values := Nil;
+  if cnt <> 1 Then
+  begin
+    values := TList<TValue>.Create();
+    if reply.Value.GetArrayLength <> 0 Then
+      values.AddRange(reply.Value.AsType<TArray<TValue>>);
+    reply.Value := Nil;
+  end;
+  if reply.Xml <> Nil Then
+    reply.Xml.AppendStartTag(LONGWORD(TCommand.ReadResponse), 'Qty', reply.Xml.IntegerToHex(cnt, 2), False);
 
-    if cnt <> 1 Then
-      values := TList<TValue>.Create();
-   }
-       cnt := reply.Count;
-    if (reply.Count = 0) and (reply.TotalCount = 0) Then
-      cnt := TGXCommon.GetObjectCount(reply.Data)
-    else
-      cnt := reply.TotalCount;
-
-    //Set total count if not set yet.
-    if reply.TotalCount = 0 Then
-    begin
-      first := true;
-      reply.TotalCount := cnt;
-    end
-    else
-      first := false;
-
-    tp := TSingleReadResponse.srData;
-    if cnt <> 1 Then
-    begin
-      values := TList<TValue>.Create();
-      if reply.Value.GetArrayLength <> 0 Then
-        values.AddRange(reply.Value.AsType<TArray<TValue>>);
-        reply.Value := Nil;
-    end;
-
+    standardXml := (reply.Xml <> Nil) and (reply.Xml.OutputType = TTranslatorOutputType.StandardXml);
     for pos := 0 to cnt - 1 do
     begin
       if reply.Data.Available = 0 Then
       begin
-          reply.TotalCount := cnt;
-          if cnt <> 1 Then
-          begin
-            GetDataFromBlock(reply.Data, 0);
-            reply.Value := TValue.From(values.ToArray());
-          end;
-          Result := false;
-          Exit;
-      end;
-      // Get status code.
-      if (first) or (cnt <> 1) Then
-        reply.CommandType := reply.Data.GetUInt8();
-
-      tp := TSingleReadResponse(reply.CommandType);
-      case(tp) of
-      TSingleReadResponse.srData:
-      begin
-        reply.Error := 0;
-        if cnt = 1 Then
-          GetDataFromBlock(reply.Data, 0)
-        else
+        reply.TotalCount := cnt;
+        if cnt <> 1 Then
         begin
+          GetDataFromBlock(reply.Data, 0);
+          reply.Value := TValue.From(values.toArray());
+          reply.ReadPosition := reply.Data.Position;
+        end;
+        Result := false;
+        Exit;
+      end;
+      // Get status code. Status code is begin of each PDU.
+      if first Then
+      begin
+        tp := TSingleReadResponse(reply.Data.GetUInt8());
+        reply.CommandType := BYTE(tp);
+      end
+      else
+        tp := TSingleReadResponse(reply.CommandType);
+      case tp of
+      TSingleReadResponse.Data:
+      begin
+          reply.Error := 0;
+          if reply.Xml <> Nil Then
+          begin
+            if standardXml Then
+              reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.Choice));
+            reply.Xml.AppendStartTag(TCommand.ReadResponse, LONGWORD(TSingleReadResponse.Data));
+            di := TGXDataInfo.Create();
+            try
+              di.xml := reply.Xml;
+              TGXCommon.GetData(reply.Data, di);
+            finally
+              FreeAndNil(di);
+            end;
+            reply.Xml.AppendEndTag(TCommand.ReadResponse, LONGWORD(TSingleReadResponse.Data));
+            if standardXml Then
+                reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.Choice));
+          end
+          else if cnt = 1 Then
+            GetDataFromBlock(reply.Data, 0)
+          else
+          begin
             reply.ReadPosition := reply.Data.Position;
             GetValueFromData(settings, reply);
             if reply.Data.Position = reply.ReadPosition Then
             begin
-                // If multiple values remove command.
-                if (cnt <> 1) and (reply.TotalCount = 0) Then
-                  index := index + 1;
-
-                reply.TotalCount := 0;
-                reply.Data.Position := index;
-                GetDataFromBlock(reply.Data, 0);
-                reply.Value := Nil;
-                // Ask that data is parsed after last block is received.
-                reply.CommandType := Byte(TSingleReadResponse.srDataBlockResult);
-                Result := false;
-                Exit;
+              //If multiple values remove command.
+              if (cnt <> 1) and (reply.TotalCount = 0) Then
+                index := index + 1;
+              reply.TotalCount := 0;
+              reply.Data.Position := index;
+              GetDataFromBlock(reply.Data, 0);
+              reply.Value := Nil;
+              //Ask that data is parsed after last block is received.
+              reply.CommandType := BYTE(TSingleReadResponse.DataBlockResult);
+              Result := false;
+              Exit;
             end;
             reply.Data.Position := reply.ReadPosition;
             values.Add(reply.Value);
             reply.Value := Nil;
-        end;
+          end;
       end;
-      TSingleReadResponse.srDataAccessError:
+      TSingleReadResponse.DataAccessError:
       begin
         // Get error code.
         reply.Error := reply.Data.GetUInt8();
-      end;
-      TSingleReadResponse.srDataBlockResult:
-      begin
-        if Not readResponseDataBlockResult(settings, reply, index) Then
+        if reply.Xml <> Nil Then
         begin
-            Result := false;
-            Exit;
+          if standardXml Then
+              reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.Choice));
+
+          reply.Xml.AppendLine(
+              (Integer(TCommand.ReadResponse) shl 8) or Integer(TSingleReadResponse.DataAccessError),
+              '', TGXDLMSTranslator.ErrorCodeToString(
+                  reply.Xml.OutputType, TErrorCode(reply.Error)));
+          if standardXml Then
+            reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.Choice));
+        end
+      end;
+      TSingleReadResponse.DataBlockResult:
+      begin
+        if Not ReadResponseDataBlockResult(settings, reply, index) Then
+        begin
+          //If xml only received bytes are shown. Data is not try to parse.
+          if reply.Xml <> Nil Then
+            reply.Xml.AppendEndTag(LONGWORD(TCommand.ReadResponse));
+          Result := false;
+          Exit;
         end;
       end;
-      TSingleReadResponse.srBlockNumber:
+      TSingleReadResponse.BlockNumber:
       begin
-          // Get Block number.
-          number := reply.Data.GetUInt16();
-          if number <> settings.BlockIndex Then
-            raise TGXDLMSException.Create('Invalid Block number. It is '
-                      + IntToStr(number) + ' and it should be '
-                      + IntToStr(settings.BlockIndex) + '.');
+        // Get Block number.
+        number := reply.Data.GetUInt16();
+        if number <> settings.BlockIndex Then
+            raise EArgumentException.create(
+                'Invalid Block number. It is ' + IntToStr(number)
+                + ' and it should be ' + IntToStr(settings.BlockIndex) + '.');
 
-          settings.IncreaseBlockIndex();
-          reply.MoreData := TRequestTypes(Integer(reply.MoreData) or Integer(TRequestTypes.rtDataBlock));
-      end;
+        settings.IncreaseBlockIndex();
+        reply.MoreData := TRequestTypes(LONGWORD(reply.MoreData) or LONGWORD(TRequestTypes.rtDataBlock));
+      end
       else
         raise TGXDLMSException.Create('HandleReadResponse failed. Invalid tag.');
-      end;
     end;
-
+    end;
+    if reply.Xml <> Nil Then
+    begin
+      reply.Xml.AppendEndTag(LONGWORD(TCommand.ReadResponse));
+      Result := true;
+      Exit;
+    end;
     if values <> Nil Then
       reply.Value := TValue.From(values.toArray());
-
     Result := cnt = 1;
   finally
     FreeAndNil(values);
@@ -1630,64 +1682,108 @@ begin
 end;
 
 // Handle method response and get data from block and/or update error status.
-class procedure TGXDLMS.HandleMethodResponse(settings: TGXDLMSSettings; data: TGXReplyData);
+class procedure TGXDLMS.HandleMethodResponse(
+    settings: TGXDLMSSettings;
+    data: TGXReplyData);
 var
   ret, t, invoke: Byte;
+  di: TGXDataInfo;
 begin
   // Get type.
   t := data.Data.GetUInt8();
   // Get invoke ID and priority.
   invoke := data.Data.GetUInt8();
+  if data.Xml <> Nil Then
+  begin
+    data.Xml.AppendStartTag(LONGWORD(TCommand.MethodResponse));
+    data.Xml.AppendStartTag(TCommand.MethodResponse, t);
+    //InvokeIdAndPriority
+    data.Xml.AppendLine(LONGWORD(TTranslatorTags.InvokeId), '',
+        data.Xml.IntegerToHex(invoke, 2));
+  end;
   if t = 1 Then
   begin
-      // Get Action-Result
-      ret := data.Data.GetUInt8();
-      if ret <> 0 Then
-          data.Error := ret;
+    // Get Action-Result
+    ret := data.Data.GetUInt8();
+    if data.Xml <> Nil Then
+    begin
+      if data.Xml.OutputType = TTranslatorOutputType.StandardXml Then
+        data.Xml.AppendStartTag(LONGWORD(TTranslatorTags.SingleResponse));
 
-      // Action-Response-Normal. Get data if exists. All meters do not
-      // return data here.
-      if (data.Error = 0) AND (data.Data.Position < data.Data.Size) Then
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.Result), '',
+          TGXDLMSTranslator.ErrorCodeToString(data.Xml.OutputType, TErrorCode(ret)));
+    end;
+    if ret <> 0 Then
+        data.Error := ret;
+
+    // Action-Response-Normal. Get data if exists. All meters do not
+    // return data here.
+    if (data.Error = 0) AND (data.Data.Position < data.Data.Size) Then
+    begin
+      // Get-Data-Result
+      ret := data.Data.GetUInt8();
+      if ret = 0 Then
+        getDataFromBlock(data.Data, 0)
+      else if ret = 1 Then
       begin
-          // Get-Data-Result
-          ret := data.Data.GetUInt8();
-          if ret = 0 Then
-            getDataFromBlock(data.Data, 0)
-          else if ret = 1 Then
+        // Get Data-Access-Result.
+        ret := data.Data.GetUInt8();
+        if ret <> 0 Then
+        begin
+          data.Error := data.Data.GetUInt8();
+          // Handle Texas Instrument missing byte here.
+          if (ret = 9) and (data.Error = 16) Then
           begin
-              // Get Data-Access-Result.
-              ret := data.Data.GetUInt8();
-              if ret <> 0 Then
-              begin
-                  data.Error := data.Data.GetUInt8();
-                  // Handle Texas Instrument missing byte here.
-                  if (ret = 9) and (data.Error = 16) Then
-                  begin
-                      data.Data.Position := (data.Data.Position - 2);
-                      GetDataFromBlock(data.Data, 0);
-                      data.Error := 0;
-                      ret := 0;
-                  end;
-              end
-              else
-                GetDataFromBlock(data.Data, 0);
-          end
-          else
-            raise TGXDLMSException.Create('HandleActionResponseNormal failed. '
-                              + 'Invalid tag.');
-      end;
+            data.Data.Position := (data.Data.Position - 2);
+            GetDataFromBlock(data.Data, 0);
+            data.Error := 0;
+            ret := 0;
+          end;
+        end
+        else
+          GetDataFromBlock(data.Data, 0);
+      end
+      else
+        raise TGXDLMSException.Create('HandleActionResponseNormal failed. '
+                          + 'Invalid tag.');
+
+    if (data.Xml <> Nil) and (data.Error <> 0) or (data.Data.Position < data.Data.Size) Then
+    begin
+        data.Xml.AppendStartTag(LONGWORD(TTranslatorTags.ReturnParameters));
+        if ret <> 0 Then
+        begin
+          data.Xml.AppendLine(LONGWORD(TTranslatorTags.DataAccessError), '',
+              TGXDLMSTranslator.ErrorCodeToString(data.Xml.OutputType, TErrorCode(data.Error)));
+        end
+        else
+        begin
+          data.Xml.AppendStartTag(TCommand.ReadResponse, LONGWORD(TSingleReadResponse.Data));
+          try
+            di := TGXDataInfo.Create();
+            di.Xml := data.Xml;
+            TGXCommon.GetData(data.Data, di);
+          finally
+            FreeAndNil(di);
+          end;
+          data.Xml.AppendEndTag(TCommand.ReadResponse, LONGWORD(TSingleReadResponse.Data));
+        end;
+        data.Xml.AppendEndTag(LONGWORD(TTranslatorTags.ReturnParameters));
+        if data.Xml.OutputType = TTranslatorOutputType.StandardXml Then
+          data.Xml.AppendEndTag(LONGWORD(TSingleReadResponse.Data));
+    end;
+  end;
   end
-  else if t = 2 Then
-    // Action-Response-With-Pblock
-    raise EArgumentException.Create('Invalid TCommand.')
-  else if t = 3 Then
-    // Action-Response-With-List.
-    raise EArgumentException.Create('Invalid TCommand.')
-  else if (t = 4) Then
-    // Action-Response-Next-Pblock
-    raise EArgumentException.Create('Invalid TCommand.')
-  else
-    raise EArgumentException.Create('Invalid TCommand.');
+else if t = 2 Then
+  // Action-Response-With-Pblock
+  raise EArgumentException.Create('Invalid TCommand.')
+else if t = 3 Then
+  // Action-Response-With-List.
+  raise EArgumentException.Create('Invalid TCommand.')
+else if (t = 4) Then
+  // Action-Response-Next-Pblock
+  raise EArgumentException.Create('Invalid TCommand.')
+else
+  raise EArgumentException.Create('Invalid TCommand.');
 end;
 
 // Handle push and get data from block and/or update error status.
@@ -1727,10 +1823,12 @@ end;
 
 class procedure TGXDLMS.HandleAccessResponse(settings: TGXDLMSSettings; reply: TGXReplyData);
 var
-  len: Byte;
-  invokeId: LongWord;
+  ct, err, ch: Byte;
+  pos, len, invokeId: LongWord;
   tmp: TBytes;
   tm: TGXDateTime;
+  di: TGXDataInfo;
+  value: TValue;
 begin
   // Get invoke id.
   invokeId := reply.Data.GetUInt32();
@@ -1745,9 +1843,61 @@ begin
       reply.Time := tm.LocalTime;
       FreeAndNil(tm);
   end;
-
-  // Skip access-request-specification
-  reply.Data.GetUInt8();
+  if reply.Xml <> Nil Then
+  begin
+    reply.Xml.AppendStartTag(LONGWORD(TCommand.AccessResponse));
+    reply.Xml.AppendLine(LONGWORD(TTranslatorTags.LongInvokeId), '', reply.Xml.IntegerToHex(invokeId, 8));
+    if reply.Time <> 0 Then
+    begin
+      reply.Xml.AppendComment(DateTimeToStr(reply.Time));
+    end;
+    reply.Xml.AppendLine(LONGWORD(TTranslatorTags.DateTime), '', TGXByteBuffer.ToHexString(tmp, False, 0, Length(tmp)));
+    //access-request-specification OPTIONAL
+    ch := reply.Data.GetUInt8;
+    len := TGXCommon.GetObjectCount(reply.Data);
+    reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.AccessResponseBody));
+    reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.AccessResponseListOfData), 'Qty', reply.Xml.IntegerToHex(len, 2), False);
+    for pos := 1 to len do
+    begin
+      if reply.Xml.OutputType = TTranslatorOutputType.StandardXml Then
+          reply.Xml.AppendStartTag(TCommand.WriteRequest, LONGWORD(TSingleReadResponse.Data));
+      try
+        di := TGXDataInfo.Create();
+        di.Xml := reply.Xml;
+        TGXCommon.GetData(reply.Data, di);
+      finally
+        FreeAndNil(di);
+      end;
+      if reply.Xml.OutputType = TTranslatorOutputType.StandardXml Then
+      begin
+        reply.Xml.AppendEndTag(TCommand.WriteRequest, LONGWORD(TSingleReadResponse.Data));
+      end;
+    end;
+    reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.AccessResponseListOfData));
+    //access-response-specification
+    len := TGXCommon.GetObjectCount(reply.Data);
+    reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.ListOfAccessResponseSpecification), 'Qty', reply.Xml.IntegerToHex(len, 2), False);
+    for pos := 1 to len do
+    begin
+      ct := reply.Data.GetUInt8();
+      err := reply.Data.GetUInt8();
+      if err <> 0 Then
+      begin
+        err := reply.Data.GetUInt8();
+      end;
+      reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.AccessResponseSpecification));
+      reply.Xml.AppendStartTag(TCommand.AccessResponse, LONGWORD(ct));
+      reply.Xml.AppendLine(LONGWORD(TTranslatorTags.RESULT), '', TGXDLMSTranslator.ErrorCodeToString(reply.Xml.OutputType, TErrorCode(err)));
+      reply.Xml.AppendEndTag(TCommand.AccessResponse, LONGWORD(ct));
+      reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.AccessResponseSpecification));
+    end;
+    reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.ListOfAccessResponseSpecification));
+    reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.AccessResponseBody));
+    reply.Xml.AppendEndTag(LONGWORD(TCommand.AccessResponse));
+  end
+  else
+    // Skip access-request-specification
+    reply.Data.GetUInt8();
 end;
 
 // Handle data notification get data from block and/or update error status.
@@ -1761,6 +1911,7 @@ var
   info: TGXDataInfo;
   ret: TValue;
   tmp2: TGXByteBuffer;
+  di: TGXDataInfo;
 begin
     start := reply.Data.Position - 1;
     // Get invoke id.
@@ -1781,36 +1932,130 @@ begin
         dt := TDataType.dtDate;
 
       info := TGXDataInfo.Create();
-      info.&Type := dt;
-      tmp2 := TGXByteBuffer.Create();
       try
-        tmp2.SetArray(tmp);
-        ret := TGXCommon.GetData(tmp2, info);
+        info.&Type := dt;
+        tmp2 := TGXByteBuffer.Create();
+        try
+          tmp2.SetArray(tmp);
+          ret := TGXCommon.GetData(tmp2, info);
+        finally
+          FreeAndNil(tmp2);
+        end;
+        reply.Time := ret.AsType<TGXDateTime>.LocalTime;
       finally
-        FreeAndNil(tmp2);
+        info.Free;
       end;
-      reply.Time := ret.AsType<TGXDateTime>.LocalTime;
     end;
-    getDataFromBlock(reply.Data, start);
-    getValueFromData(settings, reply);
+    if reply.Xml <> Nil Then
+    begin
+      reply.Xml.AppendStartTag(LONGWORD(TCommand.DataNotification));
+      reply.Xml.AppendLine(LONGWORD(TTranslatorTags.LongInvokeId), '',
+          reply.Xml.IntegerToHex(invokeId, 8));
+      if reply.Time <> 0 Then
+          reply.Xml.AppendComment(DateTimeToStr(reply.Time));
+
+      reply.Xml.AppendLine(LONGWORD(TTranslatorTags.DateTime), '',
+          TGXCommon.ToHexString(tmp, False, 0, Length(tmp)));
+      reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.NotificationBody));
+      reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.DataValue));
+      try
+        di := TGXDataInfo.Create();
+        di.Xml := reply.Xml;
+        TGXCommon.GetData(reply.Data, di);
+      finally
+        FreeAndNil(di);
+      end;
+      reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.DataValue));
+      reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.NotificationBody));
+      reply.Xml.AppendEndTag(LONGWORD(TCommand.DataNotification));
+    end
+    else
+    begin
+      GetDataFromBlock(reply.Data, start);
+      GetValueFromData(settings, reply);
+    end;
 end;
 
 // Handle set response and update error status.
-class procedure TGXDLMS.HandleSetResponse(settings: TGXDLMSSettings; data: TGXReplyData);
+class procedure TGXDLMS.HandleSetResponse(
+  settings: TGXDLMSSettings;
+  data: TGXReplyData);
 var
-  invokeId: Byte;
+  pos, cnt: Integer;
+  number: UInt32;
+  err, invokeId: Byte;
   t: TSetResponseType;
 begin
   t := TSetResponseType(data.Data.GetUInt8());
   // Invoke ID and priority.
   invokeId := data.Data.GetUInt8();
+  if data.Xml <> Nil Then
+  begin
+    data.Xml.AppendStartTag(LONGWORD(TCommand.SetResponse));
+    data.Xml.AppendStartTag(TCommand.SetResponse, Integer(t));
+    //InvokeIdAndPriority
+    data.Xml.AppendLine(LONGWORD(TTranslatorTags.InvokeId), '', data.Xml.IntegerToHex(invokeId, 2));
+  end;
   // SetResponseNormal
   if t = TSetResponseType.srNormal Then
-    data.Error := data.Data.GetUInt8()
-  else if (t = TSetResponseType.srDataBlock) or (t = TSetResponseType.srLastDataBlock) Then
-    data.Data.GetUInt32()
+  begin
+    data.Error := data.Data.GetUInt8();
+    if data.Xml <> Nil Then
+    begin
+      // Result start tag.
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.Result), '',
+          TGXDLMSTranslator.ErrorCodeToString(data.Xml.OutputType, TErrorCode(data.Error)));
+    end;
+  end
+  else if t = TSetResponseType.srDataBlock Then
+  begin
+    number := data.Data.GetUInt32();
+    if data.Xml <> Nil Then
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.BlockNumber), '', data.Xml.IntegerToHex(number, 8));
+  end
+  else if t = TSetResponseType.srLastDataBlock Then
+  begin
+    data.Error := data.Data.GetUInt8();
+    number := data.Data.GetUInt32();
+    if data.Xml <> Nil Then
+    begin
+      // Result start tag.
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.Result), '',
+                          TGXDLMSTranslator.ErrorCodeToString(
+                              data.Xml.OutputType,
+                              TErrorCode(data.Error)));
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.BlockNumber), '', data.Xml.IntegerToHex(number, 8));
+    end;
+  end
+  else if t = TSetResponseType.srWithList Then
+  begin
+    cnt := TGXCommon.GetObjectCount(data.Data);
+    if data.Xml <> Nil Then
+    begin
+      data.Xml.AppendStartTag(LONGWORD(TTranslatorTags.Result), 'Qty', data.Xml.IntegerToHex(cnt, 2), False);
+      for pos := 1 to cnt do
+      begin
+        data.Error := data.Data.GetUInt8();
+        data.Xml.AppendLine(LONGWORD(TTranslatorTags.DataAccessResult), '',
+            TGXDLMSTranslator.ErrorCodeToString(data.Xml.OutputType, TErrorCode(data.Error)));
+      end;
+      data.Xml.AppendEndTag(LONGWORD(TTranslatorTags.Result));
+    end
+    else
+      for pos := 1 to cnt do
+      begin
+        err := data.Data.GetUInt8();
+        if (data.Error = 0) and (err <> 0) Then
+            data.Error := err;
+      end;
+  end
   else
     raise EArgumentException.Create('Invalid data type.');
+  if data.Xml <> Nil Then
+  begin
+      data.Xml.AppendEndTag(TCommand.SetResponse, LONGWORD(t));
+      data.Xml.AppendEndTag(LONGWORD(TCommand.SetResponse));
+  end;
 end;
 
 // Handle write response and update error status.
@@ -1827,37 +2072,125 @@ begin
   end;
 end;
 
+// Handle get response with list.
+class procedure TGXDLMS.HandleGetResponseWithList(settings: TGXDLMSSettings; reply: TGXReplyData);
+var
+  ch: Byte;
+  pos, cnt, blockLength: Integer;
+  expectedIndex, number: LongWord;
+  values: TList<TValue>;
+  empty: Boolean;
+  di: TGXDataInfo;
+begin
+  // Get object count.
+  cnt := TGXCommon.GetObjectCount(reply.Data);
+  values := TList<TValue>.Create();
+  if reply.Xml <> Nil Then
+  begin
+    //Result start tag.
+    reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.Result), 'Qty', reply.Xml.IntegerToHex(cnt, 2), false);
+  end;
+  try
+    for pos := 0 to cnt - 1 do
+    begin
+      // Result
+      ch := reply.Data.GetUInt8();
+      if ch <> 0 Then
+        reply.Error := reply.Data.GetUInt8()
+      else
+      begin
+        reply.Value := Nil;
+        reply.ReadPosition := reply.Data.Position;
+        GetValueFromData(settings, reply);
+        reply.Data.Position := reply.ReadPosition;
+        if reply.Value.IsArray then
+          values.AddRange(reply.Value)
+        else
+          values.Add(reply.Value);
+        reply.Value := Nil;
+      end;
+    end;
+    reply.Value := TValue.From(values.ToArray());
+  finally
+    FreeAndNil(values);
+  end;
+end;
+
 // Handle get response and get data from block and/or update error status.
 class function TGXDLMS.HandleGetResponse(settings: TGXDLMSSettings; reply: TGXReplyData; index: Integer): Boolean;
 var
   ch: Byte;
   pos, cnt, blockLength: Integer;
-  t: TGetCommandType;
   expectedIndex, number: LongWord;
   values: TList<TValue>;
+  empty: Boolean;
+  di: TGXDataInfo;
 begin
     //long number;
     Result := true;
+    empty := False;
     ch := 0;
     // Get type.
-    t := TGetCommandType(reply.Data.GetUInt8());
+    reply.CommandType := reply.Data.GetUInt8();
     // Get invoke ID and priority.
-    ch := reply.Data.GetUInt8();
-
-    // Response normal
-    if t = TGetCommandType.ctNormal Then
+    reply.InvokeId := reply.Data.GetUInt8();
+    if reply.Xml <> Nil Then
     begin
-      // Result
-      ch := reply.Data.GetUInt8();
-      if ch <> 0 Then
-        reply.Error := reply.Data.GetUInt8();
-      GetDataFromBlock(reply.Data, 0);
+      reply.Xml.AppendStartTag(LONGWORD(TCommand.GetResponse));
+      reply.Xml.AppendStartTag(TCommand.GetResponse, LONGWORD(reply.CommandType));
+      //InvokeIdAndPriority
+      reply.Xml.AppendLine(LONGWORD(TTranslatorTags.InvokeId), '', reply.Xml.IntegerToHex(reply.InvokeId, 2));
+    end;
+    // Response normal
+    if TGetCommandType(reply.CommandType) = TGetCommandType.ctNormal Then
+    begin
+      if reply.Data.Available() = 0 Then
+      begin
+        empty := True;
+        GetDataFromBlock(reply.Data, 0);
+      end
+      else
+      begin
+        // Result
+        ch := reply.Data.GetUInt8();
+        if ch <> 0 Then
+          reply.Error := reply.Data.GetUInt8();
+        if reply.Xml <> Nil Then
+        begin
+          // Result start tag.
+          reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.Result));
+          if reply.Error <> 0 Then
+              reply.Xml.AppendLine(LONGWORD(TTranslatorTags.DataAccessError), '',
+                  TGXDLMSTranslator.ErrorCodeToString(reply.Xml.OutputType, TErrorCode(reply.Error)))
+          else
+          begin
+            reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.Data));
+            try
+              di := TGXDataInfo.Create();
+              di.xml := reply.Xml;
+              TGXCommon.GetData(reply.Data, di);
+            finally
+              FreeAndNil(di);
+            end;
+            reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.Data));
+          end;
+        end
+        else
+          GetDataFromBlock(reply.Data, 0);
+      end;
     end
-    else if t = TGetCommandType.ctNextDataBlock Then
+    else if TGetCommandType(reply.CommandType) = TGetCommandType.ctNextDataBlock Then
     begin
         // GetResponsewithDataBlock
         // Is Last block.
         ch := reply.Data.GetUInt8();
+        if reply.Xml <> Nil Then
+        begin
+          //Result start tag.
+          reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.Result));
+          //LastBlock
+          reply.Xml.AppendLine(LONGWORD(TTranslatorTags.LastBlock), '', reply.Xml.IntegerToHex(ch, 2));
+        end;
         if ch = 0 Then
             reply.MoreData := TRequestTypes(Integer(reply.MoreData) or Integer(TRequestTypes.rtDataBlock))
         else
@@ -1865,24 +2198,50 @@ begin
 
         // Get Block number.
         number := reply.Data.GetUInt32();
-        // If meter's block index is zero based.
-        if (number = 0) and (settings.BlockIndex = 1) Then
-          settings.BlockIndex := 0;
+        //BlockNumber
+        if reply.Xml <> Nil Then
+            reply.Xml.AppendLine(LONGWORD(TTranslatorTags.BlockNumber), '', reply.Xml.IntegerToHex(number, 8))
+        else
+        begin
+          // If meter's block index is zero based.
+          if (number = 0) and (settings.BlockIndex = 1) Then
+            settings.BlockIndex := 0;
 
-        expectedIndex := settings.BlockIndex;
-        if (number <> expectedIndex) Then
-          raise EArgumentException.Create(
-                    'Invalid Block number. It is ' + IntToStr(number)
-                            + ' and it should be ' + IntToStr(expectedIndex)
-                            + '.');
-
-
+          expectedIndex := settings.BlockIndex;
+          if (number <> expectedIndex) Then
+            raise EArgumentException.Create(
+                      'Invalid Block number. It is ' + IntToStr(number)
+                              + ' and it should be ' + IntToStr(expectedIndex)
+                              + '.');
+        end;
         // Get status.
         ch := reply.Data.GetUInt8();
         if ch <> 0 Then
           reply.Error := reply.Data.GetUInt8();
 
-        if reply.Data.Position <> reply.Data.Size Then
+        if reply.Xml <> Nil Then
+        begin
+          //Result
+          reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.Result));
+          if reply.Error <> 0 Then
+            reply.Xml.AppendLine(LONGWORD(TTranslatorTags.DataAccessResult), '',
+                  TGXDLMSTranslator.ErrorCodeToString(reply.Xml.OutputType, TErrorCode(reply.Error)))
+          else if reply.Data.Available <> 0 Then
+          begin
+            // Get data size.
+            blockLength := TGXCommon.GetObjectCount(reply.Data);
+            // if whole block is read.
+            if (Integer(reply.MoreData)) and Integer(TRequestTypes.rtFrame) = 0 Then
+                // Check Block length.
+                if blockLength > reply.Data.Available() Then
+                    reply.Xml.AppendComment('Block is not complete.' + IntToStr(reply.Data.Available()) + '/' + IntToStr(blockLength) + '.');
+
+            reply.Xml.AppendLine(LONGWORD(TTranslatorTags.RawData), '',
+                                 reply.Data.ToHex(False, reply.Data.Position, reply.Data.Available()));
+          end;
+          reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.Result));
+        end
+        else if reply.Data.Available() <> 0 Then
         begin
             // Get data size.
             blockLength := TGXCommon.GetObjectCount(reply.Data);
@@ -1912,88 +2271,72 @@ begin
             end;
         end;
     end
-    else if t = TGetCommandType.ctWithList Then
+    else if TGetCommandType(reply.CommandType) = TGetCommandType.ctWithList Then
     begin
-      // Get object count.
-      cnt := TGXCommon.GetObjectCount(reply.Data);
-      values := TList<TValue>.Create();
-      try
-        for pos := 0 to cnt - 1 do
-        begin
-          // Result
-          ch := reply.Data.GetUInt8();
-          if ch <> 0 Then
-            reply.Error := reply.Data.GetUInt8()
-          else
-          begin
-            reply.ReadPosition := reply.Data.Position;
-            GetValueFromData(settings, reply);
-            reply.Data.Position := reply.ReadPosition;
-            if values <> Nil Then
-              values.Add(reply.Value);
-
-            reply.Value := Nil;
-          end;
-        end;
-        reply.Value := TValue.From(values.ToArray());
-      finally
-        FreeAndNil(values);
-      end;
-      Result := false;
+      HandleGetResponseWithList(settings, reply);
+      Result := False;
     end
     else
       raise EArgumentException.Create('Invalid Get response.');
+    if reply.Xml <> Nil Then
+    begin
+      if Not empty Then
+        reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.Result));
+      reply.Xml.AppendEndTag(TCommand.GetResponse, reply.CommandType);
+      reply.Xml.AppendEndTag(LONGWORD(TCommand.GetResponse));
+    end;
 end;
 
 // Handle General block transfer message.
-class procedure TGXDLMS.HandleGbt(settings : TGXDLMSSettings; data: TGXReplyData);
+class procedure TGXDLMS.HandleGbt(
+    settings : TGXDLMSSettings;
+    data: TGXReplyData);
 var
-  window, bn, bna, ch: Byte;
+  windowSize, ch: Byte;
   len, index: Integer;
 begin
-    data.Gbt := true;
     index := data.Data.Position - 1;
+    data.WindowSize := settings.WindowSize;
+    //BlockControl
     ch := data.Data.GetUInt8();
     // Is streaming active.
-    // boolean streaming = (ch & $40) = 1;
-    window := ch and $3F;
-    // Block number.
-    bn := data.Data.GetUInt8();
-    // Block number acknowledged.
-    bna := data.Data.GetUInt8();
-    // Get APU tag.
-    if data.Data.GetUInt8() <> 0 Then
-      raise EArgumentException.Create('Invalid APU.');
-
-    // Get Addl tag.
-    if data.Data.GetUInt8() <> 0 Then
-      raise EArgumentException.Create('Invalid APU.');
-
-    data.Command := TCommand.NONE;
-    if window <> 0 Then
+    data.Streaming := (ch and $40) <> 0;
+    //GBT Window size.
+    windowSize := (ch and $3F);
+    //Block number.
+    data.BlockNumber := data.Data.GetUInt16();
+    //Block number acknowledged.
+    data.BlockNumberAck := data.Data.GetUInt16();
+    settings.BlockNumberAck := data.BlockNumber;
+    data.Command := TCommand.None;
+    len := TGXCommon.GetObjectCount(data.Data);
+    if len > data.Data.Available Then
     begin
-      len := TGXCommon.GetObjectCount(data.Data);
-      if (len <> data.Data.Size - data.Data.Position) Then
-      begin
-        data.Complete := false;
-        Exit;
-      end;
+      data.Complete := false;
+      Exit;
     end;
-    GetDataFromBlock(data.Data, index);
-    GetPdu(settings, data);
-    // Update Is Last block for GBT again. Get PDU might change it.
-    if (ch and $80) = 0 Then
-      data.MoreData := TRequestTypes(Integer(data.MoreData) or Integer(TRequestTypes.rtDataBlock))
-    else
-      data.MoreData := TRequestTypes(Integer(data.MoreData) and Not Integer(TRequestTypes.rtDataBlock));
 
-    // Get data if all data is read or we want to peek data.
-    if ((data.Error = 0) AND (data.Data.Position <> data.Data.Size)
-            and ((data.Command = TCommand.ReadResponse) or (data.Command = TCommand.GetResponse))
-            and ((data.MoreData = TRequestTypes.rtNone) or data.Peek)) Then
+    GetDataFromBlock(data.Data, index);
+    //Is Last block,
+    if (ch and $80) = 0 Then
+      data.MoreData := TRequestTypes(Integer(data.MoreData) or Integer(TRequestTypes.rtGBT))
+    else
     begin
-      data.Data.Position := 0;
-      getValueFromData(settings, data);
+        data.MoreData := TRequestTypes(Integer(data.MoreData) and Not Integer(TRequestTypes.rtGBT));
+        if data.Data.Size <> 0 Then
+        begin
+            data.Data.Position := 0;
+            GetPdu(settings, data);
+        end;
+        // Get data if all data is read or we want to peek data.
+        if (data.Data.Position <> data.Data.Size) and (
+            (data.Command = TCommand.ReadResponse) or
+             (data.Command = TCommand.GetResponse) and
+             ((data.MoreData = TRequestTypes.rtNone) or data.Peek)) Then
+        begin
+            data.Data.Position := 0;
+            GetValueFromData(settings, data);
+        end;
     end;
 end;
 
@@ -2006,7 +2349,7 @@ var
 begin
     cmd := data.Command;
     // If header is not read yet or GBT message.
-    if (data.Command = TCommand.NONE) or (data.Gbt) Then
+    if data.Command = TCommand.NONE Then
     begin
         // If PDU is missing.
         if data.Data.Size - data.Data.Position = 0 Then
@@ -2070,7 +2413,7 @@ begin
         TCommand.GloMethodResponse,
         TCommand.GeneralGloCiphering,
         TCommand.GloEventNotificationRequest:
-            HandleGloResponse(settings, data, index);
+            HandleGloDedResponse(settings, data, index);
         TCommand.DataNotification:
             HandleDataNotification(settings, data);
         TCommand.EventNotification:
@@ -2132,8 +2475,8 @@ begin
             if (data.Command = TCommand.ReadResponse) and (Not data.isMoreData) Then
             begin
               data.Data.Position := 0;
-              if data.CommandType = Byte(TSingleReadResponse.srDataBlockResult) Then
-                data.CommandType := Byte(TSingleReadResponse.srData);
+              if data.CommandType = Byte(TSingleReadResponse.DataBlockResult) Then
+                data.CommandType := Byte(TSingleReadResponse.Data);
 
               if Not HandleReadResponse(settings, data, 0) Then
                 Exit;
@@ -2173,10 +2516,40 @@ class procedure TGXDLMS.HandleConfirmedServiceError(data : TGXReplyData);
 var
   service: TConfirmedServiceError;
   t: TServiceError;
+  ch: BYTE;
 begin
-  service := TConfirmedServiceError(data.Data.GetUInt8());
-  t := TServiceError(data.Data.GetUInt8());
-  raise TGXDLMSConfirmedServiceError.Create(service, t, data.Data.GetUInt8());
+  if data.Xml <> Nil Then
+  begin
+    data.Xml.AppendStartTag(LONGWORD(TCommand.ConfirmedServiceError));
+    if data.Xml.OutputType = TTranslatorOutputType.StandardXml Then
+    begin
+      ch := data.Data.GetUInt8();
+      data.Xml.AppendStartTag(LONGWORD(TTranslatorTags.InitiateError));
+      ch := data.Data.GetUInt8();
+      t := TServiceError(ch);
+      ch := data.Data.GetUInt8();
+      data.Xml.AppendLine('x:' + TTranslatorStandardTags.ServiceErrorToString(t), '', TTranslatorStandardTags.GetServiceErrorValue(t, ch));
+      data.Xml.AppendEndTag(LONGWORD(TTranslatorTags.InitiateError));
+    end
+    else
+    begin
+      ch := data.Data.GetUInt8();
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.Service), '', data.Xml.IntegerToHex(ch, 2));
+      ch := data.Data.GetUInt8();
+      t := TServiceError(ch);
+      data.Xml.AppendStartTag(LONGWORD(TTranslatorTags.ServiceError));
+      ch := data.Data.GetUInt8();
+      data.Xml.AppendLine(TTranslatorSimpleTags.ServiceErrorToString(t), '', TTranslatorSimpleTags.GetServiceErrorValue(t, ch));
+      data.Xml.AppendEndTag(LONGWORD(TTranslatorTags.ServiceError));
+    end;
+    data.Xml.AppendEndTag(LONGWORD(TCommand.ConfirmedServiceError));
+  end
+  else
+  begin
+    service := TConfirmedServiceError(data.Data.GetUInt8());
+    t := TServiceError(data.Data.GetUInt8());
+    raise TGXDLMSConfirmedServiceError.Create(service, t, data.Data.GetUInt8());
+  end;
 end;
 
 class function TGXDLMS.HandleGloRequest(settings: TGXDLMSSettings; data: TGXReplyData; cmd: Byte) : Integer;
@@ -2189,7 +2562,7 @@ begin
   if Integer(data.MoreData) and Integer(TRequestTypes.rtFrame) = 0 Then
   begin
     data.Data.Position := (data.Data.Position - 1);
-    settings.Cipher.Decrypt(settings.SourceSystemTitle, data.Data);
+    settings.Cipher.Decrypt(settings.SourceSystemTitle, settings.Cipher.BlockCipherKey, data.Data);
     // Get command.
     Result := data.Data.GetUInt8();
     data.Command := TCommand(Result);
@@ -2198,7 +2571,10 @@ begin
     data.Data.Position := (data.Data.Position - 1);
 end;
 
-class procedure TGXDLMS.HandleGloResponse(settings: TGXDLMSSettings; data: TGXReplyData; index: Integer);
+class procedure TGXDLMS.HandleGloDedResponse(
+    settings: TGXDLMSSettings;
+    data: TGXReplyData;
+    index: Integer);
 var
   bb: TGXByteBuffer;
 begin
@@ -2213,7 +2589,7 @@ begin
     try
       data.Data.Position := index;
       data.Data.size := index;
-      settings.Cipher.Decrypt(settings.SourceSystemTitle, bb).Free;
+      settings.Cipher.Decrypt(settings.SourceSystemTitle, settings.Cipher.BlockCipherKey, bb).Free;
       data.Data.SetArray(bb);
     finally
       FreeAndNil(bb);
@@ -2224,9 +2600,12 @@ begin
   end;
 end;
 
-class procedure TGXDLMS.HandleGeneralCiphering(settings: TGXDLMSSettings; data: TGXReplyData);
+class procedure TGXDLMS.HandleGeneralCiphering(
+    settings: TGXDLMSSettings;
+    data: TGXReplyData);
 var
   p: TAesGcmParameter;
+  origPos: Integer;
 begin
   if settings.Cipher = Nil Then
     raise EArgumentException.Create('Secure connection is not supported.');
@@ -2234,11 +2613,50 @@ begin
   // If all frames are read.
   if Integer(data.MoreData) and Integer(TRequestTypes.rtFrame) = 0 Then
   begin
+    origPos := data.Xml.GetXmlLength();
     data.Data.Position := (data.Data.Position - 1);
-    p := settings.Cipher.Decrypt(Nil, data.Data);
-    data.Command := TCommand.NONE;
-    if p.Security <> TSecurity.None Then
-      GetPdu(settings, data);
+    try
+      p := settings.Cipher.Decrypt(settings.SourceSystemTitle,
+          settings.Cipher.BlockCipherKey, data.Data);
+      data.Command := TCommand.None;
+      data.CipheredCommand := TCommand.GeneralCiphering;
+      if p.Security <> TSecurity.None Then
+        GetPdu(settings, data);
+    except
+    on E: Exception do
+    begin
+      if data.Xml = Nil Then
+        raise;
+      data.Xml.SetXmlLength(origPos);
+    end;
+    end;
+    if (data.Xml <> Nil) and (p <> Nil) Then
+    begin
+      data.Xml.AppendStartTag(LONGWORD(TCommand.GeneralCiphering));
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.TransactionId), '',
+              data.Xml.IntegerToHex(p.InvocationCounter, 16, true));
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.OriginatorSystemTitle),
+              '', TGXCommon.ToHexString(p.SystemTitle, false, 0, Length(p.SystemTitle)));
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.RecipientSystemTitle), '',
+              TGXCommon.ToHexString(p.RecipientSystemTitle, false, 0, Length(p.RecipientSystemTitle)));
+  //    data.Xml.AppendLine(LONGWORD(TTranslatorTags.DateTime), '',
+  //            GXCommon.ToHex(p.DateTime, false));
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.OtherInformation), '',
+              TGXCommon.ToHexString(p.OtherInformation, false, 0, Length(p.OtherInformation)));
+
+      data.Xml.AppendStartTag(LONGWORD(TTranslatorTags.KeyInfo));
+      data.Xml.AppendStartTag(LONGWORD(TTranslatorTags.AgreedKey));
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.KeyParameters), '',
+              data.Xml.IntegerToHex(p.KeyParameters, 2, true));
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.KeyCipheredData), '',
+              TGXCommon.ToHexString(p.KeyCipheredData, false, 0, Length(p.KeyCipheredData)));
+      data.Xml.AppendEndTag(LONGWORD(TTranslatorTags.AgreedKey));
+      data.Xml.AppendEndTag(LONGWORD(TTranslatorTags.KeyInfo));
+     // data.Xml.AppendLine(LONGWORD(TTranslatorTags.CipheredContent), '',
+     //         TGXCommon.ToHexString(p.CipheredContent, false, 0, Length(p.CipheredContent)));
+      data.Xml.AppendEndTag(LONGWORD(TCommand.GeneralCiphering));
+    end;
+    FreeAndNil(p);
   end;
 end;
 

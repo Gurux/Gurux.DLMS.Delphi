@@ -40,7 +40,11 @@ Gurux.DLMS.GXDLMSObject, Gurux.DLMS.GXCiphering, Gurux.DLMS.PduType,
 Gurux.DLMS.BerType, Gurux.DLMS.Command, Gurux.DLMS.GXDLMSConfirmedServiceError,
 Gurux.DLMS.ConfirmedServiceError, Gurux.DLMS.ServiceError, Gurux.DLMS.Initiate,
 Gurux.DLMS.Conformance, Gurux.DLMS.Service, Gurux.DLMS.AesGcmParameter,
-Gurux.DLMS.GXDLMSChippering, Gurux.DLMS.Security;
+Gurux.DLMS.GXDLMSChippering, Gurux.DLMS.Security,
+Gurux.DLMS.GXDLMSTranslatorStructure,
+TranslatorOutputType,
+TranslatorGeneralTags,
+Gurux.DLMS.TranslatorTags, Gurux.DLMS.GXDLMSConverter;
 
 type
 
@@ -50,49 +54,114 @@ type
 // <p />In DLMS/COSEM the meter is primarily a server, and the controlling system
 // is a client. Also unsolicited (received without a request) messages are available.
 TGXAPDU = class
-  class procedure Parse(initiateRequest: Boolean; settings: TGXDLMSSettings;
-    cipher: TGXCiphering; data: TGXByteBuffer; tag: WORD);
+  class procedure Parse(
+      initiateRequest: Boolean;
+      settings: TGXDLMSSettings;
+      cipher: TGXCiphering;
+      data: TGXByteBuffer;
+      xml: TGXDLMSTranslatorStructure;
+      tag: WORD);
 
-  class procedure ParseInitiate(initiateRequest: Boolean;
-    settings: TGXDLMSSettings; cipher: TGXCiphering; data: TGXByteBuffer);
+  class procedure ParseInitiate(
+      initiateRequest: Boolean;
+      settings: TGXDLMSSettings;
+      cipher: TGXCiphering;
+      data: TGXByteBuffer;
+      xml: TGXDLMSTranslatorStructure);
+
   // Parse User Information from PDU.
-  class procedure ParseUserInformation(settings: TGXDLMSSettings; cipher: TGXCiphering; data: TGXByteBuffer);
+  class procedure ParseUserInformation(
+      settings: TGXDLMSSettings;
+      cipher: TGXCiphering;
+      data: TGXByteBuffer;
+      xml: TGXDLMSTranslatorStructure);
+
   // Retrieves the string that indicates the level of authentication, if any.
-  class procedure GetAuthenticationString(settings: TGXDLMSSettings; data: TGXByteBuffer);
+  class procedure GetAuthenticationString(
+      settings: TGXDLMSSettings;
+      data: TGXByteBuffer);
+
   // Code application context name.
-  class procedure GenerateApplicationContextName(settings: TGXDLMSSettings; data: TGXByteBuffer; cipher: TGXCiphering);
+  class procedure GenerateApplicationContextName(
+      settings: TGXDLMSSettings;
+      data: TGXByteBuffer;
+      cipher: TGXCiphering);
+
   // Generate User information initiate request.
-  class procedure GetInitiateRequest(settings: TGXDLMSSettings; cipher: TGXCiphering; data: TGXByteBuffer);
+  class procedure GetInitiateRequest(
+      settings: TGXDLMSSettings;
+      cipher: TGXCiphering;
+      data: TGXByteBuffer);
 
   // Parse application context name.
-  class function ParseApplicationContextName(settings: TGXDLMSSettings; buff: TGXByteBuffer): Boolean;
+  class function ParseApplicationContextName(
+      settings: TGXDLMSSettings;
+      buff: TGXByteBuffer;
+      xml: TGXDLMSTranslatorStructure): Boolean;
 
-  class procedure UpdateAuthentication(settings: TGXDLMSSettings; buff: TGXByteBuffer);
-  class procedure UpdatePassword(settings: TGXDLMSSettings; buff: TGXByteBuffer);
+  class procedure UpdateAuthentication(
+      settings: TGXDLMSSettings;
+      buff: TGXByteBuffer);
 
-  class function GetUserInformation(settings: TGXDLMSSettings; cipher: TGXCiphering): TBytes;
+  class procedure UpdatePassword(
+      settings: TGXDLMSSettings;
+      buff: TGXByteBuffer;
+      xml: TGXDLMSTranslatorStructure);
+
+  class function GetUserInformation(
+      settings: TGXDLMSSettings;
+      cipher: TGXCiphering): TBytes;
+
   //Server generates AARE message.
-  class procedure GenerateAARE(settings: TGXDLMSSettings; data: TGXByteBuffer;
-      result: TAssociationResult; diagnostic: TSourceDiagnostic;
-      cipher: TGXCiphering; encryptedData: TGXByteBuffer);
+  class procedure GenerateAARE(
+      settings: TGXDLMSSettings;
+      data: TGXByteBuffer;
+      result: TAssociationResult;
+      diagnostic: TSourceDiagnostic;
+      cipher: TGXCiphering;
+      encryptedData: TGXByteBuffer);
+
+  class procedure AppendServerSystemTitleToXml(
+      settings: TGXDLMSSettings;
+      xml: TGXDLMSTranslatorStructure;
+      tag: BYTE);
 
   public
   // Generate user information.
-  class procedure GenerateUserInformation(settings: TGXDLMSSettings; cipher:
-                TGXCiphering; encryptedData: TGXByteBuffer; data: TGXByteBuffer);
+  class procedure GenerateUserInformation(
+      settings: TGXDLMSSettings;
+      cipher: TGXCiphering;
+      encryptedData: TGXByteBuffer;
+      data: TGXByteBuffer);
 
   // Generates Aarq.
-  class procedure GenerateAarq(settings: TGXDLMSSettings; cipher: TGXCiphering;
-                encryptedData: TGXByteBuffer; data: TGXByteBuffer);static;
+  class procedure GenerateAarq(
+      settings: TGXDLMSSettings;
+      cipher: TGXCiphering;
+      encryptedData: TGXByteBuffer;
+      data: TGXByteBuffer);static;
 
   // Parse APDU.
-  class function ParsePDU(settings: TGXDLMSSettings; cipher: TGXCiphering; buff: TGXByteBuffer): TSourceDiagnostic;
+  class function ParsePDU(
+      settings: TGXDLMSSettings;
+      cipher: TGXCiphering;
+      buff: TGXByteBuffer;
+      xml: TGXDLMSTranslatorStructure): TSourceDiagnostic;
 
-  class function ParsePDU2(settings: TGXDLMSSettings; cipher: TGXCiphering; buff: TGXByteBuffer): TSourceDiagnostic;
+  class function ParsePDU2(
+      settings: TGXDLMSSettings;
+      cipher: TGXCiphering;
+      buff: TGXByteBuffer;
+      xml: TGXDLMSTranslatorStructure): TSourceDiagnostic;
+
+  class procedure GetConformance(
+    value: UInt32;
+    xml: TGXDLMSTranslatorStructure); static;
 
 end;
 
 implementation
+uses TranslatorStandardTags, TranslatorSimpleTags;
 
 class procedure TGXAPDU.GetAuthenticationString(settings: TGXDLMSSettings; data: TGXByteBuffer);
 var
@@ -151,6 +220,14 @@ class procedure TGXAPDU.GenerateApplicationContextName(settings: TGXDLMSSettings
 var
   ciphered: Boolean;
 begin
+  //ProtocolVersion
+  if settings.ProtocolVersion <> '' Then
+  begin
+    data.SetUInt8(Integer(TBerType.btContext) or Integer(TPduType.ProtocolVersion));
+    data.SetUInt8(2);
+    data.SetUInt8(8 - Length(settings.protocolVersion));
+    TGXCommon.SetBitString(data, settings.ProtocolVersion, False);
+  end;
   //Application context name tag
   data.SetUInt8(Integer(TBerType.btContext) or Integer(TBerType.btConstructed) or Integer(TPduType.ApplicationContextName));
   //Len
@@ -159,34 +236,47 @@ begin
   //Len
   data.SetUInt8($07);
   ciphered := (cipher <> Nil) and cipher.IsCiphered;
+  data.SetUInt8($60);
+  data.SetUInt8($85);
+  data.SetUInt8($74);
+  data.SetUInt8($5);
+  data.SetUInt8($8);
+  data.SetUInt8($1);
   if settings.UseLogicalNameReferencing Then
-  begin
-    if ciphered Then
-      data.SetArray(LogicalNameObjectIdWithCiphering)
+    if ciphered then
+      data.SetUInt8(3)
     else
-      data.SetArray(GXCommon.LogicalNameObjectID);
-  end
+      data.SetUInt8(1)
   else
-  begin
-    if ciphered Then
-      data.SetArray(GXCommon.ShortNameObjectIdWithCiphering)
+    if ciphered then
+      data.SetUInt8(4)
     else
-      data.SetArray(GXCommon.ShortNameObjectID);
-  end;
-  //Add system title if cipher or GMAC authentication is used..
-  if Not settings.IsServer and (ciphered or (settings.Authentication = TAuthentication.atHighGMAC)) Then
-  begin
-    if (cipher.SystemTitle = Nil) or (Length(cipher.SystemTitle) = 0) Then
-      raise EArgumentException.Create('SystemTitle');
+      data.SetUInt8(2);
 
+  //Add system title if cipher or GMAC authentication is used..
+  if Not settings.IsServer and ciphered or (settings.Authentication = TAuthentication.atHighGMAC) Then
+  begin
+    if Length(cipher.SystemTitle) <> 8 Then
+      raise EArgumentException.Create('Invalid SystemTitle');
     //Add calling-AP-title
-    data.SetUInt8(Integer(TBerType.btContext) or Integer(TBerType.btConstructed) or 6);
+    data.SetUInt8(BYTE(TBerType.btContext) or BYTE(TBerType.btConstructed) or BYTE(TPduType.CallingApTitle));
     //LEN
     data.SetUInt8(2 + Length(cipher.SystemTitle));
-    data.SetUInt8(Integer(TBerType.btOctetString));
+    data.SetUInt8(BYTE(TBerType.btOctetString));
     //LEN
     data.SetUInt8(Length(cipher.SystemTitle));
     data.SetArray(cipher.SystemTitle);
+  end;
+  //Add CallingAEInvocationId.
+  if Not settings.IsServer and (settings.UserId <> 0) Then
+  begin
+    data.SetUInt8(BYTE(TBerType.btContext) or BYTE(TBerType.btConstructed) or BYTE(TPduType.CallingAeInvocationId));
+    //LEN
+    data.SetUInt8(3);
+    data.SetUInt8(BYTE(TBerType.btInteger));
+    //LEN
+    data.SetUInt8(1);
+    data.SetUInt8(settings.UserId);
   end;
 end;
 
@@ -290,72 +380,150 @@ begin
   GenerateApplicationContextName(settings, data, cipher);
   GetAuthenticationString(settings, data);
   GenerateUserInformation(settings, cipher, encryptedData, data);
-  data.SetUInt8(offset, data.Size - offset - 1);
+  data.SetUInt8(offset, byte(data.Size - offset - 1));
 end;
 
-class procedure TGXAPDU.Parse(initiateRequest: Boolean; settings: TGXDLMSSettings;
-    cipher: TGXCiphering; data: TGXByteBuffer; tag: WORD);
+class procedure TGXAPDU.GetConformance(
+    value: UInt32;
+    xml: TGXDLMSTranslatorStructure);
+var
+  str: string;
+  tmp: UInt32;
+  it: BYTE;
+begin
+  tmp := 1;
+  if xml.OutputType = TTranslatorOutputType.SimpleXml Then
+  begin
+    for it := 0 to 23 do
+    begin
+      if (tmp and value) <> 0 Then
+      begin
+        str := TTranslatorSimpleTags.ConformanceToString(TConformance(tmp));
+        xml.AppendLine(UInt32(TTranslatorGeneralTags.ConformanceBit), 'Name', str);
+      end;
+      tmp := tmp shl 1;
+    end;
+  end
+  else
+  begin
+    for it := 0 to 23 do
+    begin
+      if (tmp and value) <> 0 Then
+      begin
+        str := TTranslatorStandardTags.ConformanceToString(TConformance(tmp));
+        str := str + ' ';
+        xml.Append(str);
+      end;
+      tmp := tmp shl 1;
+    end;
+  end;
+end;
+
+class procedure TGXAPDU.Parse(
+    initiateRequest: Boolean;
+    settings: TGXDLMSSettings;
+    cipher: TGXCiphering;
+    data: TGXByteBuffer;
+    xml: TGXDLMSTranslatorStructure;
+    tag: WORD);
 var
   len: Integer;
   response: Boolean;
   tmp: TBytes;
   bb: TGXByteBuffer;
   v: LongWord;
-  pdu: WORD;
+  vaa, pdu: WORD;
+  se: TServiceError;
+  str, value: string;
+  ver: BYTE;
 begin
   response := tag = Integer(TCommand.InitiateResponse);
   if response Then
   begin
+    //<InitiateResponse>
+    if xml <> Nil Then
+      xml.AppendStartTag(LONGWORD(TCommand.InitiateResponse));
+
     //Optional usage field of the negotiated quality of service component
     tag := data.GetUInt8();
-    if tag <> 0 Then//Skip if used.
+    if tag <> 0 Then
     begin
-      len := data.GetUInt8();
-      data.Position := (data.Position + len);
+      settings.QualityOfService := data.GetUInt8();
+      //NegotiatedQualityOfService
+      if xml <> Nil Then
+          xml.AppendLine(UInt32(TranslatorGeneralTags.NegotiatedQualityOfService),
+              '', xml.IntegerToHex(settings.QualityOfService, 2));
     end;
   end
   else if tag = Byte(TCommand.InitiateRequest) Then
   begin
-      //Optional usage field of the negotiated quality of service component
+      //<InitiateRequest>
+      if xml <> Nil Then
+        xml.AppendStartTag(LONGWORD(TCommand.InitiateRequest));
+      //Optional usage field of dedicated key.
       tag := data.GetUInt8();
+      if settings.Cipher <> Nil Then
+        settings.Cipher.DedicatedKey := Nil;
       if tag <> 0 Then
       begin
-        len := data.GetUInt8();
-        if initiateRequest Then
-        begin
+          len := data.GetUInt8();
           SetLength(tmp, len);
           data.Get(tmp);
-          settings.DedicatedKey := tmp;
-          tmp := Nil
-        end
-        else
-        begin
-          // CtoS.
-          SetLength(tmp, len);
-          data.Get(tmp);
-          settings.CtoSChallenge := tmp;
-          tmp := Nil;
-        end;
+          if settings.Cipher <> Nil Then
+            settings.Cipher.DedicatedKey := tmp;
+          if xml <> Nil Then
+              xml.AppendLine(LONGWORD(TTranslatorGeneralTags.DedicatedKey), '', TGXByteBuffer.ToHexString(tmp, False, 0, Length(tmp)));
       end;
       //Optional usage field of the negotiated quality of service component
       tag := data.GetUInt8();
       if tag <> 0 Then
       begin
-        //len :=
-        data.GetUInt8();
-      end;
+          settings.QualityOfService := data.GetUInt8();
+          if (xml <> Nil) and (initiateRequest or (xml.OutputType = TTranslatorOutputType.SimpleXml)) Then
+              xml.AppendLine(LONGWORD(TranslatorGeneralTags.ProposedQualityOfService), '', IntToStr(settings.QualityOfService));
+      end
+      else
+        if (xml <> Nil) and (xml.OutputType = TTranslatorOutputType.StandardXml) Then
+            xml.AppendLine(LONGWORD(TTranslatorTags.ResponseAllowed), '', 'true');
       //Optional usage field of the proposed quality of service component
       tag := data.GetUInt8();
-      if tag <> 0 Then//Skip if used.
+      if tag <> 0 Then
       begin
-        len := data.GetUInt8();
-        data.Position := (data.Position + len);
+        settings.QualityOfService := data.GetUInt8();
+        if (xml <> Nil) and (xml.OutputType = TTranslatorOutputType.SimpleXml) Then
+            xml.AppendLine(LONGWORD(TranslatorGeneralTags.ProposedQualityOfService), '', IntToStr(settings.QualityOfService));
       end;
   end
   else if tag = Integer(TCommand.ConfirmedServiceError) Then
-    raise TGXDLMSConfirmedServiceError.Create(
-            TConfirmedServiceError(data.GetUInt8()),
-            TServiceError(data.GetUInt8()), data.GetUInt8())
+    if xml <> Nil Then
+    begin
+      xml.AppendStartTag(LONGWORD(TCommand.ConfirmedServiceError));
+      if xml.OutputType = TTranslatorOutputType.StandardXml Then
+      begin
+        data.GetUInt8();
+        xml.AppendStartTag(LONGWORD(TTranslatorTags.InitiateError));
+        se := TServiceError(data.GetUInt8());
+        str := TTranslatorStandardTags.ServiceErrorToString(se);
+        value := TTranslatorStandardTags.GetServiceErrorValue(se, data.GetUInt8());
+        xml.AppendLine('x:' + str, '', value);
+        xml.AppendEndTag(LONGWORD(TTranslatorTags.InitiateError));
+      end
+      else
+      begin
+        xml.AppendLine(LONGWORD(TTranslatorTags.Service), '', xml.IntegerToHex(data.GetUInt8(), 2));
+        se := TServiceError(data.GetUInt8());
+        xml.AppendStartTag(LONGWORD(TTranslatorTags.ServiceError));
+        xml.AppendLine(TTranslatorSimpleTags.ServiceErrorToString(se), '',
+                TTranslatorSimpleTags.GetServiceErrorValue(se, data.GetUInt8()));
+        xml.AppendEndTag(LONGWORD(TTranslatorTags.ServiceError));
+      end;
+      xml.AppendEndTag(LONGWORD(TCommand.ConfirmedServiceError));
+      Exit;
+    end
+    else
+      raise TGXDLMSConfirmedServiceError.Create(
+              TConfirmedServiceError(data.GetUInt8()),
+              TServiceError(data.GetUInt8()), data.GetUInt8())
   else
     raise EArgumentException.Create('Invalid tag.');
 
@@ -363,21 +531,24 @@ begin
   if Not response Then
   begin
     //ProposedDlmsVersionNumber
-    if data.GetUInt8() <> 6 Then
-    begin
-      if settings.IsServer Then
-      begin
-          raise TGXDLMSConfirmedServiceError.Create(
-              TConfirmedServiceError.InitiateError,
-              TServiceError.Initiate,
-              Byte(TInitiate.DlmsVersionTooLow));
-      end;
-      raise EArgumentException.Create('Invalid DLMS version number.');
-    end;
+    ver := data.GetUInt8();
+    //ProposedDlmsVersionNumber
+    if (xml <> Nil) and (initiateRequest or (xml.OutputType = TTranslatorOutputType.SimpleXml)) Then
+        xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ProposedDlmsVersionNumber), '', xml.IntegerToHex(ver, 2))
+    else if ver <> 6 Then
+        raise TGXDLMSConfirmedServiceError.Create(
+            TConfirmedServiceError.InitiateError,
+            TServiceError.Initiate,
+            Byte(TInitiate.DlmsVersionTooLow));
   end
-  else if data.GetUInt8() <> 6 Then
-    raise EArgumentException.Create('Invalid DLMS version number.');
-
+  else
+  begin
+    ver := data.GetUInt8();
+    if (xml <> Nil) and (initiateRequest or (xml.OutputType = TTranslatorOutputType.SimpleXml)) Then
+        xml.AppendLine(LONGWORD(TTranslatorGeneralTags.NegotiatedDlmsVersionNumber), '', xml.IntegerToHex(ver, 2))
+    else if ver <> 6 Then
+      raise EArgumentException.Create('Invalid DLMS version number.');
+  end;
   //Tag for conformance block
   tag := data.GetUInt8();
   if tag <> $5F Then
@@ -403,16 +574,41 @@ begin
     FreeAndNil(bb);
   end;
   if settings.IsServer Then
-    settings.NegotiatedConformance := TConformance(v and Integer(settings.ProposedConformance))
+    if xml <> Nil Then
+    begin
+      xml.AppendStartTag(LONGWORD(TTranslatorGeneralTags.ProposedConformance));
+      GetConformance(v, xml);
+    end
+    else
+      settings.NegotiatedConformance := TConformance(v and Integer(settings.ProposedConformance))
   else
-    settings.NegotiatedConformance := TConformance(v);
+  begin
+   if xml <> Nil Then
+    begin
+      xml.AppendStartTag(LONGWORD(TTranslatorGeneralTags.NegotiatedConformance));
+      GetConformance(v, xml);
+    end
+    else
+      settings.NegotiatedConformance := TConformance(v);
+  end;
 
   if Not response Then
   begin
     //Proposed max PDU size.
     pdu := data.GetUInt16();
     //If PDU is too low.
-    if pdu < 64 Then
+    if xml <> Nil Then
+    begin
+      // ProposedConformance closing
+      if xml.OutputType = TTranslatorOutputType.SimpleXml Then
+        xml.AppendEndTag(LONGWORD(TTranslatorGeneralTags.ProposedConformance))
+      else if initiateRequest Then
+        xml.Append(LONGWORD(TTranslatorGeneralTags.ProposedConformance), false);
+      // ProposedMaxPduSize
+      xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ProposedMaxPduSize),
+          '', xml.IntegerToHex(pdu, 4));
+    end
+    else if pdu < 64 Then
       raise TGXDLMSConfirmedServiceError.Create(
                 TConfirmedServiceError.InitiateError,
                 TServiceError.Service, Integer(TService.PduSize));
@@ -423,128 +619,256 @@ begin
       settings.MaxPduSize := settings.MaxServerPDUSize;
   end
   else
+  begin
     //Max PDU size.
     settings.MaxPduSize := data.GetUInt16();
-
+    if xml <> Nil Then
+    begin
+        // NegotiatedConformance closing
+      if xml.OutputType = TTranslatorOutputType.SimpleXml Then
+        xml.AppendEndTag(LONGWORD(TTranslatorGeneralTags.NegotiatedConformance))
+      else if initiateRequest Then
+        xml.Append(LONGWORD(TTranslatorGeneralTags.NegotiatedQualityOfService), False);
+        // NegotiatedMaxPduSize
+        xml.AppendLine(LONGWORD(TTranslatorGeneralTags.NegotiatedMaxPduSize),
+            '', xml.IntegerToHex(settings.MaxPduSize, 4));
+    end;
+  end;
   if response Then
   begin
-      //VAA Name
-      tag := data.GetUInt16();
-      if tag = $0007 Then
-      begin
-          if initiateRequest Then
-            settings.UseLogicalNameReferencing := true
-          else if Not settings.UseLogicalNameReferencing Then
-              // If LN
-                  raise EArgumentException.Create('Invalid VAA.');
-      end
-      else if (tag = $FA00) Then
-      begin
-          // If SN
-          if initiateRequest Then
-            settings.UseLogicalNameReferencing := false
-          else if settings.UseLogicalNameReferencing Then
-            raise EArgumentException.Create('Invalid VAA.');
-      end
-      else
-        // Unknown VAA.
+    // VAA Name
+    vaa := data.GetUInt16();
+    if xml <> Nil Then
+    begin
+      if initiateRequest or (xml.OutputType = TTranslatorOutputType.SimpleXml) Then
+        xml.AppendLine(LONGWORD(TTranslatorGeneralTags.VaaName), '', xml.IntegerToHex(vaa, 4));
+    end;
+    if vaa = $0007 Then
+    begin
+      // If LN
+      if initiateRequest Then
+        settings.UseLogicalNameReferencing := True
+      else if Not settings.UseLogicalNameReferencing and (xml = Nil) Then
         raise EArgumentException.Create('Invalid VAA.');
-  end;
+    end
+    else if vaa = $FA00 Then
+    begin
+      // If SN
+      if initiateRequest Then
+        settings.UseLogicalNameReferencing := False
+      else if settings.UseLogicalNameReferencing and (xml = Nil) Then
+          raise EArgumentException.Create('Invalid VAA.');
+    end
+    else
+      raise EArgumentException.Create('Invalid VAA.');
+    if xml <> Nil Then
+      xml.AppendEndTag(LONGWORD(TCommand.InitiateResponse));
+  end
+  else if xml <> Nil Then
+    xml.AppendEndTag(LONGWORD(TCommand.InitiateRequest));
 end;
 
-class procedure TGXAPDU.ParseInitiate(initiateRequest: Boolean;
-    settings: TGXDLMSSettings; cipher: TGXCiphering; data: TGXByteBuffer);
+class procedure TGXAPDU.ParseInitiate(
+    initiateRequest: Boolean;
+    settings: TGXDLMSSettings;
+    cipher: TGXCiphering;
+    data: TGXByteBuffer;
+    xml: TGXDLMSTranslatorStructure);
 var
   p: TAesGcmParameter;
-  tag: Byte;
+  tag1, tag: Byte;
   tmp: TBytes;
+  pos, cnt, originalPos: Integer;
+  encrypted, st: TBytes;
 begin
   //Tag for xDLMS-Initate.response
-  p := Nil;
-  try
-    tag := data.GetUInt8();
-    if tag = Integer(TCommand.GloInitiateResponse) Then
+  tag := data.GetUInt8();
+  if (tag = Integer(TCommand.GloInitiateResponse)) or
+    (tag = Integer(TCommand.GloInitiateRequest)) or
+    (tag = Integer(TCommand.DedInitiateResponse)) or
+    (tag = Integer(TCommand.DedInitiateRequest)) or
+    (tag = Integer(TCommand.GeneralGloCiphering)) or
+    (tag = Integer(TCommand.GeneralDedCiphering)) Then
+  begin
+    if xml <> Nil Then
     begin
-        data.Position := (data.Position - 1);
-        p := TAesGcmParameter.Create(settings.SourceSystemTitle, settings.Cipher.BlockCipherKey, settings.Cipher.AuthenticationKey);
-        tmp := TGXDLMSChippering.DecryptAesGcm(p, data);
-        data.Clear();
-        data.SetArray(tmp);
-        cipher.Security := p.Security;
-        tag := data.GetUInt8();
+      originalPos := data.Position;
+      if (tag = Integer(TCommand.GeneralGloCiphering)) or
+          (tag = Integer(TCommand.GeneralDedCiphering)) Then
+      begin
+        cnt := TGXCommon.GetObjectCount(data);
+        SetLength(st, cnt);
+        data.Get(st);
+      end
+      else
+        st := settings.SourceSystemTitle;
+
+      cnt := TGXCommon.GetObjectCount(data);
+      SetLength(encrypted, cnt);
+      data.Get(encrypted);
+      if (st <> Nil) and (cipher <> Nil) and (xml.Comments) Then
+      begin
+        pos := xml.GetXmlLength();
+        try
+          data.Position := originalPos - 1;
+          p := TAesGcmParameter.Create(st, settings.Cipher.BlockCipherKey, settings.Cipher.AuthenticationKey);
+          p.Xml := xml;
+          tmp := TGXDLMSChippering.DecryptAesGcm(p, data);
+          data.Clear();
+          data.SetArray(tmp);
+          cipher.Security := p.Security;
+          tag1 := data.GetUInt8();
+          xml.StartComment('Decrypted data:');
+          xml.AppendLine('Security: ' + TGXDLMSConverter.ToString(p.Security));
+          xml.AppendLine('Invocation Counter: ' + IntToStr(p.InvocationCounter));
+          Parse(initiateRequest, settings, cipher, data, xml, tag1);
+          xml.EndComment();
+        except
+          // It's OK if this fails.
+          xml.SetXmlLength(pos);
+        end;
+      end;
+      xml.AppendLine(tag, '', TGXCommon.ToHexString(encrypted, False, 0, Length(encrypted)));
+      Exit
     end
-    else if tag = Integer(TCommand.GloInitiateRequest) Then
+    else
     begin
-        data.Position := (data.Position - 1);
-        p := TAesGcmParameter.Create(settings.SourceSystemTitle, settings.Cipher.BlockCipherKey, settings.Cipher.AuthenticationKey);
+      data.Position := (data.Position - 1);
+      p := TAesGcmParameter.Create(settings.SourceSystemTitle, settings.Cipher.BlockCipherKey, settings.Cipher.AuthenticationKey);
+      try
         tmp := TGXDLMSChippering.DecryptAesGcm(p, data);
         data.Clear();
         data.SetArray(tmp);
         cipher.Security := p.Security;
         tag := data.GetUInt8();
+      finally
+        p.Free;
+      end;
     end;
-    Parse(initiateRequest, settings, cipher, data, tag);
-  finally
-    FreeAndNil(p);
   end;
+  Parse(initiateRequest, settings, cipher, data, xml, tag);
 end;
 
-class procedure TGXAPDU.ParseUserInformation(settings: TGXDLMSSettings; cipher: TGXCiphering; data: TGXByteBuffer);
+class procedure TGXAPDU.ParseUserInformation(
+    settings: TGXDLMSSettings;
+    cipher: TGXCiphering;
+    data: TGXByteBuffer;
+    xml: TGXDLMSTranslatorStructure);
 var
   tag, len: Byte;
 begin
-    len := data.GetUInt8();
-    if data.Size - data.Position < len Then
-        raise EArgumentException.Create('Not enough data.');
+  len := data.GetUInt8();
+  if data.Size - data.Position < len Then
+  begin
+    if xml = Nil Then
+      raise EArgumentException.Create('Not enough data.');
+    xml.AppendComment('Error: Invalid data size.');
+  end;
 
-    //Excoding the choice for user information
-    tag := data.GetUInt8();
-    if tag <> $4 Then
-      raise EArgumentException.Create('Invalid tag.');
+  //Excoding the choice for user information
+  tag := data.GetUInt8();
+  if tag <> $4 Then
+    raise EArgumentException.Create('Invalid tag.');
 
-    len := data.GetUInt8();
-    if data.Size - data.Position < len Then
-        raise EArgumentException.Create('Not enough data.');
-
-    ParseInitiate(false, settings, cipher, data);
+  len := data.GetUInt8();
+  if data.Size - data.Position < len Then
+  begin
+    if xml = Nil Then
+      raise EArgumentException.Create('Not enough data.');
+    xml.AppendComment('Error: Invalid data size.');
+  end;
+  ParseInitiate(false, settings, cipher, data, xml);
 end;
 
-class function TGXAPDU.ParseApplicationContextName(settings: TGXDLMSSettings; buff: TGXByteBuffer): Boolean;
+class function TGXAPDU.ParseApplicationContextName(
+    settings: TGXDLMSSettings;
+    buff: TGXByteBuffer;
+    xml: TGXDLMSTranslatorStructure): Boolean;
 var
   len: Byte;
+  tmp: TBytes;
+  name: Byte;
 begin
-    //Get length.
-    len := buff.GetUInt8();
-    if buff.Size - buff.Position < len Then
-      raise EArgumentException.Create('Encoding failed. Not enough data.');
+  //Get length.
+  len := buff.GetUInt8();
+  if buff.Size - buff.Position < len Then
+    raise EArgumentException.Create('Encoding failed. Not enough data.');
 
-    if buff.GetUInt8() <> $6 Then
-      raise EArgumentException.Create('Encoding failed. Not an Object ID.');
+  if buff.GetUInt8() <> $6 Then
+    raise EArgumentException.Create('Encoding failed. Not an Object ID.');
 
-    if settings.IsServer and (settings.Cipher <> Nil) Then
-      settings.Cipher.Security := TSecurity.None;
+  if settings.IsServer and (settings.Cipher <> Nil) Then
+    settings.Cipher.Security := TSecurity.None;
 
-    //Object ID length.
-    //len :=
-    buff.GetUInt8();
-    if settings.UseLogicalNameReferencing Then
-    begin
-      if buff.Compare(LogicalNameObjectID) Then
+  //Object ID length.
+  len := buff.GetUInt8();
+  SetLength(tmp, len);
+  buff.Get(tmp);
+  if (tmp[0] <> $60) or
+      (tmp[1] <> $85) or
+      (tmp[2] <> $74) or
+      (tmp[3] <> $5) or
+      (tmp[4] <> $8) or
+      (tmp[5] <> $1) Then
+      if xml <> Nil Then
       begin
-        Result := true;
-        Exit;
-      end;
-      // If ciphering is used.
-      Result := buff.Compare(LogicalNameObjectIdWithCiphering);
+          xml.AppendLine(UInt32(TTranslatorGeneralTags.ApplicationContextName), '', 'UNKNOWN');
+          Result := true;
+          Exit;
+      end
+      else
+        raise EArgumentException.Create('Encoding failed. Invalid Application context name.');
+  name := tmp[6];
+  if xml <> Nil Then
+  begin
+    if name = 1 Then
+    begin
+        if xml.OutputType = TTranslatorOutputType.SimpleXml Then
+            xml.AppendLine(LONGWORD(TranslatorGeneralTags.ApplicationContextName), '', 'LN')
+        else
+            xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ApplicationContextName), '', '1');
+        settings.UseLogicalNameReferencing := True;
+    end
+    else if name = 3 Then
+    begin
+      if xml.OutputType = TTranslatorOutputType.SimpleXml Then
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ApplicationContextName), '', 'LN_WITH_CIPHERING')
+      else
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ApplicationContextName), '', '3');
+        settings.UseLogicalNameReferencing := true;
+    end
+    else if name = 2 Then
+    begin
+      if xml.OutputType = TTranslatorOutputType.SimpleXml Then
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ApplicationContextName), '', 'SN')
+      else
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ApplicationContextName), '', '2');
+      settings.UseLogicalNameReferencing := false;
+    end
+    else if name = 4 Then
+    begin
+      if xml.OutputType = TTranslatorOutputType.SimpleXml Then
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ApplicationContextName), '', 'SN_WITH_CIPHERING')
+      else
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ApplicationContextName),'', '4');
+      settings.UseLogicalNameReferencing := false;
+    end
+    else
+    begin
+        if xml.OutputType = TTranslatorOutputType.SimpleXml Then
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ApplicationContextName), '', 'UNKNOWN')
+        else
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ApplicationContextName), '', '5');
+      Result := false;
       Exit;
     end;
-    if buff.Compare(ShortNameObjectID) Then
-    begin
-        Result := true;
-        Exit;
-    end;
-    // If ciphering is used.
-    Result := buff.Compare(GXCommon.ShortNameObjectIdWithCiphering);
+    Result := True;
+    Exit;
+  end;
+  if settings.UseLogicalNameReferencing Then
+    Result := (name = 1) or (name = 3)
+  else
+    Result := (name = 2) or (name = 4);
 end;
 
 class procedure TGXAPDU.UpdateAuthentication(settings: TGXDLMSSettings; buff: TGXByteBuffer);
@@ -578,7 +902,11 @@ begin
     settings.Authentication := TAuthentication(tmp);
 end;
 
-class function TGXAPDU.ParsePDU(settings: TGXDLMSSettings; cipher: TGXCiphering; buff: TGXByteBuffer): TSourceDiagnostic;
+class function TGXAPDU.ParsePDU(
+    settings: TGXDLMSSettings;
+    cipher: TGXCiphering;
+    buff: TGXByteBuffer;
+    xml: TGXDLMSTranslatorStructure): TSourceDiagnostic;
 var
   size: Integer;
   len, tag: Byte;
@@ -596,13 +924,30 @@ begin
   len := TGXCommon.GetObjectCount(buff);
   size := buff.Size - buff.Position;
   if len > size Then
-    raise EArgumentException.Create('Not enough data.');
-
+  if xml = Nil Then
+    raise EArgumentException.Create('Not enough data.')
+  else
+    xml.AppendComment('Error: Invalid data size.');
   //Opening tags
-  Result := ParsePDU2(settings, cipher, buff);
+  if xml <> Nil Then
+    if settings.IsServer Then
+      xml.AppendStartTag(LONGWORD(TCommand.Aarq))
+    else
+      xml.AppendStartTag(LONGWORD(TCommand.Aare));
+  Result := ParsePDU2(settings, cipher, buff, xml);
+  //Closing tags
+  if xml <> Nil Then
+    if settings.IsServer Then
+      xml.AppendEndTag(LONGWORD(TCommand.Aarq))
+    else
+      xml.AppendEndTag(LONGWORD(TCommand.Aare));
 end;
 
-class function TGXAPDU.ParsePDU2(settings: TGXDLMSSettings; cipher: TGXCiphering; buff: TGXByteBuffer): TSourceDiagnostic;
+class function TGXAPDU.ParsePDU2(
+    settings: TGXDLMSSettings;
+    cipher: TGXCiphering;
+    buff: TGXByteBuffer;
+    xml: TGXDLMSTranslatorStructure): TSourceDiagnostic;
 var
   resultComponent: TAssociationResult;
   len, tag: Byte;
@@ -615,7 +960,7 @@ begin
       tag := buff.GetUInt8();
       case tag of
       Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or Byte(TPduType.ApplicationContextName)://$A1
-        if Not ParseApplicationContextName(settings, buff) Then
+        if Not ParseApplicationContextName(settings, buff, xml) Then
             raise TGXDLMSException.Create(TAssociationResult.PermanentRejected, TSourceDiagnostic.ApplicationContextNameNotSupported);
       Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or Byte(TPduType.CalledApTitle)://$A2
       begin
@@ -623,15 +968,36 @@ begin
         if buff.GetUInt8() <> 3 Then
           raise EArgumentException.Create('Invalid tag.');
 
-        //Choice for result (INTEGER, universal)
-        if buff.GetUInt8() <> Byte(TBerType.btInteger) Then
-            raise EArgumentException.Create('Invalid tag.');
-
-        //Get len.
-        if buff.GetUInt8() <> 1 Then
-          raise EArgumentException.Create('Invalid tag.');
-
-        resultComponent := TAssociationResult(buff.GetUInt8());
+        if settings.IsServer Then
+        begin
+          //tag :=
+          buff.GetUInt8();
+          len := buff.GetUInt8();
+          SetLength(tmp, len);
+          buff.Get(tmp);
+          settings.SourceSystemTitle := tmp;
+          if xml <> Nil Then
+            xml.AppendLine(LONGWORD(TTranslatorTags.CalledAPTitle), '',
+              TGXCommon.ToHexString(tmp, False, 0, Length(tmp)));
+          tmp := Nil;
+        end
+        else
+        begin
+          // Choice for result (INTEGER, universal)
+          //tag :=
+          buff.GetUInt8();
+          //len :=
+          buff.GetUInt8();
+          tag := buff.GetUInt8();
+          if xml <> Nil Then
+          begin
+            if tag <> 0 Then
+              xml.AppendComment(TGXDLMSConverter.ToString(TAssociationResult(tag)));
+            xml.AppendLine(LONGWORD(TTranslatorGeneralTags.AssociationResult), '',
+                xml.IntegerToHex(tag, 2));
+            xml.AppendStartTag(LONGWORD(TTranslatorGeneralTags.ResultSourceDiagnostic));
+          end;
+        end;
       end;
       Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or Byte(TPduType.CalledAeQualifier):////SourceDiagnostic $A3
       begin
@@ -640,16 +1006,32 @@ begin
         // ACSE service user tag.
         //tag :=
         buff.GetUInt8();
-        //len :=
-        buff.GetUInt8();
-        // Result source diagnostic component.
-        if buff.GetUInt8() <> Byte(TBerType.btInteger) Then
-          raise EArgumentException.Create('Invalid tag.');
-
-        if buff.GetUInt8() <> 1 Then
-          raise EArgumentException.Create('Invalid tag.');
-
-        Result := TSourceDiagnostic(buff.GetUInt8());
+        len := buff.GetUInt8();
+        if settings.IsServer Then
+        begin
+          SetLength(tmp, len);
+          if xml <> Nil Then
+            xml.AppendLine(LONGWORD(TTranslatorTags.CalledAEQualifier), '',
+                TGXCommon.ToHexString(tmp, False, 0, Length(tmp)));
+        end
+        else
+        begin
+          // Result source diagnostic component.
+          //tag :=
+          buff.GetUInt8();
+          len := buff.GetUInt8();
+          if len <> 1 Then
+            raise EArgumentException.Create('Invalid tag.');
+          Result := TSourceDiagnostic(buff.GetUInt8());
+          if xml <> Nil Then
+          begin
+            if Result <> TSourceDiagnostic.None Then
+              xml.AppendComment(TGXDLMSConverter.ToString(Result));
+            xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ACSEServiceUser),
+                '', xml.IntegerToHex(Integer(Result), 2));
+            xml.AppendEndTag(LONGWORD(TTranslatorGeneralTags.ResultSourceDiagnostic));
+          end;
+        end;
       end;
       Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or Byte(TPduType.CalledApInvocationId):
       begin
@@ -658,19 +1040,37 @@ begin
         if buff.GetUInt8() <> $A Then
           raise EArgumentException.Create('Invalid tag.');
 
-        //Choice for result (Universal, Octetstring type)
-        if buff.GetUInt8() <> Byte(TBerType.btOctetString) Then
-          raise EArgumentException.Create('Invalid tag.');
-
-        //responding-AP-title-field
-        //Get len.
-        len := buff.GetUInt8();
-        SetLength(tmp, len);
-        buff.Get(tmp);
-        settings.SourceSystemTitle := tmp;
-        tmp := Nil;
+        if settings.IsServer Then
+        begin
+          //tag :=
+          buff.GetUInt8();
+          //Choice for result (Universal, Integer)
+          len := buff.GetUInt8();
+          if len <> 1 Then
+            raise EArgumentException.Create('Invalid tag.');
+          //Get value.
+          tag := buff.GetUInt8();
+          if xml <> Nil Then
+            xml.AppendLine(LONGWORD(TTranslatorTags.CalledAPInvocationId),
+                '', xml.IntegerToHex(tag, 2));
+        end
+        else
+        begin
+          //tag :=
+          buff.GetUInt8();
+            // responding-AP-title-field
+            // Get len.
+          len := buff.GetUInt8();
+          SetLength(tmp, len);
+          buff.Get(tmp);
+          settings.SourceSystemTitle := tmp;
+          if xml <> Nil Then
+            xml.AppendLine(LONGWORD(TTranslatorGeneralTags.RespondingAPTitle), '',
+                TGXCommon.ToHexString(tmp, False, 0, Length(tmp)));
+          tmp := Nil;
+        end;
       end;
-      //Client Challenge.
+      //Client Client system title.
       Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or Byte(TPduType.CallingApTitle)://$A6
       begin
         //len :=
@@ -681,20 +1081,102 @@ begin
         SetLength(tmp, len);
         buff.Get(tmp);
         settings.SourceSystemTitle := tmp;
+        if xml <> Nil Then
+          //CallingAPTitle
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.CallingAPTitle), '',
+              TGXCommon.ToHexString(tmp, False, 0, Length(tmp)));
         tmp := Nil;
       end;
-      //Server Challenge.
+      //Server system title.
       Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or Byte(TPduType.SenderAcseRequirements)://$AA
       begin
         //len :=
         buff.GetUInt8();
-        //tag :=
-        buff.GetUInt8();
+        tag := buff.GetUInt8();
         len := buff.GetUInt8();
         SetLength(tmp, len);
         buff.Get(tmp);
         settings.StoCChallenge := tmp;
         tmp := Nil;
+        AppendServerSystemTitleToXml(settings, xml, tag);
+      end;
+      //Client AEInvocationId.
+      Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or Byte(TPduType.CallingAeInvocationId)://$A9
+      begin
+        //len :=
+        buff.GetUInt8();
+        //tag :=
+        buff.GetUInt8();
+        //len :=
+        buff.GetUInt8();
+        settings.UserID := buff.GetUInt8();
+        if xml <> Nil Then
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.CallingAeInvocationId), '', xml.IntegerToHex(settings.UserID, 2));
+      end;
+      //Client CalledAeInvocationId.
+      Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or Byte(TPduType.CalledAeInvocationId)://$A5
+      begin
+      if settings.IsServer Then
+      begin
+        tag := buff.GetUInt8();
+        if tag <> 3 Then
+          raise EArgumentException.Create('Invalid tag.');
+
+        len := buff.GetUInt8();
+        if len <> 2 Then
+          raise EArgumentException.Create('Invalid tag.');
+        tag := buff.GetUInt8();
+        if tag <> 1 Then
+          raise EArgumentException.Create('Invalid tag.');
+        tag := buff.GetUInt8();
+        if xml <> Nil Then
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.CalledAeInvocationId),
+              '', xml.IntegerToHex(tag, 2));
+      end
+      else
+      begin
+        //len :=
+        buff.GetUInt8();
+        //tag :=
+        buff.GetUInt8();
+        //len :=
+        buff.GetUInt8();
+        settings.UserID := buff.GetUInt8();
+        if xml <> Nil Then
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.CalledAeInvocationId), '',
+              xml.IntegerToHex(settings.UserID, 2));
+      end;
+      end;
+      //Server RespondingAEInvocationId.
+      Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or 7://$A7
+      begin
+        //len :=
+        buff.GetUInt8();
+        //tag :=
+        buff.GetUInt8();
+        //len :=
+        buff.GetUInt8();
+        settings.UserID := buff.GetUInt8();
+          if xml <> Nil Then
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.RespondingAeInvocationId), '',
+              xml.IntegerToHex(settings.UserID, 2));
+      end;
+      Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or Byte(TPduType.CallingApInvocationId)://$A8
+      begin
+        len := buff.GetUInt8();
+        if len <> 3 Then
+          raise EArgumentException.Create('Invalid tag.');
+        tag := buff.GetUInt8();
+        if tag <> 2 Then
+          raise EArgumentException.Create('Invalid tag.');
+        len := buff.GetUInt8();
+        if len <> 1 Then
+          raise EArgumentException.Create('Invalid tag.');
+        //Get value.
+        tag := buff.GetUInt8();
+        if xml <> Nil Then
+          xml.AppendLine(LONGWORD(TTranslatorTags.CallingApInvocationId), '',
+              xml.IntegerToHex(tag, 2));
       end;
       Byte(TBerType.btContext) or Byte(TPduType.SenderAcseRequirements),
       //$8A
@@ -714,12 +1196,27 @@ begin
         begin
             raise EArgumentException.Create('Invalid tag.');
         end;
+        if xml <> Nil Then
+          xml.AppendLine(tag, '', '1');
       end;
       Byte(TBerType.btContext) or Byte(TPduType.MechanismName),//$8B
       Byte(TBerType.btContext) or Byte(TPduType.CallingAeInvocationId)://$89
+      begin
         UpdateAuthentication(settings, buff);
+        if xml <> Nil Then
+        begin
+          if xml.OutputType = TTranslatorOutputType.SimpleXml Then
+          begin
+            xml.AppendLine(tag, '', TGXDLMSConverter.ToString(settings.Authentication));
+          end
+          else
+          begin
+            xml.AppendLine(tag, '', IntToStr(Integer(settings.Authentication)));
+          end;
+        end;
+      end;
       Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or Byte(TPduType.CallingAuthenticationValue)://$AC
-        UpdatePassword(settings, buff);
+        UpdatePassword(settings, buff, xml);
       Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or Byte(TPduType.UserInformation):
       begin
         //$BE
@@ -728,7 +1225,7 @@ begin
             (Result <> TSourceDiagnostic.None) Then
           raise TGXDLMSException.Create(resultComponent, Result);
 
-        ParseUserInformation(settings, cipher, buff);
+        ParseUserInformation(settings, cipher, buff, xml);
       end;
       else
       begin
@@ -749,7 +1246,10 @@ begin
     raise TGXDLMSException.Create(resultComponent, Result);
 end;
 
-class procedure TGXAPDU.UpdatePassword(settings: TGXDLMSSettings; buff: TGXByteBuffer);
+class procedure TGXAPDU.UpdatePassword(
+    settings: TGXDLMSSettings;
+    buff: TGXByteBuffer;
+    xml: TGXDLMSTranslatorStructure);
 var
   tmp: TBytes;
   len: Byte;
@@ -772,6 +1272,33 @@ begin
     SetLength(tmp, len);
     buff.Get(tmp);
     settings.CtoSChallenge := tmp;
+  end;
+  if xml <> Nil Then
+  begin
+    if xml.OutputType = TTranslatorOutputType.SimpleXml Then
+    begin
+      if settings.Authentication = TAuthentication.atLow Then
+      begin
+          if TGXCommon.IsAsciiString(settings.Password) Then
+              xml.AppendComment(TEncoding.ASCII.GetString(settings.Password));
+          xml.AppendLine(LONGWORD(TTranslatorGeneralTags.CallingAuthentication), '',
+              TGXCommon.ToHexString(settings.Password, False, 0, Length(settings.Password)));
+      end
+      else
+        xml.AppendLine(LONGWORD(TTranslatorGeneralTags.CallingAuthentication), '',
+            TGXCommon.ToHexString(settings.CtoSChallenge, False, 0, Length(settings.CtoSChallenge)));
+    end
+    else
+    begin
+      xml.AppendStartTag(LONGWORD(TTranslatorGeneralTags.CallingAuthentication));
+      xml.AppendStartTag(LONGWORD(TTranslatorGeneralTags.CharString));
+      if settings.Authentication = TAuthentication.atLow Then
+        xml.Append(TGXCommon.ToHexString(settings.Password, False, 0, Length(settings.Password)))
+      else
+        xml.Append(TGXCommon.ToHexString(settings.CtoSChallenge, False, 0, Length(settings.CtoSChallenge)));
+      xml.AppendEndTag(LONGWORD(TTranslatorGeneralTags.CharString));
+      xml.AppendEndTag(LONGWORD(TTranslatorGeneralTags.CallingAuthentication));
+    end;
   end;
 end;
 
@@ -906,7 +1433,27 @@ begin
     data.SetUInt8(Length(tmp));
     data.SetArray(tmp);
     data.SetUInt8(offset + 1, data.Size - offset - 2);
-
 end;
 
+class procedure TGXAPDU.AppendServerSystemTitleToXml(
+    settings: TGXDLMSSettings;
+    xml: TGXDLMSTranslatorStructure;
+    tag: BYTE);
+begin
+  if xml <> Nil Then
+  begin
+      // RespondingAuthentication
+      if xml.OutputType = TTranslatorOutputType.SimpleXml Then
+        xml.AppendLine(tag, '', TGXCommon.ToHexString(settings.StoCChallenge, False, 0, Length(settings.StoCChallenge)))
+      else
+      begin
+        xml.Append(tag, true);
+        xml.Append(LONGWORD(TTranslatorGeneralTags.CharString), true);
+        xml.Append(TGXCommon.ToHexString(settings.StoCChallenge, False, 0, Length(settings.StoCChallenge)));
+        xml.Append(LONGWORD(TTranslatorGeneralTags.CharString), false);
+        xml.Append(tag, false);
+        xml.Append(sLineBreak);
+      end;
+  end;
+end;
 end.

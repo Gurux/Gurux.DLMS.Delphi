@@ -429,9 +429,14 @@ begin
         for it in e.Value.AsType<TArray<TValue>> do
         begin
           item := TGXDLMSIp4SetupIpOption.Create;
-          item.&Type := TGXDLMSIp4SetupIpOptionType(it.GetArrayElement(0).AsType<TValue>.AsInteger);
-          item.Length := it.GetArrayElement(1).AsType<TValue>.AsInteger;
-          item.Data := it.GetArrayElement(2).AsType<TValue>.AsType<TBytes>;
+          try
+            item.&Type := TGXDLMSIp4SetupIpOptionType(it.GetArrayElement(0).AsType<TValue>.AsInteger);
+            item.Length := it.GetArrayElement(1).AsType<TValue>.AsInteger;
+            item.Data := it.GetArrayElement(2).AsType<TValue>.AsType<TBytes>;
+            except
+            item.Free;
+            raise;
+          end;
           data2.Add(item);
         end
       end;

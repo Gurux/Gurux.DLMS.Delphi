@@ -204,35 +204,38 @@ var
   reply: TGXByteBuffer;
 begin
   reply := TGXByteBuffer.Create(transforms^ * 64);
-  reply.SetArray(data.GetData(), 0, data.Size);
-  //Total number of hashed bits.
-  total_bits := UInt64((transforms^ * 64 + Cardinal(data.Size)) * 8);
+  try
+    reply.SetArray(data.GetData(), 0, data.Size);
+    //Total number of hashed bits.
+    total_bits := UInt64((transforms^ * 64 + Cardinal(data.Size)) * 8);
 
-  //Padding
-  reply.SetUInt8($80);
-  orig_size := reply.Size;
-  reply.Zero(reply.Size, 64 - reply.Size);
-  for pos := 0to 15 do
-    block[pos] := reply.GetUInt32();
+    //Padding
+    reply.SetUInt8($80);
+    orig_size := reply.Size;
+    reply.Zero(reply.Size, 64 - reply.Size);
+    for pos := 0to 15 do
+      block[pos] := reply.GetUInt32();
 
-  if orig_size > 64 - 8 Then
-  begin
-    Transform(@block[0], digest, transforms);
-    for pos := 0 to 16 - 2 do
-      block[pos] := 0;
+    if orig_size > 64 - 8 Then
+    begin
+      Transform(@block[0], digest, transforms);
+      for pos := 0 to 16 - 2 do
+        block[pos] := 0;
+    end;
+
+    // Append total_bits, split this uint64 into two uint32.
+    block[16 - 1] := total_bits;
+    block[16 - 2] := (total_bits shr 32);
+    Transform(@block, digest, transforms);
+    reply.Capacity(20);
+    reply.Position := 0;
+    reply.Size := 0;
+    for pos := 0 to 4 do
+      reply.SetUInt32(PCardinal(Cardinal(digest) + (pos * SizeOf(Cardinal)))^);
+    Result := reply.ToArray();
+  finally
+    FreeAndNil(reply);
   end;
-
-  // Append total_bits, split this uint64 into two uint32.
-  block[16 - 1] := total_bits;
-  block[16 - 2] := (total_bits shr 32);
-  Transform(@block, digest, transforms);
-  reply.Capacity(20);
-  reply.Position := 0;
-  reply.Size := 0;
-  for pos := 0 to 4 do
-    reply.SetUInt32(PCardinal(Cardinal(digest) + (pos * SizeOf(Cardinal)))^);
-  Result := reply.ToArray();
-  FreeAndNil(reply);
 end;
 
 class function TGXSHA1.Encrypt(data: TGXByteBuffer): TBytes;

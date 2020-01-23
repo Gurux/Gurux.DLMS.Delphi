@@ -33,7 +33,8 @@
 unit Gurux.DLMS.AesGcmParameter;
 
 interface
-uses SysUtils, GXByteBuffer, Gurux.DLMS.Security, Gurux.DLMS.CountType;
+uses SysUtils, GXByteBuffer, Gurux.DLMS.Security, Gurux.DLMS.CountType,
+Gurux.DLMS.GXDLMSTranslatorStructure;
 
 type
   TAesGcmParameter = class
@@ -45,7 +46,13 @@ type
     FAuthenticationKey: TBytes;
     FType: TCountType;
     FCountTag: TBytes;
+    FKeyParameters: BYTE;
+    FRecipientSystemTitle: TBytes;
+    FDateTime: TDateTime;
+    FKeyCipheredData: TBytes;
+    FOtherInformation: TBytes;
   public
+    xml: TGXDLMSTranslatorStructure;
     property Tag: Byte read FTag write FTag;
     property Security: TSecurity read FSecurity write FSecurity;
     property InvocationCounter: LongWord read FInvocationCounter write FInvocationCounter;
@@ -54,14 +61,19 @@ type
     property AuthenticationKey: TBytes read FAuthenticationKey write FAuthenticationKey;
     property &Type: TCountType read FType write FType;
     property CountTag: TBytes read FCountTag write FCountTag;
+    property KeyParameters: BYTE read FKeyParameters write FKeyParameters;
+    property RecipientSystemTitle: TBytes read FRecipientSystemTitle write FRecipientSystemTitle;
+    property DateTime: TDateTime read FDateTime write FDateTime;
+    property KeyCipheredData: TBytes read FKeyCipheredData write FKeyCipheredData;
+    property OtherInformation: TBytes read FOtherInformation write FOtherInformation;
 
-    // Constructor.
-  // <param name='tag'>Command.
-  // <param name='security
-  // <param name='invocationCounter'>Invocation counter.
-  // <param name='systemTitle
-  // <param name='blockCipherKey
-  // <param name='authenticationKey
+  // Constructor.
+  // tag: Command.
+  // security
+  // invocationCounter: Invocation counter.
+  // systemTitle
+  // blockCipherKey
+  // authenticationKey
   constructor Create(
       tag: Byte;
       Security: TSecurity;
@@ -71,9 +83,9 @@ type
       authenticationKey: TBytes)overload;
 
   // Constructor.
-  // <param name='systemTitle
-  // <param name='blockCipherKey
-  // <param name='authenticationKey
+  // systemTitle
+  // blockCipherKey
+  // authenticationKey
   constructor Create(
       systemTitle: TBytes;
       blockCipherKey: TBytes;

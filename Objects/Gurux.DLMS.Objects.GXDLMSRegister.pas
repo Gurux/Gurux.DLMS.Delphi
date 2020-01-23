@@ -92,7 +92,7 @@ end;
 
 constructor TGXDLMSRegister.Create(ln: string; sn: System.UInt16);
 begin
-  inherited Create(TObjectType.otRegister, ln, 0);
+  inherited Create(TObjectType.otRegister, ln, sn);
   FScaler := 0;
 end;
 

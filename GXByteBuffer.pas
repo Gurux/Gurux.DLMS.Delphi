@@ -91,9 +91,8 @@ public
 
   destructor Destroy; override;
 
-  class function HexToBytes(HexStr : String): TBytes; static;
+  class function HexToBytes(const HexStr : String): TBytes; static;
 
-  class function ToHexString(bytes : TBytes; addSpace : Boolean; Index : Integer; Count : Integer): String; overload;
   class function ToHexString(bytes : TBytes): String; overload;
 
   // Clear buffer but don't release memory.
@@ -140,9 +139,9 @@ public
 
   procedure SetUInt16(index : Integer; item : Integer);overload;
 
-  procedure SetUInt32(item : Longword);overload;
+  procedure SetUInt32(item : UInt32);overload;
 
-  procedure SetUInt32(index : Integer; item : Longword);overload;
+  procedure SetUInt32(index : Integer; item : UInt32);overload;
 
   procedure SetUInt64(item : UInt64);overload;
 
@@ -168,19 +167,20 @@ public
 
   function GetUInt16(index : Integer) : Word; overload;
 
-  function GetUInt32() : Longword; overload;
+  function GetUInt32() : UInt32; overload;
 
-  function GetInt32() : Integer;overload;
+  function GetInt32() : Int32; overload;
 
-  function GetInt32( index : Integer) : Integer; overload;
+  function GetInt32( index : Integer) : Int32; overload;
 
-  function GetUInt32(index : Integer) : Longword; overload;
+  function GetUInt32(index : Integer) : UInt32; overload;
 
   function GetFloat : Single;
 
   function GetDouble : Double;
 
-  function GetInt64 : Int64;
+  function GetInt64 : Int64; overload;
+  function GetInt64(Index: Integer): Int64; overload;
 
   //Result : the data.
   function GetData : TBytes;
@@ -188,7 +188,7 @@ public
   // value : The data to set
   procedure SetData(value : TBytes);
 
-  function GetUInt64() : Extended;
+  function GetUInt64() : UInt64;
 
   function GetString(count : Integer) : String; overload;
 
@@ -288,9 +288,14 @@ public
   // count : Byte count.
   // Result : Data as hex string.
   function ToHex(addSpace : Boolean; index : Integer; count : Integer): String;overload;
+
+  class function ToHexString(bytes : TBytes; addSpace : Boolean; Index : Integer; Count : Integer): String;overload;
 end;
 
 implementation
+
+uses GXCommon;
+
 // Constructor.
 constructor TGXByteBuffer.Create();
 begin
@@ -334,8 +339,8 @@ end;
 
 destructor TGXByteBuffer.Destroy();
 begin
-inherited;
 Capacity(0);
+inherited;
 end;
 
 // Allocate new size for the array in bytes.
@@ -407,13 +412,13 @@ end;
 //Result :  Get buffer data as byte array.
 function TGXByteBuffer.ToArray() : TBytes;
 begin
-    Result := SubArray(0, size);
+  Result := SubArray(0, size);
 end;
 
 // return Amount of non read bytes in the buffer.
 function TGXByteBuffer.Available() : Integer;
 begin
-      Result := size - position;
+  Result := size - position;
 end;
 
 // Returns sub array from byte buffer.
@@ -464,7 +469,7 @@ begin
   if Size < index + count Then
     FSize := index + count;
 
-  for pos:= 1 to count do
+  for pos := 0 to count -1 do
     FData[index + pos] := 0;
 end;
 
@@ -499,13 +504,13 @@ begin
   FData[index + 1] := (item and $FF);
 end;
 
-procedure TGXByteBuffer.SetUInt32(item : Longword);
+procedure TGXByteBuffer.SetUInt32(item : UInt32);
 begin
   SetUInt32(FSize, item);
   FSize := FSize + 4;
 end;
 
-procedure TGXByteBuffer.SetUInt32(index : Integer; item : Longword);
+procedure TGXByteBuffer.SetUInt32(index : Integer; item : UInt32);
 begin
   if index + 4 >= capacity() then
     capacity(index + ARRAY_CAPACITY);
@@ -599,19 +604,19 @@ begin
   Result := Word((FData[index] and $FF) Shl 8) or (FData[index + 1] and $FF);
 end;
 
-function TGXByteBuffer.GetUInt32(): Longword;
+function TGXByteBuffer.GetUInt32: UInt32;
 begin
   Result := GetUInt32(FPosition);
   FPosition := FPosition + 4;
 end;
 
-function TGXByteBuffer.GetInt32() : Integer;
+function TGXByteBuffer.GetInt32: Int32;
 begin
   Result := GetInt32(FPosition);
   FPosition := FPosition + 4;
 end;
 
-function TGXByteBuffer.GetInt32( index : Integer) : Integer;
+function TGXByteBuffer.GetInt32(index : Integer): Int32;
 begin
   if index + 4 > size then
        raise EArgumentException.Create('getUInt32');
@@ -620,7 +625,22 @@ begin
           or (FData[index + 2] and $FF) Shl 8 or (FData[index + 3] and $FF);
 end;
 
-function TGXByteBuffer.GetUInt32(index : Integer) : Longword;
+function TGXByteBuffer.GetInt64(Index: Integer): Int64;
+begin
+  if index + 8 > FSize then
+    raise EArgumentException.Create('getInt64');
+
+  Int64Rec(Result).Bytes[7] := FData[index+0] and $FF;
+  Int64Rec(Result).Bytes[6] := FData[index+1] and $FF;
+  Int64Rec(Result).Bytes[5] := FData[index+2] and $FF;
+  Int64Rec(Result).Bytes[4] := FData[index+3] and $FF;
+  Int64Rec(Result).Bytes[3] := FData[index+4] and $FF;
+  Int64Rec(Result).Bytes[2] := FData[index+5] and $FF;
+  Int64Rec(Result).Bytes[1] := FData[index+6] and $FF;
+  Int64Rec(Result).Bytes[0] := FData[index+7] and $FF;
+end;
+
+function TGXByteBuffer.GetUInt32(index : Integer): UInt32;
 begin
   if index + 4 > size then
     raise EArgumentException.Create('getUInt32');
@@ -661,8 +681,7 @@ end;
 
 function TGXByteBuffer.GetInt64() : Int64;
 begin
-  System.Move(FData[FPosition], Result, 8);
-  Result := swap(Result);
+  Result := GetInt64(FPosition);
   FPosition := FPosition + 8;
 end;
 
@@ -679,7 +698,7 @@ begin
   FSize := Length(value);
 end;
 
-function TGXByteBuffer.GetUInt64() : Extended;
+function TGXByteBuffer.GetUInt64: UInt64;
 begin
     Result := GetInt64();
 end;
@@ -882,19 +901,21 @@ begin
   end;
 end;
 
-class function TGXByteBuffer.HexToBytes(HexStr : String): TBytes;
+class function TGXByteBuffer.HexToBytes(const HexStr : String): TBytes;
 var
   tmp : byte;
   count, index, pos: Integer;
+  tmpS : string;
 begin
-  count := (Length(HexStr) + 1) div 3;
+  tmpS := StringReplace(HexStr, ' ', '', [rfReplaceAll, rfIgnoreCase]);
+  count := (Length(tmpS) + 1) div 2;
   SetLength(Result, count);
   index := 1;
   for pos := 0 to count - 1 do
   begin
-     tmp := ToHexValue(HexStr[index]) Shl 4;
-     tmp := tmp + ToHexValue(HexStr[index + 1]);
-     index := index + 3;
+     tmp := ToHexValue(tmpS[index]) Shl 4;
+     tmp := tmp + ToHexValue(tmpS[index + 1]);
+     index := index + 2;
      Result[pos] := tmp;
   end;
 end;
@@ -926,29 +947,7 @@ end;
 
 class function TGXByteBuffer.ToHexString(bytes : TBytes): String;
 begin
-   Result := ToHexString(bytes, True,0, Length(bytes));
-end;
-
-class function TGXByteBuffer.ToHexString(bytes : TBytes; addSpace : Boolean; Index : Integer; Count : Integer): String;
-var
-pos, tmp, add : Integer;
-begin
-if addSpace then
-begin
-  add  := 3;
-  Result := String.Create(' ', (Count * add) - 1);
-end
-else
-begin
-  add := 2;
-  Result := String.Create(' ', (Count * add));
-end;
-for pos := Index to Count - 1 do
-begin
-  tmp := bytes[pos];
-  Result[(pos * add) + 1] := hexArray[tmp Shr 4];
-  Result[(pos * add) + 2] := hexArray[tmp and $0F];
-end;
+   Result := TGXCommon.ToHexString(bytes, True,0, Length(bytes));
 end;
 
 // Push the given hex string as byte array into this buffer at the current
@@ -1010,4 +1009,10 @@ function TGXByteBuffer.ToHex(addSpace : Boolean; index : Integer; count : Intege
 begin
   Result := ToHexString(FData, addSpace, index, count);
 end;
+
+class function TGXByteBuffer.ToHexString(bytes : TBytes; addSpace : Boolean; Index : Integer; Count : Integer): String;
+begin
+  Result := TGXCommon.ToHexString(bytes, addSpace, Index, Count);
+end;
+
 end.

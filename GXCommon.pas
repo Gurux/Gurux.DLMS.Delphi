@@ -44,27 +44,22 @@ Gurux.DLMS.ErrorCode, GXCmdParameter, System.Types;
 const
 
   HDLCFrameStartEnd = $7E;
-  InitialRequest = $1;
-  InitialResponce = $8;
-  AARQTag = $60;
-  AARETag = $61;
-  LogicalNameObjectID: array [0..6] of byte = ($60, $85, $74, $05, $08, $01, $01);
-  ShortNameObjectID: array [0..6] of byte = ($60, $85, $74, $05, $08, $01, $02);
-  LogicalNameObjectIDWithCiphering: array [0..6] of byte = ($60, $85, $74, $05, $08, $01, $03);
-  ShortNameObjectIDWithCiphering:array [0..6] of byte = ($60, $85, $74, $05, $08, $01, $04);
-
-
   LLCSendBytes : array [0..2] of Byte = ($E6, $E6, $00);
   LLCReplyBytes : array [0..2] of byte = ($E6, $E7, $00);
+  DATA_TYPE_OFFSET = $FF0000;
 type
   LogicalName = array[0..5] of Byte;
   TValueArray = array of TValue;
+  TGXStructure = TArray<TValue>;
+  TGXArray = TArray<TValue>;
+  TGXEnum = UInt8;
+  TGXBitString = string;
 
-  TGXCommon = class
+TGXCommon = class
 // Reserved for internal use.
 class procedure ToBitString(sb: TStringBuilder; value : Byte; count : Integer);
 // Convert Bit string to DLMS bytes.
-class procedure SetBitString(buff : TGXByteBuffer; value: TValue);
+class procedure SetBitString(buff : TGXByteBuffer; value: TValue; addCount: Boolean);
 
 // Convert Octet string to DLMS bytes.
 class procedure SetOctetString(buff: TGXByteBuffer; value: TValue);
@@ -259,13 +254,16 @@ public
 
   class function ChangeType(value: TBytes; tp: TDataType): TValue;overload;
   class function ChangeType(value: TGXByteBuffer; tp: TDataType): TValue;overload;
-  class function LogicalNameToBytes(value: String): LogicalName;static;
-  class function ToLogicalName(value: TValue): string;
+  class function LogicalNameToBytes(value: String): LogicalName;overload;
+  class function ToLogicalName(value: TValue): string;overload;
 
-// Returns command line parameters.
-// returns: List of command line parameters
+  // Returns command line parameters.
+  // returns: List of command line parameters
   class function GetParameters(optstring: string) : TObjectList<TGXCmdParameter>;
-
+  class function GetLogicalName(ln: string): TBytes;overload;
+  class function ToLogicalName(buff: TBytes): string;overload;
+  class function IsAsciiString(value: TBytes): Boolean;static;
+  class function ToHexString(bytes : TBytes; addSpace : Boolean; Index : Integer; Count : Integer): String; static;
 end;
 
 implementation
@@ -475,79 +473,81 @@ var
   startIndex : Integer;
   knownType : Boolean;
 begin
-    startIndex := data.Position;
-    if (data.Position = data.Size) then
-    begin
-        info.Complete := False;
-        Result := Nil;
-        Exit;
-    end;
-    info.Complete := True;
-    // Get data type if it is unknown.
-    knownType := info.&Type <> TDataType.dtNONE;
-    if (knownType = False) then
-        info.&Type := TDataType(data.GetUInt8());
+  startIndex := data.Position;
+  if (data.Position = data.Size) then
+  begin
+      info.Complete := False;
+      Result := Nil;
+      Exit;
+  end;
+  info.Complete := True;
+  // Get data type if it is unknown.
+  knownType := info.&Type <> TDataType.dtNONE;
+  if (knownType = False) then
+      info.&Type := TDataType(data.GetUInt8());
 
-    if (info.&Type = TDataType.dtNONE) then
-    begin
-        Result := Nil;
-        Exit;
-    end;
-    if (data.Position = data.Size) then
-    begin
-        info.Complete := False;
-        Result := Nil;
-        Exit;
-    end;
-    case(info.&Type) of
-    TDataType.dtARRAY,
-    TDataType.dtSTRUCTURE:
-        Result := GetArray(data, info, startIndex);
-    TDataType.dtBOOLEAN:
-        Result := GetBoolean(data, info);
-    TDataType.dtBITSTRING:
-        Result := GetBitString(data, info);
-    TDataType.dtINT32:
-        Result := GetInt32(data, info);
-    TDataType.dtUINT32:
-        Result := GetUInt32(data, info);
-    TDataType.dtString:
-        Result := GetString(data, info, knownType);
-    TDataType.dtStringUTF8:
-        Result := GetUtfString(data, info, knownType);
-    TDataType.dtOctetString:
-        Result := GetOctetString(data, info, knownType);
-    TDataType.dtBinaryCodedDesimal:
-        Result := GetBcd(data, info, knownType);
-    TDataType.dtINT8:
-        Result := GetInt8(data, info);
-    TDataType.dtINT16:
-        Result := GetInt16(data, info);
-    TDataType.dtUINT8:
-        Result := GetUInt8(data, info);
-    TDataType.dtUINT16:
-        Result := GetUInt16(data, info);
-    TDataType.dtCompactArray:
-      raise Exception.Create('Invalid data type.');
-    TDataType.dtINT64:
-        Result := GetInt64(data, info);
-    TDataType.dtUINT64:
-        Result := GetUInt64(data, info);
-    TDataType.dtENUM:
-        Result := GetEnum(data, info);
-    TDataType.dtFLOAT32:
-        Result := GetFloat(data, info);
-    TDataType.dtFLOAT64:
-        Result := GetDouble(data, info);
-    TDataType.dtDATETIME:
-        Result := GetDateTime(data, info);
-    TDataType.dtDATE:
-        Result := GetDate(data, info);
-    TDataType.dtTIME:
-        Result := GetTime(data, info);
-    else
-      raise Exception.Create('Invalid data type.');
-    end;
+  if (info.&Type = TDataType.dtNONE) then
+  begin
+    Result := Nil;
+    if info.Xml <> Nil Then
+      info.Xml.AppendLine('<' + info.Xml.GetDataType(info.&Type) + ' />');
+    Exit;
+  end;
+  if (data.Position = data.Size) then
+  begin
+      info.Complete := False;
+      Result := Nil;
+      Exit;
+  end;
+  case(info.&Type) of
+  TDataType.dtARRAY,
+  TDataType.dtSTRUCTURE:
+      Result := GetArray(data, info, startIndex);
+  TDataType.dtBOOLEAN:
+      Result := GetBoolean(data, info);
+  TDataType.dtBITSTRING:
+      Result := GetBitString(data, info);
+  TDataType.dtINT32:
+      Result := GetInt32(data, info);
+  TDataType.dtUINT32:
+      Result := GetUInt32(data, info);
+  TDataType.dtString:
+      Result := GetString(data, info, knownType);
+  TDataType.dtStringUTF8:
+      Result := GetUtfString(data, info, knownType);
+  TDataType.dtOctetString:
+      Result := GetOctetString(data, info, knownType);
+  TDataType.dtBinaryCodedDesimal:
+      Result := GetBcd(data, info, knownType);
+  TDataType.dtINT8:
+      Result := GetInt8(data, info);
+  TDataType.dtINT16:
+      Result := GetInt16(data, info);
+  TDataType.dtUINT8:
+      Result := GetUInt8(data, info);
+  TDataType.dtUINT16:
+      Result := GetUInt16(data, info);
+  TDataType.dtCompactArray:
+    raise Exception.Create('Invalid data type.');
+  TDataType.dtINT64:
+      Result := GetInt64(data, info);
+  TDataType.dtUINT64:
+      Result := GetUInt64(data, info);
+  TDataType.dtENUM:
+      Result := GetEnum(data, info);
+  TDataType.dtFLOAT32:
+      Result := GetFloat(data, info);
+  TDataType.dtFLOAT64:
+      Result := GetDouble(data, info);
+  TDataType.dtDATETIME:
+      Result := GetDateTime(data, info);
+  TDataType.dtDATE:
+      Result := GetDate(data, info);
+  TDataType.dtTIME:
+      Result := GetTime(data, info);
+  else
+    raise Exception.Create('Invalid data type.');
+  end;
 end;
 
 // Get array from DLMS data.
@@ -565,6 +565,9 @@ begin
   if info.Count = 0 then
     info.Count := GetObjectCount(buff);
 
+  if info.Xml <> Nil Then
+    info.Xml.AppendStartTag(DATA_TYPE_OFFSET or LONGWORD(info.&Type), 'Qty', info.Xml.IntegerToHex(info.Count, 2), False);
+
   size := buff.Size - buff.Position;
   if (info.Count <> 0) and (size < 1) then
   begin
@@ -579,6 +582,7 @@ begin
     begin
       info2 := TGXDataInfo.Create();
       try
+        info2.Xml := info.Xml;
         tmp := GetData(buff, info2);
         if info2.Complete = False then
         begin
@@ -589,14 +593,16 @@ begin
         else if info2.Count = info2.Index then
         begin
           startIndex := buff.Position;
-          arr.add(tmp.AsType<TValue>);
+          arr.add(tmp);
         end;
       finally
         FreeAndNil(info2);
       end;
     end;
+    if info.Xml <> Nil Then
+      info.Xml.AppendEndTag(DATA_TYPE_OFFSET + LONGWORD(info.&Type));
     info.Index := pos;
-    Result := TValue.From(arr.ToArray());
+    Result := TValue.From(arr.ToArray())
   finally
     FreeAndNil(arr);
   end;
@@ -609,6 +615,7 @@ end;
 class function TGXCommon.GetTime(buff : TGXByteBuffer; info: TGXDataInfo) : TValue;
 var
   hour, minute, second, ms : Integer;
+  str: String;
 begin
   if ((buff.Size - buff.Position) < 4) then
   begin
@@ -616,14 +623,19 @@ begin
     info.Complete := False;
     Exit;
   end;
+  if info.Xml <> Nil Then
+    str := buff.ToHex(False, buff.Position, buff.Available);
   // Get time.
   hour := buff.GetUInt8();
   minute := buff.GetUInt8();
   second := buff.GetUInt8();
   ms := buff.GetUInt8();
-  if ms <> $FF then
-    ms := ms * 10;
   Result := TGXTime.Create(hour, minute, second, ms);
+  if info.Xml <> Nil Then
+  begin
+    info.Xml.AppendComment(Result.ToString());
+    info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', str);
+  end;
 end;
 
 // Get date from DLMS data.
@@ -634,6 +646,7 @@ class function TGXCommon.GetDate(buff : TGXByteBuffer; info: TGXDataInfo): TValu
 var
   year, month, day, dow : Integer;
   dt : TGXDate;
+  str: string;
 begin
   if ((buff.Size - buff.Position) < 5) then
   begin
@@ -641,6 +654,8 @@ begin
     info.Complete := False;
     Exit;
   end;
+  if info.Xml <> Nil Then
+    str := buff.ToHex(False, buff.Position, buff.Available);
   // Get year.
   year := buff.getUInt16();
   // Get month
@@ -650,7 +665,12 @@ begin
   // Get week day
   dow := buff.GetUInt8();
   dt := TGXDate.Create(year, month, day, dow);
-  Result := dt;
+  Result := TValue.From(dt);
+  if info.Xml <> Nil Then
+  begin
+    info.Xml.AppendComment(dt.ToString());
+    info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', str);
+  end;
 end;
 
 // Get the number of days in that month.
@@ -691,6 +711,7 @@ var
   month, day, hour, min, sec, ms, dow : Byte;
   deviation: Integer;
   skip: TDateTimeSkipsSet;
+  str: String;
 begin
   // If there is not enough data available.
   if buff.Size - buff.Position < 12 then
@@ -705,6 +726,9 @@ begin
       info.Complete := False;
     Exit;
   end;
+  if info.Xml <> Nil Then
+    str := buff.ToHex(False, buff.Position, buff.Available);
+
   skip.SetOnly(TDateTimeSkips.dkNone);
 
   // Get year.
@@ -742,7 +766,11 @@ begin
   end;
 
   Result := TValue.From(dt);
-
+  if info.Xml <> Nil Then
+  begin
+    info.Xml.AppendComment(dt.ToString());
+    info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', str);
+  end;
 end;
 
 // Get double value from DLMS data.
@@ -750,12 +778,25 @@ end;
 // info: Data info.
 // return Parsed double value.
 class function TGXCommon.GetDouble(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
+var
+  str: String;
 begin
   // If there is not enough data available.
   if ((buff.Size - buff.Position) < 8) then
     info.Complete := False
   else
+  begin
+    if info.Xml <> Nil Then
+      str := buff.ToHex(False, buff.Position, 8);
+
     Result := buff.GetDouble();
+    if info.Xml <> Nil Then
+    begin
+      if info.Xml.Comments Then
+        info.Xml.AppendComment(Result.ToString());
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', str);
+    end;
+  end;
 end;
 
 // Get float value from DLMS data.
@@ -763,12 +804,25 @@ end;
 // info: Data info.
 // return Parsed float value.
 class function TGXCommon.GetFloat(buff : TGXByteBuffer;info: TGXDataInfo): TValue;
+var
+  str: String;
 begin
   // If there is not enough data available.
   if ((buff.Size - buff.Position) < 4) then
     info.Complete := False
   else
+  begin
+    if info.Xml <> Nil Then
+      str := buff.ToHex(False, buff.Position, 8);
+
     Result := buff.GetFloat();
+    if info.Xml <> Nil Then
+    begin
+      if info.Xml.Comments Then
+        info.Xml.AppendComment(Result.ToString());
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', str);
+    end;
+  end;
 end;
 
 // Get enumeration value from DLMS data.
@@ -776,12 +830,19 @@ end;
 // info : Data info.
 // return parsed enumeration value.
 class function TGXCommon.GetEnum(buff : TGXByteBuffer; info: TGXDataInfo) : TValue;
+var
+  ch: BYTE;
 begin
   // If there is not enough data available.
   if ((buff.Size - buff.Position) < 1) then
       info.Complete := False
   else
-    Result := buff.GetUInt8();
+  begin
+    ch := buff.GetUInt8();
+    Result := TValue.From<TGXEnum>(ch);
+    if info.Xml <> Nil Then
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', info.Xml.IntegerToHex(ch, 2));
+  end;
 end;
 
 // Get UInt64 value from DLMS data.
@@ -789,12 +850,19 @@ end;
 // info: Data info.
 // return parsed UInt64 value.
 class function TGXCommon.GetUInt64(buff : TGXByteBuffer; info: TGXDataInfo) : TValue;
+var
+  val: UInt64;
 begin
   // If there is not enough data available.
   if ((buff.Size - buff.Position) < 8) then
       info.Complete := False
   else
-    Result := buff.GetUInt64();
+  begin
+    val := buff.GetUInt64();
+    Result := val;
+    if info.Xml <> Nil Then
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', info.Xml.IntegerToHex(val, 8));
+  end;
 end;
 
 // Get Int64 value from DLMS data.
@@ -802,12 +870,19 @@ end;
 // info: Data info.
 // return parsed Int64 value.
 class function TGXCommon.GetInt64(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
+var
+  val: Int64;
 begin
   // If there is not enough data available.
   if ((buff.Size - buff.Position) < 8) then
       info.Complete := False
   else
-    Result := buff.getInt64();
+  begin
+    val := buff.GetInt64();
+    Result := val;
+    if info.Xml <> Nil Then
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', info.Xml.IntegerToHex(val, 8));
+  end;
 end;
 
 // Get UInt16 value from DLMS data.
@@ -815,12 +890,19 @@ end;
 // info: Data info.
 // return parsed UInt16 value.
 class function TGXCommon.GetUInt16(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
+var
+  val: UInt16;
 begin
   // If there is not enough data available.
   if ((buff.Size - buff.Position) < 2) then
     info.Complete := False
   else
-    Result := buff.getUInt16();
+  begin
+    val := buff.GetUInt16();
+    Result := val;
+    if info.Xml <> Nil Then
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', info.Xml.IntegerToHex(val, 4));
+  end;
 end;
 
 // Get UInt8 value from DLMS data.
@@ -828,12 +910,19 @@ end;
 // info : Data info.
 // return parsed UInt8 value.
 class function TGXCommon.GetUInt8(buff : TGXByteBuffer; info: TGXDataInfo) : TValue;
+var
+  val: BYTE;
 begin
   // If there is not enough data available.
   if ((buff.Size - buff.Position) < 1) then
     info.Complete := False
   else
-    Result := buff.GetUInt8();
+  begin
+    val := buff.GetUInt8();
+    TValue.Make(val, TypeInfo(BYTE),Result);
+    if info.Xml <> Nil Then
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', info.Xml.IntegerToHex(val, 2));
+  end;
 end;
 
 // Get Int16 value from DLMS data.
@@ -841,12 +930,19 @@ end;
 // info: Data info.
 // return parsed Int16 value.
 class function TGXCommon.GetInt16(buff : TGXByteBuffer; info: TGXDataInfo) : TValue;
+var
+  val: Int16;
 begin
   // If there is not enough data available.
   if ((buff.Size - buff.Position) < 2) then
       info.Complete := False
   else
-    Result := buff.getInt16();
+  begin
+    val := buff.GetInt16();
+    TValue.Make(val, TypeInfo(Int16),Result);
+    if info.Xml <> Nil Then
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', info.Xml.IntegerToHex(val, 4));
+  end;
 end;
 
 // Get Int8 value from DLMS data.
@@ -854,12 +950,19 @@ end;
 // info: Data info.
 // return parsed Int8 value.
 class function TGXCommon.GetInt8(buff : TGXByteBuffer; info: TGXDataInfo) : TValue;
+var
+  val: ShortInt;
 begin
   // If there is not enough data available.
   if ((buff.Size - buff.Position) < 1) then
     info.Complete := False
   else
-    Result := buff.getInt8();
+   begin
+    val := buff.GetInt8();
+    TValue.Make(val, TypeInfo(Shortint),Result);
+    if info.Xml <> Nil Then
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', info.Xml.IntegerToHex(val, 2));
+  end;
 end;
 
 // Get BCD value from DLMS data.
@@ -867,12 +970,19 @@ end;
 // info: Data info.
 // return parsed BCD value.
 class function TGXCommon.GetBcd(buff : TGXByteBuffer; info: TGXDataInfo; knownType: Boolean): TValue;
+var
+  val: BYTE;
 begin
   // If there is not enough data available.
   if ((buff.Size - buff.Position) < 1) then
       info.Complete := False
   else
-    Result := buff.GetUInt8();
+  begin
+    val := buff.GetUInt8();
+    TValue.Make(val, TypeInfo(BYTE),Result);
+    if info.Xml <> Nil Then
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', info.Xml.IntegerToHex(val, 4));
+  end;
 end;
 
 // Get UTF string value from DLMS data.
@@ -922,6 +1032,33 @@ begin
       Result := value.toString();
 end;
 
+class function TGXCommon.ToLogicalName(buff: TBytes): string;
+begin
+  Result := '';
+  if Length(buff) = 6 then
+    begin
+      Result := Format('%d', [buff[0]])+ '.' + Format('%d', [buff[1]]) + '.' +
+      Format('%d', [buff[2]])+ '.' + Format('%d', [buff[3]]) + '.' +
+      Format('%d', [buff[4]])+ '.' + Format('%d', [buff[5]]);
+    end;
+end;
+
+class function TGXCommon.GetLogicalName(ln: string): TBytes;
+var
+  index : Integer;
+  it: string;
+  items: TArray<string>;
+begin
+  items := ln.Split(['.']);
+  SetLength(Result, Length(items));
+  index := 0;
+  for it in items do
+  begin
+    Result[index] := (byte.Parse(it));
+    index := index + 1;
+  end;
+ end;
+
 // Get octet string value from DLMS data.
 // buff : Received DLMS data.
 // info: Data info.
@@ -929,7 +1066,11 @@ end;
 class function TGXCommon.GetOctetString(buff : TGXByteBuffer; info: TGXDataInfo;knownType: Boolean): TValue;
 var
   len: Integer;
-  tmp: TBytes;
+  value: TBytes;
+  str: string;
+  isString: Boolean;
+  dt: TDataType;
+  tmp: TValue;
 begin
   if knownType then
     len := buff.Size
@@ -943,9 +1084,51 @@ begin
       Exit;
     end;
   end;
-  SetLength(tmp, len);
-  buff.Get(tmp);
-  Result := TValue.From(tmp);
+  SetLength(value, len);
+  buff.Get(value);
+  Result := TValue.From(value);
+  if info.Xml <> Nil Then
+  begin
+    if (info.Xml.Comments and (Length(value) <> 0)) Then
+    begin
+      // This might be logical name.
+      if (Length(value) = 6) and (value[5] = $FF) Then
+      begin
+        info.Xml.AppendComment(TGXCommon.ToLogicalName(value));
+      end
+      else
+      begin
+        isString := True;
+        //Try to move octect string to DateTime, Date or time.
+        if (Length(value) = 12) or (Length(value) = 5) or (Length(value) = 4) Then
+        begin
+          dt := TDataType.dtNone;
+          if Length(value) = 12 Then
+            dt := TDataType.dtDateTime
+          else if Length(value) = 5 Then
+            dt := TDataType.dtDate
+          else if Length(value) = 4 Then
+            dt := TDataType.dtTime;
+          if dt <> TDataType.dtNone Then
+          begin
+            tmp := TGXCommon.ChangeType(value, dt);
+            info.Xml.AppendComment(tmp.ToString());
+            isString := false;
+          end;
+        end;
+        end;
+        if isString Then
+          isString := TGXCommon.IsAsciiString(value);
+
+        if isString Then
+        begin
+          str := str + TEncoding.ASCII.GetString(value);
+          info.Xml.AppendComment(str);
+        end;
+    end;
+    str := TGXCommon.ToHexString(value, False, 0, Length(value));
+    info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', str);
+  end;
 end;
 
 // Get string value from DLMS data.
@@ -964,14 +1147,17 @@ begin
     // If there is not enough data available.
     if (buff.Size - buff.Position < len) then
     begin
-        info.Complete := False;
-        Exit;
+      info.Complete := False;
+      Exit;
     end;
   end;
   if (len > 0) Then
     Result := buff.GetString(len)
   else
     Result := '';
+
+  if info.Xml <> Nil Then
+    info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', Result);
 end;
 
 // Get UInt32 value from DLMS data.
@@ -979,12 +1165,19 @@ end;
 // info: Data info.
 // return parsed UInt32 value.
 class function TGXCommon.GetUInt32(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
+var
+  val: UInt32;
 begin
   // If there is not enough data available.
   if ((buff.Size - buff.Position) < 4) then
     info.Complete := False
   else
-    Result := buff.getUInt32();
+  begin
+    val := buff.GetUInt32();
+    TValue.Make(val, TypeInfo(UInt32), Result);
+    if info.Xml <> Nil Then
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', info.Xml.IntegerToHex(val, 8));
+  end;
 end;
 
 // Get Int32 value from DLMS data.
@@ -992,12 +1185,19 @@ end;
 // info: Data info.
 // return parsed Int32 value.
 class function TGXCommon.GetInt32(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
+var
+  val: Int32;
 begin
   // If there is not enough data available.
   if ((buff.Size - buff.Position) < 4) then
     info.Complete := False
   else
-    Result := buff.getInt32();
+  begin
+    val := buff.GetInt32();
+    TValue.Make(val, TypeInfo(Int32), Result);
+    if info.Xml <> Nil Then
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', info.Xml.IntegerToHex(val, 8));
+  end;
 end;
 
 // Reserved for internal use.
@@ -1044,7 +1244,6 @@ begin
     info.Complete := False;
     Exit;
   end;
-
   sb := TStringBuilder.Create;
   try
     while cnt > 0 do
@@ -1052,11 +1251,12 @@ begin
       toBitString(sb, buff.getInt8(), cnt);
       cnt := cnt - 8;
     end;
-    Result := sb.ToString();
+    Result := TValue.From<TGXBitString>(sb.ToString());
+    if info.Xml <> Nil Then
+      info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', sb.ToString());
   finally
-    sb.Free;
+    FreeAndNil(sb);
   end;
-
 end;
 
 // Get boolean value from DLMS data.
@@ -1064,12 +1264,23 @@ end;
 // info : Data info.
 // return parsed boolean value.
 class function TGXCommon.GetBoolean(buff : TGXByteBuffer; info: TGXDataInfo): TValue;
+var
+  val: Boolean;
+  str: string;
 begin
     // If there is not enough data available.
     if ((buff.Size - buff.Position) < 1) then
       info.Complete := False
     else
-      Result := Boolean(buff.GetUInt8() <> 0);
+    begin
+      val := Boolean(buff.GetUInt8() <> 0);
+      Result := val;
+      if info.Xml <> Nil Then
+      begin
+        if val then str := 'true' else str := 'false';
+        info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', val);
+      end;
+    end;
 end;
 
 // Get HDLC address from byte array.
@@ -1118,7 +1329,7 @@ begin
 end;
 
 // Convert Bit string to DLMS bytes.
-class procedure TGXCommon.SetBitString(buff : TGXByteBuffer; value: TValue);
+class procedure TGXCommon.SetBitString(buff : TGXByteBuffer; value: TValue; addCount: Boolean);
 var
   val, index, pos : Integer;
   arr : TBytes;
@@ -1129,7 +1340,8 @@ begin
     begin
       val := 0;
       str := value.AsType<String>.ToCharArray();
-      SetObjectCount(Length(str), buff);
+      if addCount then
+        SetObjectCount(Length(str), buff);
       index := 7;
       for pos := 0 to Length(str) - 1 do
       begin
@@ -1450,9 +1662,11 @@ begin
   begin
     len := value.GetArrayLength;
     SetObjectCount(len, buff);
-    for pos := 0 to len do
+    for pos := 0 to len - 1 do
     begin
       it := value.GetArrayElement(pos);
+      if it.IsType<TValue> Then
+        it := it.AsType<TValue>;
       SetData(buff, TGXCommon.GetDLMSDataType(it), it);
     end;
   end
@@ -1500,7 +1714,7 @@ begin
     dtFLOAT64:
       buff.SetDouble(value.AsType<double>);
     dtBITSTRING:
-      TGXCommon.SetBitString(buff, value);
+      TGXCommon.SetBitString(buff, value, True);
     dtString:
       SetString(buff, value);
     dtStringUTF8:
@@ -1574,7 +1788,7 @@ begin
   end;
   if tp = TDataType.dtNone Then
   begin
-    Result := TGXByteBuffer.ToHexString(value.GetData, true, value.Position, value.Size - value.Position);
+    Result := value.ToHex(True, value.Position, value.Available);
     Exit;
   end;
   if (value.Size = 0) and ((tp = TDataType.dtString) or (tp = TDataType.dtOctetString)) Then
@@ -1643,11 +1857,11 @@ begin
     TDataType.dtCompactArray:
         Result := TypeInfo(TValueArray);
     TDataType.dtStructure:
-        Result := TypeInfo(TValueArray);
+        Result := TypeInfo(TGXStructure);
     TDataType.dtBinaryCodedDesimal:
         Result := TypeInfo(String);
     TDataType.dtBitString:
-        Result := TypeInfo(String);
+        Result := TypeInfo(TGXBitString);
     TDataType.dtBoolean:
         Result := TypeInfo(Boolean);
     TDataType.dtDate:
@@ -1680,6 +1894,8 @@ begin
         Result := TypeInfo(UInt64);
     TDataType.dtUInt8:
         Result := TypeInfo(byte);
+    TDataType.dtEnum:
+        Result := TypeInfo(TGXEnum);
     else
       raise EArgumentException.Create('Invalid DLMS data type.');
     end;
@@ -1692,6 +1908,11 @@ begin
   begin
     Result := TDataType.dtNone;
     Exit;
+  end;
+  if AValue.TypeInfo = TypeInfo(TGXStructure) Then
+  begin
+     Result := TDataType.dtStructure;
+     Exit;
   end;
   if AValue.IsArray Then
   begin
@@ -1708,9 +1929,19 @@ begin
     Result := TDataType.dtUInt32;
     Exit;
   end;
+  if AValue.TypeInfo = TypeInfo(TGXBitString) Then
+  begin
+     Result := TDataType.dtBitString;
+     Exit;
+  end;
   if AValue.TypeInfo = TypeInfo(String) Then
   begin
     Result := TDataType.dtString;
+    Exit;
+  end;
+  if AValue.TypeInfo = TypeInfo(TGXEnum) Then
+  begin
+    Result := TDataType.dtEnum;
     Exit;
   end;
   if AValue.TypeInfo = TypeInfo(byte) Then
@@ -1809,7 +2040,12 @@ begin
         raise EArgumentException.Create('Invalid parameter: ' + str);
 
       c := TGXCmdParameter.Create();
-      c.Tag := str.Chars[1];
+      try
+        c.Tag := str.Chars[1];
+      except
+        c.Free;
+        raise;
+      end;
       Result.Add(c);
       if (pos < Length(optstring) -1 )and (optstring.Chars[1 + pos] = ':') Then
       begin
@@ -1826,7 +2062,48 @@ begin
     result.Free;
     raise;
   end;
+end;
 
+class function TGXCommon.ToHexString(bytes : TBytes; addSpace : Boolean; Index : Integer; Count : Integer): String;
+var
+  p, pos, tmp, add : Integer;
+  begin
+  if addSpace then
+  begin
+    add  := 3;
+    Result := String.Create(' ', (Count * add) - 1);
+  end
+  else
+  begin
+    add := 2;
+    Result := String.Create(' ', (Count * add));
+  end;
+  p := 0;
+  for pos := 0 to Count - 1 do
+  begin
+    tmp := bytes[Index + pos];
+    Result[p + 1] := hexArray[tmp Shr 4];
+    Result[p + 2] := hexArray[tmp and $0F];
+    p := p + add;
+  end;
+end;
+
+class function TGXCommon.IsAsciiString(value: TBytes): Boolean;
+var
+  pos: Integer;
+  it: BYTE;
+begin
+  Result := True;
+  if value <> Nil Then
+    for pos := 0 to Length(value)- 1 do
+    begin
+      it := value[pos];
+      if (it < 32) or (it > 127) and (it <> $10) and (it <> $13) and (it <> 0) Then
+      begin
+        Result := False;
+        break;
+      end;
+    end;
 end;
 
 end.

@@ -38,15 +38,15 @@ type
 // Enumerates how data is access on read or write.
 TVariableAccessSpecification = (
   // Read data using SN.
-  vaVariableName = 2,
+  VariableName = 2,
   // Get data using parameterised access.
-  vaParameterisedAccess = 4,
+  ParameterisedAccess = 4,
   // Get next block.
-  vaBlockNumberAccess = 5,
+  BlockNumberAccess = 5,
   // Read data as blocks.
-  vaReadDataBlockAccess = 6,
+  ReadDataBlockAccess = 6,
   // Write data as blocks.
-  vaWriteDataBlockAccess = 7
+  WriteDataBlockAccess = 7
 );
 
 implementation

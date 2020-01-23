@@ -37,7 +37,9 @@ interface
 uses System.TypInfo, GXCommon, System.Generics.Collections, System.Rtti, SysUtils, Gurux.DLMS.GXDateTime,
 Gurux.DLMS.GXDate, Gurux.DLMS.GXTime, Gurux.DLMS.DataType,
 Gurux.DLMS.GXStandardObisCodeCollection, Gurux.DLMS.ObjectType, Gurux.DLMS.GXStandardObisCode,
-Gurux.DLMS.GXDLMSObject;
+Gurux.DLMS.GXDLMSObject, Gurux.DLMS.Authentication,
+Gurux.DLMS.AssociationResult, Gurux.DLMS.SourceDiagnostic,
+Gurux.DLMS.Security;
 
 type
   //DLMS Converter is used to get string value for enumeration types.
@@ -88,18 +90,91 @@ public
   // description: Description filter.
   // return: Array of descriptions that match given OBIS code.
   function GetDescription(logicalName: String; ot: TObjectType; description: String): TList<String>;overload;
+
+  //Convert object type enum value to string.
+  class function ToString(AObjectType : TObjectType) : String;overload;
+  //Convert authentication enum value to string.
+  class function ToString(value: TAuthentication): string;overload;
+  //Convert Association result enum value to string.
+  class function ToString(value: TAssociationResult): string;overload;
+  //Convert source diagnostic result enum value to string.
+  class function ToString(value: TSourceDiagnostic): string;overload;
+  //Convert security enum value to string.
+  class function ToString(value: TSecurity): string;overload;
+
 end;
 
 implementation
 constructor TGXDLMSConverter.Create;
 begin
+  inherited;
   codes := TGXStandardObisCodeCollection.Create();
 end;
 
 destructor TGXDLMSConverter.Destroy;
 begin
-  inherited;
   FreeAndNil(codes);
+  inherited;
+end;
+
+class function TGXDLMSConverter.ToString(AObjectType : TObjectType) : String;
+begin
+  case AObjectType of
+    otActionSchedule: Result := 'GXDLMSActionSchedule';
+    otActivityCalendar: Result := 'GXDLMSActivityCalendar';
+    otAssociationLogicalName: Result := 'GXDLMSAssociationLogicalName';
+    otAssociationShortName: Result := 'GXDLMSAssociationShortName';
+    otAutoAnswer: Result := 'GXDLMSAutoAnswer';
+    otAutoConnect: Result := 'GXDLMSAutoConnect';
+    otClock: Result := 'GXDLMSClock';
+    otData: Result := 'GXDLMSData';
+    otDemandRegister: Result := 'GXDLMSDemandRegister';
+    otMacAddressSetup: Result := 'GXDLMSMacAddressSetup';
+    otEvent: Result := 'GXDLMSEvent';
+    otExtendedRegister: Result := 'GXDLMSExtendedRegister';
+    otGprsSetup: Result := 'GXDLMSGprsSetup';
+    otIecHdlcSetup: Result := 'GXDLMSIecHdlcSetup';
+    otIecLocalPortSetup: Result := 'GXDLMSIecLocalPortSetup';
+    otIecTwistedPairSetup: Result := 'GXDLMSIecTwistedPairSetup';
+    otIp4Setup: Result := 'GXDLMSIp4Setup';
+    otMBusSlavePortSetup: Result := 'GXDLMSMBusSlavePortSetup';
+    otModemConfiguration: Result := 'GXDLMSModemConfiguration';
+    otNone: Result := 'GXDLMSNone';
+    otPushSetup: Result := 'GXDLMSPushSetup';
+    otPppSetup: Result := 'GXDLMSPppSetup';
+    otProfileGeneric: Result := 'GXDLMSProfileGeneric';
+    otRegister: Result := 'GXDLMSRegister';
+    otRegisterActivation: Result := 'GXDLMSRegisterActivation';
+    otRegisterMonitor: Result := 'GXDLMSRegisterMonitor';
+    otDisconnectControl: Result := 'GXDLMSDisconnectControl';
+    otLimiter: Result := 'GXDLMSLimiter';
+    otMBusClient: Result := 'GXDLMSMBusClient';
+    otMessageHandler: Result := 'GXDLMSMessageHandler';
+    otParameterMonitor: Result := 'GXDLMSParameterMonitor';
+    otWirelessModeQchannel: Result := 'GXDLMSWirelessModeQchannel';
+    otMBusMasterPortSetup: Result := 'GXDLMSMBusMasterPortSetup';
+    otRegisterTable: Result := 'GXDLMSRegisterTable';
+    otRemoteAnalogueControl: Result := 'GXDLMSRemoteAnalogueControl';
+    otRemoteDigitalControl: Result := 'GXDLMSRemoteDigitalControl';
+    otSapAssignment: Result := 'GXDLMSSapAssignment';
+    otImageTransfer: Result := 'GXDLMSImageTransfer';
+    otSchedule: Result := 'GXDLMSSchedule';
+    otScriptTable: Result := 'GXDLMSScriptTable';
+    otSmtpSetup: Result := 'GXDLMSSmtpSetup';
+    otSpecialDaysTable: Result := 'GXDLMSSpecialDaysTable';
+    otStatusMapping: Result := 'GXDLMSStatusMapping';
+    otSecuritySetup: Result := 'GXDLMSSecuritySetup';
+    otTcpUdpSetup: Result := 'GXDLMSTcpUdpSetup';
+    otTunnel: Result := 'GXDLMSTunnel';
+    otUtilityTables: Result := 'GXDLMSUtilityTables';
+    otAccount: Result := 'GXDLMSAccount';
+    otCredit: Result := 'GXDLMSCredit';
+    otCharge: Result := 'GXDLMSCharge';
+    otTokenGateway: Result := 'GXDLMSTokenGateway';
+    otGSMDiagnostic: Result := 'GXDLMSGSMDiagnostic';
+    else
+      Result := 'Manufacturer specific';
+  end;
 end;
 
 // Get OBIS code description.
@@ -318,4 +393,91 @@ begin
   Result := TGXCommon.GetDLMSDataType(AValue);
 end;
 
+class function TGXDLMSConverter.ToString(value: TAuthentication): string;
+begin
+  case value of
+  TAuthentication.atHigh:
+    Result := 'High';
+  TAuthentication.atHighGMac:
+    Result := 'HighGMac';
+  TAuthentication.atHighMd5:
+    Result := 'HighMd5';
+  TAuthentication.atHighSha1:
+    Result := 'HighSha1';
+  TAuthentication.atHighSha256:
+    Result := 'HighSha256';
+  TAuthentication.atLow:
+    Result := 'Low';
+  TAuthentication.atNone:
+    Result := 'None';
+  else
+    Result := 'UNKNOWN';
+  end;
+end;
+
+class function TGXDLMSConverter.ToString(value: TAssociationResult): string;
+begin
+  case value of
+  TAssociationResult.Accepted: Result := 'Accepted';
+  TAssociationResult.PermanentRejected: Result := 'PermanentRejected';
+  TAssociationResult.TransientRejected: Result := 'TransientRejected';
+  else Result := 'Unknown';
+  end;
+end;
+
+//Convert source diagnostic result enum value to string.
+class function TGXDLMSConverter.ToString(value: TSourceDiagnostic): string;
+begin
+  case value of
+  TSourceDiagnostic.None:
+    Result := 'None';
+  TSourceDiagnostic.ApplicationContextNameNotSupported:
+    Result := 'ApplicationContextNameNotSupported';
+  TSourceDiagnostic.CallingApTitleNotRecognized:
+    Result := 'CallingApTitleNotRecognized';
+  TSourceDiagnostic.NoReasonGiven:
+    Result := 'NoReasonGiven';
+  TSourceDiagnostic.CallingApInvocationIdentifierNotRecognized:
+    Result := 'CallingApInvocationIdentifierNotRecognized';
+  TSourceDiagnostic.CallingAeQualifierNotRecognized:
+    Result := 'CallingAeQualifierNotRecognized ';
+  TSourceDiagnostic.CallingAeInvocationIdentifierNotRecognized:
+    Result := 'CallingAeInvocationIdentifierNotRecognized';
+  TSourceDiagnostic.CalledApTitleNotRecognized:
+    Result := 'CalledApTitleNotRecognized';
+  TSourceDiagnostic.CalledApInvocationIdentifierNotRecognized:
+    Result := 'CalledApInvocationIdentifierNotRecognized';
+  TSourceDiagnostic.CalledAeQualifierNotRecognized:
+    Result := 'CalledAeQualifierNotRecognized';
+  TSourceDiagnostic.CalledAeInvocationIdentifierNotRecognized:
+    Result := 'CalledAeInvocationIdentifierNotRecognized';
+  TSourceDiagnostic.AuthenticationMechanismNameNotRecognised:
+    Result := 'AuthenticationMechanismNameNotRecognised';
+  TSourceDiagnostic.AuthenticationMechanismNameReguired:
+    Result := 'AuthenticationMechanismNameReguired';
+  TSourceDiagnostic.AuthenticationFailure:
+    Result := 'AuthenticationFailure';
+  TSourceDiagnostic.AuthenticationRequired:
+    Result := 'AuthenticationRequired';
+  else
+    Result := 'Unknown';
+  end;
+end;
+
+//Convert security enum value to string.
+class function TGXDLMSConverter.ToString(value: TSecurity): string;
+begin
+  case value of
+    TSecurity.None:
+      Result := 'None';
+    TSecurity.Authentication:
+      Result := 'Authentication';
+    TSecurity.Encryption:
+      Result := 'Encryption';
+    TSecurity.AuthenticationEncryption:
+      Result := 'AuthenticationEncryption';
+    else
+      Result := 'Invalid';
+  end;
+end;
 end.

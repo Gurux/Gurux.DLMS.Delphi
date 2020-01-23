@@ -84,15 +84,15 @@ end;
 
 constructor TGXDLMSAssociationShortName.Create(ln: string; sn: System.UInt16);
 begin
-  inherited Create(TObjectType.otAssociationShortName, ln, 0);
+  inherited Create(TObjectType.otAssociationShortName, ln, sn);
   FObjectList := TGXDLMSObjectCollection.Create(False);
   FVersion := 2;
 end;
 
 destructor TGXDLMSAssociationShortName.Destroy;
 begin
-  inherited;
   FreeAndNil(FObjectList);
+  inherited;
 end;
 
 function TGXDLMSAssociationShortName.GetValues() : TArray<TValue>;
@@ -190,7 +190,7 @@ begin
   end
   else if index = 4 Then
   begin
-    Result := TDataType.dtArray;
+    Result := TDataType.dtOctetString;
   end
   else
   	raise Exception.Create('GetDataType failed. Invalid attribute index.');

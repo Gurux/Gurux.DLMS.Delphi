@@ -30,22 +30,23 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.RequestTypes;
+unit Gurux.DLMS.ActionResponseType;
 
 interface
 
 type
-// RequestTypes enumerates the replies of the server to a client's request,
-// indicating the request type.
-TRequestTypes = (
-    // No more data is available for the request.
-    rtNone = 0,
-    // More data blocks are available for the request.
-    rtDataBlock = 1,
-    //More data frames are available for the request.
-    rtFrame = 2,
-    //More data is available for the General Block Transfer.
-    rtGBT = 4);
+  //Enumerates Action response types.
+  TActionResponseType = (
+    // Normal action.
+    Normal = 1,
+    // Action with first block.
+    WithFirstBlock = 2,
+    // Action with list.
+    WithList = 3,
+    // Action with next block.
+    WithBlock = 4
+  );
+
 implementation
 
 end.

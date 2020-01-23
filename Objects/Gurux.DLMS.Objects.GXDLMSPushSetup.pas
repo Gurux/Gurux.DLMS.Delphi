@@ -280,8 +280,10 @@ begin
         begin
           obj := TGXObjectFactory.CreateObject(ot);
           obj.LogicalName := ln;
-        end;
-        co := TGXDLMSCaptureObject.Create(obj, tmp[2].AsInteger, tmp[3].AsInteger);
+          co := TGXDLMSCaptureObject.Create(obj, tmp[2].AsInteger, tmp[3].AsInteger, True);
+        end
+        else
+          co := TGXDLMSCaptureObject.Create(obj, tmp[2].AsInteger, tmp[3].AsInteger);
         PushObjectList.Add(co);
       end;
     end

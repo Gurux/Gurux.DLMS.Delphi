@@ -33,7 +33,7 @@
 unit GXDataInfo;
 
 interface
-uses Gurux.DLMS.DataType;
+uses Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSTranslatorStructure;
 
 type
 //This class is used in DLMS data parsing.
@@ -47,6 +47,7 @@ private
   FType: TDataType;
   // Is data parsed to the end.
   FCompleate: Boolean;
+  FXml: TGXDLMSTranslatorStructure;
 
 public
   // Last array index.
@@ -56,6 +57,8 @@ public
   // Object data type.
   property &Type: TDataType read FType write FType;
   property Complete: Boolean read FCompleate write FCompleate;
+
+  property Xml: TGXDLMSTranslatorStructure read FXml write FXml;
 
   procedure Clear;
   //Constructor.

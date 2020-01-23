@@ -98,10 +98,10 @@ end;
 
 destructor TGXDLMSClock.Destroy;
 begin
-  inherited;
   FreeAndNil(FTime);
   FreeAndNil(FBegin);
   FreeAndNil(FEnd);
+  inherited;
 end;
 
 function TGXDLMSClock.GetUIDataType(index : Integer) : TDataType;

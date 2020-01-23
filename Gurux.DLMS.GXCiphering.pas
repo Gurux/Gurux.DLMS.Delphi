@@ -44,14 +44,19 @@ TGXCiphering = class
   FAuthenticationKey: TBytes;
   FSystemTitle: TBytes;
   FBlockCipherKey: TBytes;
+  FSourceSystemTitle: TBytes;
+  FDedicatedKey: TBytes;
+
   function get_SystemTitle: TBytes;
   function get_BlockCipherKey: TBytes;
   function get_AuthenticationKey: TBytes;
   procedure set_SystemTitle(Value: TBytes);
   procedure set_BlockCipherKey(Value: TBytes);
   procedure set_AuthenticationKey(Value: TBytes);
-  public
-    FrameCounter: UInt32;
+  function get_SourceSystemTitle: TBytes;
+  procedure set_SourceSystemTitle(Value: TBytes);
+  function get_DedicatedKey: TBytes;
+  procedure set_DedicatedKey(Value: TBytes);
   public
     constructor Create(systemTitle: TBytes); overload;
     constructor Create(frameCounter: UInt32; systemTitle: TBytes; blockCipherKey: TBytes;
@@ -62,13 +67,24 @@ TGXCiphering = class
     property InvocationCounter: LongWord read FInvocationCounter write FInvocationCounter;
 
     property SystemTitle: TBytes read get_SystemTitle write set_SystemTitle;
+
+    property SourceSystemTitle: TBytes read get_SourceSystemTitle write set_SourceSystemTitle;
+
+    property DedicatedKey: TBytes read get_DedicatedKey write set_DedicatedKey;
+
     property BlockCipherKey: TBytes read get_BlockCipherKey write set_BlockCipherKey;
     //Authentication Key is 16 bytes value.
     property AuthenticationKey: TBytes read get_AuthenticationKey write set_AuthenticationKey;
 
-    function Encrypt(tag: Byte; title: TBytes; data: TBytes): TBytes;
+    function Encrypt(
+        tag: Byte;
+        title: TBytes;
+        data: TBytes): TBytes;
 
-    function Decrypt(title: TBytes; data: TGXByteBuffer) : TAesGcmParameter;
+    function Decrypt(
+        title: TBytes;
+        key: TBytes;
+        data: TGXByteBuffer) : TAesGcmParameter;
     procedure Reset;
 
     function IsCiphered: Boolean;
@@ -100,7 +116,7 @@ constructor TGXCiphering.Create(frameCounter: UInt32; systemTitle: TBytes;
 begin
   inherited Create;
   Self.Security := TSecurity.None;
-  Self.FrameCounter := frameCounter;
+  Self.FInvocationCounter := frameCounter;
   Self.SystemTitle := systemTitle;
   Self.BlockCipherKey := blockCipherKey;
   Self.AuthenticationKey := authenticationKey;
@@ -126,6 +142,30 @@ begin
   if ((value <> nil) and (Length(value) <> 8)) then
     raise Exception.Create('Invalid System Title.');
   FSystemTitle := value;
+end;
+
+function TGXCiphering.get_SourceSystemTitle: TBytes;
+begin
+  Result := FSourceSystemTitle;
+end;
+
+procedure TGXCiphering.set_SourceSystemTitle(Value: TBytes);
+begin
+  if ((value <> nil) and (Length(value) <> 8)) then
+    raise Exception.Create('Invalid Source System Title.');
+  FSourceSystemTitle := value;
+end;
+
+function TGXCiphering.get_DedicatedKey: TBytes;
+begin
+  Result := FDedicatedKey;
+end;
+
+procedure TGXCiphering.set_DedicatedKey(Value: TBytes);
+begin
+  if ((value <> nil) and (Length(value) <> 16)) then
+    raise Exception.Create('Invalid Dedicated key.');
+  FDedicatedKey := value;
 end;
 
 procedure TGXCiphering.set_BlockCipherKey(Value: TBytes);
@@ -161,11 +201,14 @@ begin
     Result := data;
 end;
 
-function TGXCiphering.Decrypt(title: TBytes; data: TGXByteBuffer) : TAesGcmParameter;
+function TGXCiphering.Decrypt(
+    title: TBytes;
+    key: TBytes;
+    data: TGXByteBuffer) : TAesGcmParameter;
 var
   tmp: TBytes;
 begin
-  Result := TAesGcmParameter.Create(title, BlockCipherKey, AuthenticationKey);
+  Result := TAesGcmParameter.Create(title, key, AuthenticationKey);
   tmp := TGXDLMSChippering.DecryptAesGcm(Result, data);
   data.Clear();
   data.SetArray(tmp);

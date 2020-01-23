@@ -207,18 +207,28 @@ begin
         for item in e.Value.AsType<TArray<TValue>> do
         begin
           s := TGXDLMSScript.Create();
-          s.ID := item.GetArrayElement(0).AsType<TValue>.AsInteger;
-          if item.GetArrayLength = 2 Then
-            for item2 in item.GetArrayElement(1).AsType<TValue>.AsType<TArray<TValue>> do
-            begin
-              it := TGXDLMSScriptAction.Create();
-              it.&Type := TGXDLMSScriptActionType(item2.GetArrayElement(0).AsType<TValue>.AsInteger);
-              it.ObjectType := TObjectType(item2.GetArrayElement(1).AsType<TValue>.AsInteger);
-              it.LogicalName := TGXCommon.ToLogicalName(item2.GetArrayElement(2));
-              it.Index := item2.AsType<TValue>.GetArrayElement(3).AsType<TValue>.AsInteger;
-              it.Parameter := item2.GetArrayElement(4).AsType<TValue>;
-              s.Actions.Add(it);
-            end;
+          try
+            s.ID := item.GetArrayElement(0).AsType<TValue>.AsInteger;
+            if item.GetArrayLength = 2 Then
+              for item2 in item.GetArrayElement(1).AsType<TValue>.AsType<TArray<TValue>> do
+              begin
+                it := TGXDLMSScriptAction.Create();
+                try
+                  it.&Type := TGXDLMSScriptActionType(item2.GetArrayElement(0).AsType<TValue>.AsInteger);
+                  it.ObjectType := TObjectType(item2.GetArrayElement(1).AsType<TValue>.AsInteger);
+                  it.LogicalName := TGXCommon.ToLogicalName(item2.GetArrayElement(2));
+                  it.Index := item2.AsType<TValue>.GetArrayElement(3).AsType<TValue>.AsInteger;
+                  it.Parameter := item2.GetArrayElement(4).AsType<TValue>;
+                except
+                  it.Free;
+                  raise;
+                end;
+                s.Actions.Add(it);
+              end;
+          except
+            s.Free;
+            raise;
+          end;
           FScripts.Add(s);
         end;
       end;

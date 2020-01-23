@@ -243,8 +243,13 @@ begin
       for it in  e.Value.AsType<TArray<TValue>> do
       begin
         item := TGXDLMSObjectDefinition.Create;
-        item.ClassId := TObjectType(it.GetArrayElement(0).AsType<TValue>.AsInteger);
-        item.LogicalName := TGXDLMSObject.ToLogicalName(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>);
+        try
+          item.ClassId := TObjectType(it.GetArrayElement(0).AsType<TValue>.AsInteger);
+          item.LogicalName := TGXDLMSObject.ToLogicalName(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>);
+        except
+          item.Free;
+          raise;
+        end;
         FRegisterAssignment.Add(item);
       end
     end;

@@ -356,7 +356,7 @@ begin
     begin
       FreeAndNil(FUnitChargeActivationTime);
       if e.Value.IsEmpty Then
-      FUnitChargeActivationTime := TGXDateTime.Create(TGXDateTime.MinDateTime)
+        FUnitChargeActivationTime := TGXDateTime.Create(TGXDateTime.MinDateTime)
       else
       begin
         if e.Value.IsType<TBytes> Then
@@ -365,7 +365,7 @@ begin
         FUnitChargeActivationTime := e.Value.AsType<TGXDateTime>;
       end;
     end;
-    8:FPeriod := e.Value.AsInteger;
+    8: FPeriod := e.Value.AsInteger;
     9: FChargeConfiguration := e.Value.ToString;
     10:
     begin
@@ -412,13 +412,21 @@ begin
   charge.Commodity.Target := e.settings.Objects.FindByLN(ot, ln);
   charge.Commodity.Index := tmp2[2].AsType<TValue>.AsInteger;
   charge.ChargeTables.Clear();
-  tmp2 := tmp[2].AsType<TArray<TValue>>;
-  for it in tmp2 do
+  if Length(tmp) > 2 then
   begin
-    item := TGXChargeTable.Create();
-    item.Index := it.GetArrayElement(0).ToString;
-    item.ChargePerUnit := it.GetArrayElement(1).AsInteger;
-    charge.ChargeTables.Add(item);
+    tmp2 := tmp[2].AsType<TArray<TValue>>;
+    for it in tmp2 do
+    begin
+      item := TGXChargeTable.Create();
+      try
+        item.Index := TEncoding.ASCII.GetString(it.AsType<TArray<TValue>>[0].AsType<TBytes>);
+        item.ChargePerUnit := it.AsType<TArray<TValue>>[1].AsInteger;
+      except
+        item.Free;
+        raise;
+      end;
+      charge.ChargeTables.Add(item);
+    end;
   end;
 end;
 
@@ -427,8 +435,8 @@ var
    bb: TGXByteBuffer;
    it: TGXChargeTable;
 begin
+  bb := TGXByteBuffer.Create();
   try
-    bb := TGXByteBuffer.Create();
     bb.SetUInt8(Integer(TDataType.dtStructure));
     bb.SetUInt8(3);
     bb.SetUInt8(Integer(TDataType.dtStructure));

@@ -164,11 +164,15 @@ begin
   else if e.Index = 2 Then
   begin
     stream := TGXByteBuffer.Create();
-    stream.Add(Integer(TDataType.dtStructure));
-    stream.Add(2);
-    TGXCommon.SetData(stream, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(ExecutedScriptLogicalName)));
-    TGXCommon.SetData(stream, TDataType.dtUInt16, ExecutedScriptSelector);
-    Result := TValue.From(stream.ToArray());
+    try
+      stream.Add(Integer(TDataType.dtStructure));
+      stream.Add(2);
+      TGXCommon.SetData(stream, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(ExecutedScriptLogicalName)));
+      TGXCommon.SetData(stream, TDataType.dtUInt16, ExecutedScriptSelector);
+      Result := TValue.From(stream.ToArray());
+    finally
+      stream.Free;
+    end;
   end
   else if e.Index = 3 Then
   begin
@@ -177,27 +181,37 @@ begin
   else if e.Index = 4 Then
   begin
     stream := TGXByteBuffer.Create();
-    stream.Add(Integer(TDataType.dtArray));
-    if ExecutionTime = Nil Then
-    begin
+    try
+      stream.Add(Integer(TDataType.dtArray));
+      if ExecutionTime = Nil Then
+      begin
         TGXCommon.SetObjectCount(0, stream);
-    end
-    else
-    begin
+      end
+      else
+      begin
         TGXCommon.SetObjectCount(FExecutionTime.Count, stream);
         for it in ExecutionTime do
         begin
           stream.Add(Integer(TDataType.dtStructure));
           stream.Add(2); //Count
           tmp := TGXTime.Create(it);
-          TGXCommon.SetData(stream, TDataType.dtOctetString, tmp); //Time
-          FreeAndNil(tmp);
+          try
+            TGXCommon.SetData(stream, TDataType.dtOctetString, tmp); //Time
+          finally
+            FreeAndNil(tmp);
+          end;
           tmp := TGXDate.Create(it);
-          TGXCommon.SetData(stream, TDataType.dtOctetString, tmp); //Date
-          FreeAndNil(tmp);
+          try
+            TGXCommon.SetData(stream, TDataType.dtOctetString, tmp); //Date
+          finally
+            FreeAndNil(tmp);
+          end;
         end
+      end;
+      Result := TValue.From(stream.ToArray());
+    finally
+      stream.Free;
     end;
-    Result := TValue.From(stream.ToArray());
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');

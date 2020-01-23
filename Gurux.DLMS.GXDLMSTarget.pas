@@ -106,8 +106,8 @@ end;
 
 destructor TGXDLMSTarget.Destroy;
 begin
-  inherited;
   Clear;
+  inherited;
 end;
 
 end.

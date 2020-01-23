@@ -40,6 +40,7 @@ type
     constructor Create(year: Integer; month: Integer; day: Integer; dow: Integer = $FF); overload;
     constructor Create(value: TGXDateTime); overload;
     constructor Create(AValue: TDateTime = -1); overload;
+    function ToString: string; override;
   end;
 
 implementation
@@ -68,4 +69,10 @@ begin
   Skip.Add(TDateTimeSkips.dkSecond);
   Skip.Add(TDateTimeSkips.dkMs);
 end;
+
+function TGXDate.ToString: string;
+begin
+  Result := FormatDateTime('yy"-"mm"-"dd', Self.Time, TFormatSettings.Invariant)
+end;
+
 end.

@@ -125,9 +125,9 @@ implementation
 
 destructor TGXProgram.Destroy;
 begin
-  inherited;
   Close();
   FreeAndNil(Client);
+  inherited;
 end;
 
 
@@ -246,6 +246,7 @@ var
   data: TArray<TBytes>;
   values: TList<TValue>;
   it: TBytes;
+  pos: Integer;
 begin
   data := Client.ReadList(list);
   reply := TGXReplyData.Create();
@@ -255,11 +256,13 @@ begin
     begin
       ReadDataBlock(it, reply);
       if (list.Count <> 1) and (reply.Value.isArray) Then
-        values.AddRange(reply.Value.AsType<TArray<TValue>>)
+      begin
+        for pos := 0 to reply.Value.GetArrayLength() - 1 do
+          values.Add(reply.Value.GetArrayElement(pos).AsType<TValue>());
+      end
       else if Not reply.Value.IsEmpty Then
         //Value is null if data is send in multiple frames.
         values.Add(reply.Value);
-
       reply.Clear();
     end;
     if values.Count <> list.Count Then
@@ -762,18 +765,21 @@ begin
   begin
     Writeln('Disconnecting from the meter.');
     reply := TGXReplyData.Create();
-    //Release is call only for secured connections.
-    //All meters are not supporting Release and it's causing problems.
-    if ((Client.InterfaceType = TInterfaceType.WRAPPER) or
-    ((Client.InterfaceType = TInterfaceType.HDLC) and (Client.Ciphering.Security = TSecurity.None))) Then
-    begin
-      ReadDataBlock(Client.ReleaseRequest(), reply);
+    try
+      //Release is call only for secured connections.
+      //All meters are not supporting Release and it's causing problems.
+      if ((Client.InterfaceType = TInterfaceType.WRAPPER) or
+      ((Client.InterfaceType = TInterfaceType.HDLC) and (Client.Ciphering.Security = TSecurity.None))) Then
+      begin
+        ReadDataBlock(Client.ReleaseRequest(), reply);
+      end;
+      ReadDLMSPacket(Client.DisconnectRequest(), reply);
+      socket.Close;
+    finally
+      FreeAndNil(reply);
+      FreeAndNil(socket);
     end;
-    ReadDLMSPacket(Client.DisconnectRequest(), reply);
-    socket.Close;
   end;
-  FreeAndNil(reply);
-  FreeAndNil(socket);
 end;
 
 //Initialize connection to the meter.

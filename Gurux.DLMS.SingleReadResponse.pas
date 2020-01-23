@@ -30,22 +30,23 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.RequestTypes;
+unit Gurux.DLMS.SingleReadResponse;
 
 interface
-
 type
-// RequestTypes enumerates the replies of the server to a client's request,
-// indicating the request type.
-TRequestTypes = (
-    // No more data is available for the request.
-    rtNone = 0,
-    // More data blocks are available for the request.
-    rtDataBlock = 1,
-    //More data frames are available for the request.
-    rtFrame = 2,
-    //More data is available for the General Block Transfer.
-    rtGBT = 4);
+// Enumerates single read response types.
+TSingleReadResponse =
+(
+  // Normal data.
+  Data = 0,
+  //Error has occurred on read.
+  DataAccessError = 1,
+  // Return data as blocks.
+  DataBlockResult = 2,
+  // Return block number.
+  BlockNumber = 3
+);
+
 implementation
 
 end.

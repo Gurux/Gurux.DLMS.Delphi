@@ -116,7 +116,7 @@ end;
 
 constructor TGXDLMSAssociationLogicalName.Create(ln: string; sn: System.UInt16);
 begin
-  inherited Create(TObjectType.otAssociationLogicalName, ln, 0);
+  inherited Create(TObjectType.otAssociationLogicalName, ln, sn);
   FObjectList := TGXDLMSObjectCollection.Create(False);
   FApplicationContextName := TGXApplicationContextName.Create();
   FXDLMSContextInfo := TGXxDLMSContextType.Create();
@@ -125,11 +125,11 @@ end;
 
 destructor TGXDLMSAssociationLogicalName.Destroy;
 begin
-  inherited;
   FreeAndNil(FXDLMSContextInfo);
   FreeAndNil(FObjectList);
   FreeAndNil(FApplicationContextName);
   FreeAndNil(FAuthenticationMechanismName);
+  inherited;
 end;
 
 // Updates secret.
@@ -475,7 +475,6 @@ begin
   else if e.Index = 2 Then
   begin
     FObjectList.Clear();
-    Writeln(e.Value.ToString);
     if Not e.Value.IsEmpty Then
     begin
       for item in e.Value.AsType<TArray<TValue>> do
@@ -513,7 +512,7 @@ begin
   begin
     bb := TGXByteBuffer.Create(4);
     try
-      TGXCommon.SetBitString(bb, e.Value.GetArrayElement(0).AsType<TValue>.ToString);
+      TGXCommon.SetBitString(bb, e.Value.GetArrayElement(0).AsType<TValue>.ToString, True);
       bb.SetUInt8(0, 0);
       FXDLMSContextInfo.Conformance := TConformance(bb.GetUInt32());
     finally

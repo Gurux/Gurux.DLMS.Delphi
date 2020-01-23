@@ -34,7 +34,8 @@ unit Gurux.DLMS.GXReplyData;
 
 interface
 uses SysUtils, Rtti, Gurux.DLMS.DataType, Gurux.DLMS.Command,
-GXByteBuffer, Gurux.DLMS.RequestTypes, Gurux.DLMS.ErrorCode, GXCommon;
+GXByteBuffer, Gurux.DLMS.RequestTypes, Gurux.DLMS.ErrorCode, GXCommon,
+Gurux.DLMS.GXDLMSTranslatorStructure;
 
 type
   TGXReplyData = class
@@ -48,6 +49,7 @@ type
   FPacketLength : Integer;
   // Received command.
   FCommand : TCommand;
+  FCipheredCommand : TCommand;
   // Received command type.
   FCommandType : Byte;
   // Received data.
@@ -64,14 +66,18 @@ type
   FTotalCount: Integer;
   // Cipher index is position where data is decrypted.
   FCipherIndex : Integer;
-  // Is received message General Block Transfer message.
-  FGbt: Boolean;
   // Data notification date time.
   FTime: TDateTime;
   // Is more data available. Return None if more data is not available or Frame or Block type.
   FMoreData: TRequestTypes;
   // Is value try to peek.
   FPeek: Boolean;
+  FXml: TGXDLMSTranslatorStructure;
+
+  FStreaming: Boolean;
+  FWindowSize: BYTE;
+  FBlockNumber: BYTE;
+  FBlockNumberAck: BYTE;
 
   public
 
@@ -112,10 +118,14 @@ type
   property Error: SmallInt read FError write FError;
   // Received command.
   property Command: TCommand read FCommand write FCommand;
+  // Received command.
+  property CipheredCommand: TCommand read FCipheredCommand write FCipheredCommand;
+
+
   // Received command type.
   property CommandType: Byte read FCommandType write FCommandType;
   // Received data.
-  property Data: TGXByteBuffer read FData;
+  property Data: TGXByteBuffer read FData write FData;
   property ValueType : TDataType read FDataType write FDataType;
 
   // Expected count of elements in the array.
@@ -128,12 +138,18 @@ type
   property Time: TDateTime read FTime write FTime;
   // Is value try to peek.
   property Peek: Boolean read FPeek write FPeek;
-  // Is received message General Block Transfer message.
-  property Gbt: Boolean read FGbt write FGbt;
   // Cipher index is position where data is decrypted.
   property CipherIndex : Integer read FCipherIndex write FCipherIndex;
    // HDLC frame ID.
   property FrameId : Byte read FFrameId write FFrameId;
+
+  property Xml: TGXDLMSTranslatorStructure read FXml write FXml;
+
+  property Streaming: Boolean read FStreaming write FStreaming;
+
+  property WindowSize : Byte read FWindowSize write FWindowSize;
+  property BlockNumber : Byte read FBlockNumber write FBlockNumber;
+  property BlockNumberAck : Byte read FBlockNumberAck write FBlockNumberAck;
 
 end;
 
@@ -159,8 +175,8 @@ end;
 
 destructor TGXReplyData.Destroy;
 begin
-  inherited;
   FreeAndNil(FData);
+  inherited;
 end;
 
 procedure TGXReplyData.Clear;
@@ -174,11 +190,12 @@ begin
   FTotalCount := 0;
   FValue := Nil;
   FReadPosition := 0;
-  FGbt := false;
   FPacketLength := 0;
   FDataType := TDataType.dtNone;
   FCipherIndex := 0;
   FTime := 0;
+  FStreaming := False;
+  FWindowSize := 0;
 end;
 
 

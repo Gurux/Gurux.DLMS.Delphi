@@ -77,14 +77,12 @@ end;
 
 constructor TGXDLMSRegisterMonitor.Create(ln: string);
 begin
-  inherited Create(TObjectType.otRegisterMonitor, ln, 0);
-  FMonitoredValue := TGXDLMSMonitoredValue.Create();
-  FActions := TObjectList<TGXDLMSActionSet>.Create();
+  Create(ln, 0);
 end;
 
 constructor TGXDLMSRegisterMonitor.Create(ln: string; sn: System.UInt16);
 begin
-  inherited Create(TObjectType.otRegisterMonitor, ln, 0);
+  inherited Create(TObjectType.otRegisterMonitor, ln, sn);
   FMonitoredValue := TGXDLMSMonitoredValue.Create();
   FActions := TObjectList<TGXDLMSActionSet>.Create();
 end;

@@ -268,11 +268,15 @@ begin
   else if e.Index = 4 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtStructure));
-    data.Add(2);
-    TGXCommon.SetData(data, TDataType.dtUInt8, FScaler);
-    TGXCommon.SetData(data, TDataType.dtUInt8, Integer(FUnit));
-    Result := TValue.From(data.ToArray());
+    try
+      data.Add(Integer(TDataType.dtStructure));
+      data.Add(2);
+      TGXCommon.SetData(data, TDataType.dtUInt8, FScaler);
+      TGXCommon.SetData(data, TDataType.dtUInt8, Integer(FUnit));
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
+    end;
   end
   else if e.Index = 5 Then
   begin

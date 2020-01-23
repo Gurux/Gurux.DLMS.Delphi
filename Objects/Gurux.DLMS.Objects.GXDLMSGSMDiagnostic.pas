@@ -157,40 +157,43 @@ var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
-  //LN is static and read only once.
-  if (string.IsNullOrEmpty(LogicalName)) then
-    items.Add(1);
+  try
+    //LN is static and read only once.
+    if (string.IsNullOrEmpty(LogicalName)) then
+      items.Add(1);
 
-  //Operator
-  if not IsRead(2) Then
-    items.Add(2);
+    //Operator
+    if not IsRead(2) Then
+      items.Add(2);
 
-  //Status
-  if CanRead(3) Then
-    items.Add(3);
+    //Status
+    if CanRead(3) Then
+      items.Add(3);
 
-  //CS Attachment
-  if CanRead(4) Then
-    items.Add(4);
+    //CS Attachment
+    if CanRead(4) Then
+      items.Add(4);
 
-  //PS Status
-  if CanRead(5) Then
-    items.Add(5);
+    //PS Status
+    if CanRead(5) Then
+      items.Add(5);
 
-  //CelLInfo
-  if CanRead(6) Then
-    items.Add(6);
+    //CelLInfo
+    if CanRead(6) Then
+      items.Add(6);
 
-  //AdjacentCells
-  if CanRead(7) Then
-    items.Add(7);
+    //AdjacentCells
+    if CanRead(7) Then
+      items.Add(7);
 
-  //CaptureTime
-  if CanRead(8) Then
-    items.Add(8);
+    //CaptureTime
+    if CanRead(8) Then
+      items.Add(8);
 
-  Result := items.ToArray;
-  FreeAndNil(items);
+    Result := items.ToArray;
+  finally
+    FreeAndNil(items);
+  end;
 end;
 
 function TGXDLMSGSMDiagnostic.GetAttributeCount: Integer;
@@ -238,8 +241,9 @@ begin
     4: Result := Integer(FCSAttachment);
     5: Result := Integer(FPSStatus);
     6:
-    try
-        bb := TGXByteBuffer.Create;
+    begin
+      bb := TGXByteBuffer.Create;
+      try
         bb.SetUInt8(Integer(TDataType.dtStructure));
         if Version = 0 Then
         begin
@@ -254,35 +258,40 @@ begin
         TGXCommon.SetData(bb, TDataType.dtUInt16, FCellInfo.LocationId);
         TGXCommon.SetData(bb, TDataType.dtUInt8, BYTE(FCellInfo.SignalQuality));
         TGXCommon.SetData(bb, TDataType.dtUInt8, BYTE(FCellInfo.Ber));
-        {if Version > 0 Then
+        {
+        if Version > 0 Then
         begin
           TGXCommon.SetData(bb, TDataType.dtUInt16, Integer(FCellInfo.MobileCountryCode));
           TGXCommon.SetData(bb, TDataType.dtUInt16, Integer(FCellInfo.MobileNetworkCode));
           TGXCommon.SetData(bb, TDataType.dtUInt32, Integer(FCellInfo.ChannelNumber));
         end;
-        }Result := TValue.From(bb.ToArray());
-    finally
-      FreeAndNil(bb);
+        }
+        Result := TValue.From(bb.ToArray());
+      finally
+        FreeAndNil(bb);
+      end;
     end;
     7:
-    try
+    begin
       bb := TGXByteBuffer.Create;
-      bb.SetUInt8(Integer(TDataType.dtArray));
-      bb.SetUInt8(FAdjacentCells.Count);
-      for it in FAdjacentCells do
-      begin
-        bb.SetUInt8(Integer(TDataType.dtStructure));
-        bb.SetUInt8(2);
-        if Version = 0 Then
-          TGXCommon.SetData(bb, TDataType.dtUInt16, it.CellId)
-        else
-          TGXCommon.SetData(bb, TDataType.dtUInt32, it.CellId);
+        try
+        bb.SetUInt8(Integer(TDataType.dtArray));
+        bb.SetUInt8(FAdjacentCells.Count);
+        for it in FAdjacentCells do
+        begin
+          bb.SetUInt8(Integer(TDataType.dtStructure));
+          bb.SetUInt8(2);
+          if Version = 0 Then
+            TGXCommon.SetData(bb, TDataType.dtUInt16, it.CellId)
+          else
+            TGXCommon.SetData(bb, TDataType.dtUInt32, it.CellId);
 
-        TGXCommon.SetData(bb, TDataType.dtUInt8, it.SignalQuality.FSignalQuality);
+          TGXCommon.SetData(bb, TDataType.dtUInt8, it.SignalQuality.FSignalQuality);
+        end;
+        Result := TValue.From(bb.ToArray());
+      finally
+        FreeAndNil(bb);
       end;
-      Result := TValue.From(bb.ToArray());
-    finally
-      FreeAndNil(bb);
     end;
     8: Result := FCaptureTime;
     else

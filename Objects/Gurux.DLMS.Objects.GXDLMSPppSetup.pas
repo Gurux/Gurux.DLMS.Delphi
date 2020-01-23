@@ -288,41 +288,53 @@ begin
   else if e.Index = 3 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtArray));
-    data.Add(FIPCPOptions.Count);
-    for lcp in FLCPOptions do
-    begin
-      data.Add(Integer(TDataType.dtStructure));
-      data.Add(3);
-      TGXCommon.SetData(data, TDataType.dtUInt8, Integer(lcp.&Type));
-      TGXCommon.SetData(data, TDataType.dtUInt8, lcp.Length);
-      TGXCommon.SetData(data, TGXDLMSConverter.GetDLMSDataType(lcp.Data), lcp.Data);
+    try
+      data.Add(Integer(TDataType.dtArray));
+      data.Add(FIPCPOptions.Count);
+      for lcp in FLCPOptions do
+      begin
+        data.Add(Integer(TDataType.dtStructure));
+        data.Add(3);
+        TGXCommon.SetData(data, TDataType.dtUInt8, Integer(lcp.&Type));
+        TGXCommon.SetData(data, TDataType.dtUInt8, lcp.Length);
+        TGXCommon.SetData(data, TGXDLMSConverter.GetDLMSDataType(lcp.Data), lcp.Data);
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else if e.Index = 4 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtArray));
-    data.Add(FIPCPOptions.Count);
-    for ipc in FIPCPOptions do
-    begin
-      data.Add(Integer(TDataType.dtStructure));
-      data.Add(3);
-      TGXCommon.SetData(data, TDataType.dtUInt8, Integer(ipc.&Type));
-      TGXCommon.SetData(data, TDataType.dtUInt8, ipc.Length);
-      TGXCommon.SetData(data, TGXDLMSConverter.GetDLMSDataType(ipc.Data), ipc.Data);
+    try
+      data.Add(Integer(TDataType.dtArray));
+      data.Add(FIPCPOptions.Count);
+      for ipc in FIPCPOptions do
+      begin
+        data.Add(Integer(TDataType.dtStructure));
+        data.Add(3);
+        TGXCommon.SetData(data, TDataType.dtUInt8, Integer(ipc.&Type));
+        TGXCommon.SetData(data, TDataType.dtUInt8, ipc.Length);
+        TGXCommon.SetData(data, TGXDLMSConverter.GetDLMSDataType(ipc.Data), ipc.Data);
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
     end;
-    Result := TValue.From(data.ToArray());
   end
   else if e.Index = 5 Then
   begin
     data := TGXByteBuffer.Create;
-    data.Add(Integer(TDataType.dtStructure));
-    data.SetUInt8(2);
-    TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(FUserName));
-    TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(FPassword));
-    Result := TValue.From(data.ToArray());
+    try
+      data.Add(Integer(TDataType.dtStructure));
+      data.SetUInt8(2);
+      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(FUserName));
+      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(FPassword));
+      Result := TValue.From(data.ToArray());
+    finally
+      data.Free;
+    end;
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');
@@ -330,7 +342,6 @@ end;
 
 procedure TGXDLMSPppSetup.SetValue(e: TValueEventArgs);
 var
-  str : String;
   item : TValue;
   lcp : TGXDLMSPppSetupLcpOption;
   ipc : TGXDLMSPppSetupIPCPOption;
@@ -351,9 +362,14 @@ begin
       for item in e.Value.AsType<TArray<TValue>> do
       begin
         lcp := TGXDLMSPppSetupLcpOption.Create();
-        lcp.&Type := TGXDLMSPppSetupLcpOptionType(item.GetArrayElement(0).AsType<TValue>.AsInteger);
-        lcp.Length := item.GetArrayElement(1).AsType<TValue>.AsInteger;
-        lcp.Data := item.GetArrayElement(2).AsType<TValue>;
+        try
+          lcp.&Type := TGXDLMSPppSetupLcpOptionType(item.GetArrayElement(0).AsType<TValue>.AsInteger);
+          lcp.Length := item.GetArrayElement(1).AsType<TValue>.AsInteger;
+          lcp.Data := item.GetArrayElement(2).AsType<TValue>;
+        except
+          lcp.Free;
+          raise;
+        end;
         FLCPOptions.Add(lcp);
       end
     end;
@@ -366,23 +382,30 @@ begin
       for item in e.Value.AsType<TArray<TValue>> do
       begin
         ipc := TGXDLMSPppSetupIPCPOption.Create();
-        ipc.&Type := TGXDLMSPppSetupIPCPOptionType(item.GetArrayElement(0).AsType<TValue>.AsInteger);
-        ipc.Length := item.GetArrayElement(1).AsType<TValue>.AsInteger;
-        ipc.Data := item.GetArrayElement(2).AsType<TValue>;
+        try
+          ipc.&Type := TGXDLMSPppSetupIPCPOptionType(item.GetArrayElement(0).AsType<TValue>.AsInteger);
+          ipc.Length := item.GetArrayElement(1).AsType<TValue>.AsInteger;
+          ipc.Data := item.GetArrayElement(2).AsType<TValue>;
+        except
+          ipc.Free;
+          raise;
+        end;
         FIPCPOptions.Add(ipc);
       end
     end;
   end
   else if e.Index = 5 Then
   begin
-    FUserName := e.Value.GetArrayElement(0).AsType<TValue>.AsType<TBytes>;
-    FPassword := e.Value.GetArrayElement(1).AsType<TValue>.AsType<TBytes>;
-    str := '';
-    if FUserName <> Nil then
-      str := TEncoding.ASCII.GetString(FUserName);
-
-    if FPassword <> Nil then
-      str := str + ' ' + TEncoding.ASCII.GetString(FPassword);
+    if e.Value.IsEmpty then
+    begin
+      FUserName := Nil;
+      FPassword := Nil;
+    end
+    else
+    begin
+      FUserName := e.Value.GetArrayElement(0).AsType<TValue>.AsType<TBytes>;
+      FPassword := e.Value.GetArrayElement(1).AsType<TValue>.AsType<TBytes>;
+    end;
   end
   else
     raise Exception.Create('SetValue failed. Invalid attribute index.');

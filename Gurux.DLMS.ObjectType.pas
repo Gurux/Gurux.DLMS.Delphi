@@ -103,7 +103,11 @@ TObjectType =
   //allow a more general use.
   otMacAddressSetup = 43,
 
+  //GSM diagnostic settings.
   otGSMDiagnostic = 47,
+
+  //To determine the IP 6 settings, use the Ip6Setup object.
+  otIp6Setup = 48,
 
   //When a certain occasion should cause a certain action, use an object of
   //type Event, which the client system can enable. When enabled, and when the
@@ -270,6 +274,29 @@ TObjectType =
   //In an object of type UtilityTables each "Table"  = ANSI C12.19:1997 table data
   //is represented as an instance, and identified by its logical name.
   otUtilityTables = 26,
+
+  otToken = 115,
+
+  // S-FSK Phy MAC Setup
+  otSFSKPhyMacSetUp = 50,
+
+  // S-FSK Active initiator.
+  otSFSKActiveInitiator = 51,
+
+  // S-FSK MAC synchronization timeouts
+  otSFSKMacSynchronizationTimeouts = 52,
+
+  // S-FSK MAC Counters.
+  otSFSKMacCounters = 53,
+
+  // G3-PLC MAC layer counters
+  otG3PlcMacLayerCounters = 90,
+
+  // G3-PLC MAC setup.
+  otG3PlcMacSetup = 91,
+
+  // G3-PLC 6LoWPAN.
+  otG3Plc6LoWPan = 92,
 
   otAccount = 111,
 

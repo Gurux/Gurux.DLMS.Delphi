@@ -131,7 +131,7 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
 				//Password if authentication is used.
 				APassword : TBytes;
         //Interface type. Default is general.
-				intefaceType : TInterfaceType);overload;
+				interfaceType : TInterfaceType);overload;
 
     constructor Create(
         //Is Logical or short name referencing used.
@@ -145,7 +145,7 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
 				//Password if authentication is used.
 				APassword : string;
         //Interface type. Default is general.
-				intefaceType : TInterfaceType);overload;
+				interfaceType : TInterfaceType);overload;
 
     // Update list values.
     procedure UpdateValues(list: TList<TPair<TGXDLMSObject, Integer>>; values: TList<TValue>);
@@ -237,6 +237,7 @@ implementation
 
 constructor TGXDLMSClient.Create;
 begin
+  inherited;
   FSettings := TGXDLMSSettings.Create(False);
   Self.ClientAddress := Byte($10);
   Self.ServerAddress := Byte(1);
@@ -254,10 +255,10 @@ constructor TGXDLMSClient.Create(
     //Password if authentication is used.
     APassword : string;
     //Interface type. Default is general.
-    intefaceType : TInterfaceType);
+    interfaceType : TInterfaceType);
 begin
-  FSettings := TGXDLMSSettings.Create(False);
-  Self.InterfaceType := intefaceType;
+  Create;
+  Self.InterfaceType := interfaceType;
   Self.UseLogicalNameReferencing := UseLogicalNameReferencing;
   Self.ClientAddress := ClientAddress;
   Self.ServerAddress := ServerAddress;
@@ -276,12 +277,12 @@ constructor TGXDLMSClient.Create(
     //Password if authentication is used.
     APassword: TBytes;
     //Interface type. Default is general.
-    intefaceType : TInterfaceType);
+    interfaceType : TInterfaceType);
 var
   tmp: TBytes;
 begin
-  FSettings := TGXDLMSSettings.Create(False);
-  Self.InterfaceType := intefaceType;
+  Create;
+  Self.InterfaceType := interfaceType;
   Self.UseLogicalNameReferencing := UseLogicalNameReferencing;
   Self.ClientAddress := ClientAddress;
   Self.ServerAddress := ServerAddress;
@@ -295,8 +296,8 @@ end;
 
 destructor TGXDLMSClient.Destroy;
 begin
-  inherited;
   FreeAndNil(FSettings);
+  inherited;
 end;
 
 function TGXDLMSClient.GetNegotiatedConformance : TConformance;
@@ -467,7 +468,7 @@ begin
   try
     data.SetUInt8($81); // FromatID
     data.SetUInt8($80); // GroupID
-    data.SetUInt8(0); // Length.
+    data.SetUInt8($00); // Length.
 
     // If custom HDLC parameters are used.
     if DEFAULT_MAX_INFO_TX <> FSettings.Limits.MaxInfoTX Then
@@ -483,13 +484,13 @@ begin
     if DEFAULT_WINDOWS_SIZE_TX <> FSettings.Limits.WindowSizeTX Then
     begin
       data.SetUInt8(BYTE(THDLCInfo.WindowSizeTX));
-      data.SetUInt8(4);
+      data.SetUInt8($04);
       data.SetUInt32(FSettings.Limits.WindowSizeTX);
      end;
     if DEFAULT_WINDOWS_SIZE_RX <> FSettings.Limits.WindowSizeRX Then
     begin
       data.SetUInt8(BYTE(THDLCInfo.WindowSizeRX));
-      data.SetUInt8(4);
+      data.SetUInt8($04);
       data.SetUInt32(FSettings.Limits.WindowSizeRX);
      end;
     // If default HDLC parameters are not used.
@@ -499,7 +500,7 @@ begin
       FreeAndNil(data);
 
     FSettings.ResetFrameSequence();
-    Result := TGXDLMS.GetHdlcFrame(FSettings, Byte(TCommand.Snrm), Nil);
+    Result := TGXDLMS.GetHdlcFrame(FSettings, Byte(TCommand.Snrm), data);
   finally
     data.Free;
   end;
@@ -522,19 +523,21 @@ begin
         id := THDLCInfo(data.GetUInt8());
         len := data.GetUInt8();
         case len of
-        1: val := data.GetUInt8();
-        2: val := data.GetUInt16();
-        4: val := data.GetUInt32();
-        else raise TGXDLMSException.Create('Invalid Exception.');
+          1: val := data.GetUInt8();
+          2: val := data.GetUInt16();
+          4: val := data.GetUInt32();
+        else
+          raise TGXDLMSException.Create('Invalid Exception.');
         end;
         // RX / TX are delivered from the partner's point of view =>
         // reversed to ours
         case id of
-        THDLCInfo.MaxInfoTX: Limits.MaxInfoRX := val;
-        HDLCInfo.MaxInfoRX: Limits.MaxInfoTX := val;
-        HDLCInfo.WindowSizeTX: Limits.WindowSizeRX := val;
-        HDLCInfo.WindowSizeRX: Limits.WindowSizeTX := val;
-        else raise TGXDLMSException.Create('Invalid UA response.');
+          THDLCInfo.MaxInfoTX: Limits.MaxInfoRX := val;
+          HDLCInfo.MaxInfoRX: Limits.MaxInfoTX := val;
+          HDLCInfo.WindowSizeTX: Limits.WindowSizeRX := val;
+          HDLCInfo.WindowSizeRX: Limits.WindowSizeTX := val;
+        else
+          raise TGXDLMSException.Create('Invalid UA response.');
         end;
     end;
   end;
@@ -546,36 +549,44 @@ var
   buff : TGXByteBuffer;
   p: TObject;
 begin
- try
-  p := Nil;
-  buff := Nil;
+
   FSettings.NegotiatedConformance := TConformance(0);
   FSettings.ResetBlockIndex();
   FSettings.Connected := TConnectionState(Integer(FSettings.Connected) and not Integer(TConnectionState.csDlms));
   FSettings.StoCChallenge := Nil;
   TGXDLMS.CheckInit(FSettings);
+
   buff := TGXByteBuffer.Create();
-
+  try
    //If High authentication is used.
-  if Authentication > TAuthentication.atLow Then
-    if Not FSettings.UseCustomChallenge Then
-      FSettings.CtoSChallenge := TGXSecure.GenerateChallenge
-  else
-    FSettings.CtoSChallenge := Nil;
+    if Authentication > TAuthentication.atLow Then
+    begin
+      if Not FSettings.UseCustomChallenge Then
+        FSettings.CtoSChallenge := TGXSecure.GenerateChallenge
+    end
+    else
+      FSettings.CtoSChallenge := Nil;
 
-  TGXAPDU.GenerateAarq(FSettings, FSettings.Cipher, Nil, buff);
-  if UseLogicalNameReferencing Then
-  begin
-    p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.Aarq, 0, buff, Nil, $ff);
-    Result := TGXDLMS.GetLnMessages(TGXDLMSLNParameters(p));
-  end
-  else
-  begin
-    p:= TGXDLMSSNParameters.Create(FSettings, TCommand.Aarq, 0, 0, Nil, buff);
-    Result := TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p));
-  end;
+    TGXAPDU.GenerateAarq(FSettings, FSettings.Cipher, Nil, buff);
+    if UseLogicalNameReferencing Then
+    begin
+      p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.Aarq, 0, buff, Nil, $ff, TCommand.None);
+      try
+        Result := TGXDLMS.GetLnMessages(p as TGXDLMSLNParameters);
+      finally
+        p.Free;
+      end;
+    end
+    else
+    begin
+      p:= TGXDLMSSNParameters.Create(FSettings, TCommand.Aarq, 0, 0, Nil, buff);
+      try
+        Result := TGXDLMS.GetSnMessages(p as TGXDLMSSNParameters);
+      finally
+        p.Free;
+      end;
+    end;
   finally
-    FreeAndNil(p);
     FreeAndNil(buff);
   end;
 end;
@@ -584,7 +595,7 @@ procedure TGXDLMSClient.ParseAAREResponse(Data : TGXByteBuffer);
 var
   ret: TSourceDiagnostic;
 begin
-  ret := TGXAPDU.ParsePDU(FSettings, FSettings.Cipher, Data);
+  ret := TGXAPDU.ParsePDU(FSettings, FSettings.Cipher, Data, Nil);
   FSettings.IsAuthenticationRequired := (ret = TSourceDiagnostic.AuthenticationRequired);
   if FSettings.IsAuthenticationRequired = false Then
     FSettings.Connected := TConnectionState(Integer(FSettings.Connected) or Integer(TConnectionState.csDlms));
@@ -603,10 +614,11 @@ begin
 
   bb := TGXByteBuffer.Create(4);
   try
-    bb.setUInt8(0);
+    bb.setUInt8($00);
     bb.setUInt8($80);
-    bb.setUInt8(01);
-    bb.setUInt8(00);
+    bb.setUInt8($01);
+    bb.setUInt8($00);
+
     //Increase IC.
     if ((FSettings.Cipher <> Nil) and (FSettings.Cipher.IsCiphered())) Then
     begin
@@ -618,9 +630,9 @@ begin
     if UseLogicalNameReferencing Then
     begin
       ln := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.ReleaseRequest,
-            0, bb, Nil, $ff);
+            0, bb, Nil, $ff, TCommand.None);
       try
-       Result := TGXDLMS.GetLnMessages(ln);
+        Result := TGXDLMS.GetLnMessages(ln);
       finally
         ln.Free;
       end;
@@ -641,8 +653,6 @@ begin
 end;
 
 function TGXDLMSClient.DisconnectRequest() : TBytes;
-var
-  bb : TGXByteBuffer;
 begin
   //Reset to max PDU size when connection is closed.
   FSettings.MaxPduSize := $FFFF;
@@ -654,16 +664,8 @@ begin
   if FSettings.InterfaceType = TInterfaceType.HDLC Then
     Result := TGXDLMS.GetHdlcFrame(FSettings, Byte(TCommand.DisconnectRequest), Nil)
   else
-  begin
-    bb := TGXByteBuffer.Create(2);
-    try
-      bb.SetUInt8(Byte(TCommand.ReleaseRequest));
-      bb.SetUInt8($0);
-      Result := TGXDLMS.GetWrapperFrame(FSettings, bb);
-    finally
-      bb.Free;
-    end;
-  end;
+    Result := self.ReleaseRequest[0];
+
   FSettings.Connected := TConnectionState.csNone;
   FSettings.ResetFrameSequence();
 end;
@@ -820,7 +822,7 @@ begin
           attributeDescriptor.SetUInt8(1);
 
         p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.MethodRequest,
-          Byte(TActionRequestType.Normal), attributeDescriptor, data, $ff);
+          Byte(TActionRequestType.arNormal), attributeDescriptor, data, $ff, TCommand.None);
         try
           Result := TGXDLMS.GetLnMessages(TGXDLMSLNParameters(p));
         finally
@@ -830,9 +832,9 @@ begin
       else
       begin
         if dt = TDataType.dtNone Then
-          requestType := Byte(TVariableAccessSpecification.vaVariableName)
+          requestType := Byte(TVariableAccessSpecification.VariableName)
         else
-          requestType := Byte(TVariableAccessSpecification.vaParameterisedAccess);
+          requestType := Byte(TVariableAccessSpecification.ParameterisedAccess);
         ind := 0;
         count := 0;
         TGXDLMS.GetActionInfo(ot, @ind, @count);
@@ -932,7 +934,7 @@ begin
         // Access selection is not used.
         attributeDescriptor.SetUInt8(0);
         p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.SetRequest,
-              Byte(TSetRequestType.Normal), attributeDescriptor, data, $ff);
+              Byte(TSetRequestType.stNormal), attributeDescriptor, data, $ff, TCommand.None);
         try
           Result := TGXDLMS.GetLnMessages(TGXDLMSLNParameters(p));
         finally
@@ -948,7 +950,7 @@ begin
         //Data cnt.
         attributeDescriptor.SetUInt8(1);
         p := TGXDLMSSNParameters.Create(FSettings, TCommand.WriteRequest, 1,
-                Byte(TVariableAccessSpecification.vaVariableName), attributeDescriptor, data);
+                Byte(TVariableAccessSpecification.VariableName), attributeDescriptor, data);
         try
           Result := TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p));
         finally
@@ -989,7 +991,7 @@ begin
 
       if UseLogicalNameReferencing Then
       begin
-        p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.GetRequest, BYTE(TGetCommandType.ctWithList), Nil, data, $ff);
+        p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.GetRequest, BYTE(TGetCommandType.ctWithList), Nil, data, $ff, TCommand.None);
         try
           //Request service primitive shall always fit in a single APDU.
           pos := 0;
@@ -1037,7 +1039,7 @@ begin
           for it in list do
           begin
             // Add variable type.
-            data.SetUInt8(BYTE(TVariableAccessSpecification.vaVariableName));
+            data.SetUInt8(BYTE(TVariableAccessSpecification.VariableName));
             sn := it.Key.ShortName + ((it.Value - 1) * 8);
             data.SetUInt16(Integer(sn));
             if data.Size >= FSettings.MaxPduSize Then
@@ -1087,8 +1089,8 @@ begin
   FSettings.ResetBlockIndex();
    if FAutoIncreaseInvokeID Then
     FSettings.InvokeID := ((FSettings.InvokeID + 1) and $F);
+
   attributeDescriptor := TGXByteBuffer.Create();
-  p := Nil;
   try
     if UseLogicalNameReferencing Then
     begin
@@ -1106,9 +1108,13 @@ begin
         // Access selection is used.
         attributeDescriptor.SetUInt8(1);
 
-     p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.GetRequest,
-      Byte(TGetCommandType.ctNormal), attributeDescriptor, data, $ff);
-     Result := TGXDLMS.GetLnMessages(TGXDLMSLNParameters(p));
+      p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.GetRequest,
+      Byte(TGetCommandType.ctNormal), attributeDescriptor, data, $ff, TCommand.None);
+      try
+        Result := TGXDLMS.GetLnMessages(p as TGXDLMSLNParameters);
+      finally
+        p.Free;
+      end;
     end
     else
     begin
@@ -1117,17 +1123,20 @@ begin
         attributeDescriptor.SetUInt16(sn);
         // parameterized-access
         if (data <> Nil) and (data.Size <> 0) Then
-          requestType := Byte(TVariableAccessSpecification.vaParameterisedAccess)
+          requestType := Byte(TVariableAccessSpecification.ParameterisedAccess)
         else
           //variable-name
-          requestType := Byte(TVariableAccessSpecification.vaVariableName);
+          requestType := Byte(TVariableAccessSpecification.VariableName);
         p := TGXDLMSSNParameters.Create(FSettings, TCommand.ReadRequest, 1,
               requestType, attributeDescriptor, data);
-        Result := TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p));
+        try
+          Result := TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p));
+        finally
+          p.Free;
+        end;
     end;
   finally
     FreeAndNil(attributeDescriptor);
-    FreeAndNil(p);
   end;
 end;
 
@@ -1171,15 +1180,7 @@ var
   tp : TObjectType;
 begin
   tp := TObjectType(ClassID);
-  if tp = TObjectType.otProfileGeneric Then
-    Result := TGXDLMSProfileGeneric.Create()
-  else if tp = TObjectType.otAssociationShortName Then
-    Result := TGXDLMSAssociationShortName.Create()
-  else if tp = TObjectType.otAssociationLogicalName Then
-    Result := TGXDLMSAssociationLogicalName.Create()
-  else
-    Result := TGXObjectFactory.CreateObject(tp);
-
+  Result := TGXObjectFactory.CreateObject(tp);
   try
     UpdateObjectData(Result, tp, Version, BaseName, LN,
             AccessRights);
@@ -1475,66 +1476,69 @@ var
   c: TGXDLMSCaptureObject;
   it: TGXDLMSCaptureObject;
 begin
-try
-  pg.Reset();
-  FSettings.ResetBlockIndex();
   buff := TGXByteBuffer.Create(19);
-  // Add AccessSelector value
-  buff.SetUInt8($02);
-  // Add enum tag.
-  buff.SetUInt8(Byte(TDataType.dtStructure));
-  // Add item count
-  buff.SetUInt8($04);
-  // Add start index
-  TGXCommon.SetData(buff, TDataType.dtUInt32, index);
-  // Add Count
-  if count = 0 then
-    TGXCommon.SetData(buff, TDataType.dtUInt32, count)
-  else
-    TGXCommon.SetData(buff, TDataType.dtUInt32, index + count - 1);
+  try
+    pg.Reset();
+    FSettings.ResetBlockIndex();
 
-  columnIndex := 1;
-  columnCount := 0;
-  // If columns are given find indexes.
-  if (columns <> Nil) and (columns.Count <> 0) Then
-  begin
-    if (pg.CaptureObjects = Nil) or (pg.CaptureObjects.Count = 0) Then
-      raise Exception.Create('Read capture objects first.');
+    // Add AccessSelector value
+    buff.SetUInt8($02);
+    // Add enum tag.
+    buff.SetUInt8(Byte(TDataType.dtStructure));
+    // Add item count
+    buff.SetUInt8($04);
+    // Add start index
+    TGXCommon.SetData(buff, TDataType.dtUInt32, index);
+    // Add Count
+    if count = 0 then
+      TGXCommon.SetData(buff, TDataType.dtUInt32, count)
+    else
+      TGXCommon.SetData(buff, TDataType.dtUInt32, index + count - 1);
 
-    columnIndex := pg.CaptureObjects.Count;
-    columnCount := 1;
-    for c in columns do
+    columnIndex := 1;
+    columnCount := 0;
+    // If columns are given find indexes.
+    if (columns <> Nil) and (columns.Count <> 0) Then
     begin
-      pos := 0;
-      found := false;
-      for it in pg.CaptureObjects do
-      begin
-          pos := pos + 1;
-          if (it.Target.ObjectType = c.Target.ObjectType)
-                  and (it.Target.LogicalName.CompareTo(c.Target.LogicalName) = 0)
-                  and (it.AttributeIndex = c.AttributeIndex)
-                  and (it.DataIndex = c.DataIndex) Then
-          begin
-            found := true;
-            if pos < columnIndex Then
-              columnIndex := pos;
+      if (pg.CaptureObjects = Nil) or (pg.CaptureObjects.Count = 0) Then
+        raise Exception.Create('Read capture objects first.');
 
-            columnCount := pos - columnIndex + 1;
-            break;
-          end;
+      columnIndex := pg.CaptureObjects.Count;
+      columnCount := 1;
+      for c in columns do
+      begin
+        pos := 0;
+        found := false;
+        for it in pg.CaptureObjects do
+        begin
+            pos := pos + 1;
+            if (it.Target.ObjectType = c.Target.ObjectType)
+                    and (it.Target.LogicalName.CompareTo(c.Target.LogicalName) = 0)
+                    and (it.AttributeIndex = c.AttributeIndex)
+                    and (it.DataIndex = c.DataIndex) Then
+            begin
+              found := true;
+              if pos < columnIndex Then
+                columnIndex := pos;
+
+              columnCount := pos - columnIndex + 1;
+              break;
+            end;
+        end;
+        if Not found Then
+          raise Exception.Create('Invalid column: ' + c.Target.LogicalName);
       end;
-      if Not found Then
-        raise Exception.Create('Invalid column: ' + c.Target.LogicalName);
     end;
+    // Select columns to read.
+    TGXCommon.SetData(buff, TDataType.dtUInt16, columnIndex);
+    TGXCommon.SetData(buff, TDataType.dtUInt16, columnCount);
+    Result := Read(pg.Name, TObjectType.otProfileGeneric, 2, buff);
+  finally
+    FreeAndNil(buff);
   end;
-  // Select columns to read.
-  TGXCommon.SetData(buff, TDataType.dtUInt16, columnIndex);
-  TGXCommon.SetData(buff, TDataType.dtUInt16, columnCount);
-  Result := Read(pg.Name, TObjectType.otProfileGeneric, 2, buff);
-finally
-  FreeAndNil(buff);
+
 end;
-end;
+
 
 function TGXDLMSClient.UpdateValue(target: TGXDLMSObject; attributeIndex: Integer; value: TValue) : TValue;
 begin
@@ -1583,7 +1587,7 @@ begin
   begin
     e := TValueEventArgs.Create(FSettings, it.Key, it.Value, 0, Nil);
     try
-      e.Value := values[pos];
+      e.Value := values[pos].AsType<TValue>;
       it.Key.SetValue(e);
       pos := pos + 1;
     finally
@@ -1614,62 +1618,7 @@ end;
 
 class function TGXDLMSClient.ObjectTypeToString(AObjectType : TObjectType) : String;
 begin
-  case AObjectType of
-    otActionSchedule: Result := 'GXDLMSActionSchedule';
-    otActivityCalendar: Result := 'GXDLMSActivityCalendar';
-    otAssociationLogicalName: Result := 'GXDLMSAssociationLogicalName';
-    otAssociationShortName: Result := 'GXDLMSAssociationShortName';
-    otAutoAnswer: Result := 'GXDLMSAutoAnswer';
-    otAutoConnect: Result := 'GXDLMSAutoConnect';
-    otClock: Result := 'GXDLMSClock';
-    otData: Result := 'GXDLMSData';
-    otDemandRegister: Result := 'GXDLMSDemandRegister';
-    otMacAddressSetup: Result := 'GXDLMSMacAddressSetup';
-    otEvent: Result := 'GXDLMSEvent';
-    otExtendedRegister: Result := 'GXDLMSExtendedRegister';
-    otGprsSetup: Result := 'GXDLMSGprsSetup';
-    otIecHdlcSetup: Result := 'GXDLMSIecHdlcSetup';
-    otIecLocalPortSetup: Result := 'GXDLMSIecLocalPortSetup';
-    otIecTwistedPairSetup: Result := 'GXDLMSIecTwistedPairSetup';
-    otIp4Setup: Result := 'GXDLMSIp4Setup';
-    otMBusSlavePortSetup: Result := 'GXDLMSMBusSlavePortSetup';
-    otModemConfiguration: Result := 'GXDLMSModemConfiguration';
-    otNone: Result := 'GXDLMSNone';
-    otPushSetup: Result := 'GXDLMSPushSetup';
-    otPppSetup: Result := 'GXDLMSPppSetup';
-    otProfileGeneric: Result := 'GXDLMSProfileGeneric';
-    otRegister: Result := 'GXDLMSRegister';
-    otRegisterActivation: Result := 'GXDLMSRegisterActivation';
-    otRegisterMonitor: Result := 'GXDLMSRegisterMonitor';
-    otDisconnectControl: Result := 'GXDLMSDisconnectControl';
-    otLimiter: Result := 'GXDLMSLimiter';
-    otMBusClient: Result := 'GXDLMSMBusClient';
-    otMessageHandler: Result := 'GXDLMSMessageHandler';
-    otParameterMonitor: Result := 'GXDLMSParameterMonitor';
-    otWirelessModeQchannel: Result := 'GXDLMSWirelessModeQchannel';
-    otMBusMasterPortSetup: Result := 'GXDLMSMBusMasterPortSetup';
-    otRegisterTable: Result := 'GXDLMSRegisterTable';
-    otRemoteAnalogueControl: Result := 'GXDLMSRemoteAnalogueControl';
-    otRemoteDigitalControl: Result := 'GXDLMSRemoteDigitalControl';
-    otSapAssignment: Result := 'GXDLMSSapAssignment';
-    otImageTransfer: Result := 'GXDLMSImageTransfer';
-    otSchedule: Result := 'GXDLMSSchedule';
-    otScriptTable: Result := 'GXDLMSScriptTable';
-    otSmtpSetup: Result := 'GXDLMSSmtpSetup';
-    otSpecialDaysTable: Result := 'GXDLMSSpecialDaysTable';
-    otStatusMapping: Result := 'GXDLMSStatusMapping';
-    otSecuritySetup: Result := 'GXDLMSSecuritySetup';
-    otTcpUdpSetup: Result := 'GXDLMSTcpUdpSetup';
-    otTunnel: Result := 'GXDLMSTunnel';
-    otUtilityTables: Result := 'GXDLMSUtilityTables';
-    otAccount: Result := 'GXDLMSAccount';
-    otCredit: Result := 'GXDLMSCredit';
-    otCharge: Result := 'GXDLMSCharge';
-    otTokenGateway: Result := 'GXDLMSTokenGateway';
-    otGSMDiagnostic: Result := 'GXDLMSGSMDiagnostic';
-    else
-      Result := 'Manufacturer specific';
-  end;
+  Result := TGXDLMSConverter.ToString(AObjectType);
 end;
 
 class function TGXDLMSClient.GetInitialConformance(useLogicalNameReferencing: Boolean): TConformance;

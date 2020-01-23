@@ -262,10 +262,15 @@ begin
       for it in e.Value.AsType<TArray<TValue>> do
       begin
         item := TGXDLMSModemInitialisation.Create();
-        item.Request := TGXCommon.ChangeType(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
-        item.Response := TGXCommon.ChangeType(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
-        if it.GetArrayLength > 2 Then
-          item.Delay := it.GetArrayElement(2).AsType<TValue>.AsInteger;
+        try
+          item.Request := TGXCommon.ChangeType(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
+          item.Response := TGXCommon.ChangeType(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>, TDataType.dtString).ToString();
+          if it.GetArrayLength > 2 Then
+            item.Delay := it.GetArrayElement(2).AsType<TValue>.AsInteger;
+        except
+          item.Free;
+          raise;
+        end;
         FInitialisationStrings.Add(item);
       end;
     end;

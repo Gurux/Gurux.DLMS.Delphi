@@ -128,6 +128,24 @@ type
     InformationReport = $18,
     // Event Notification request.
     EventNotification = $C2,
+    // Ded initiate request.
+    DedInitiateRequest = 65,
+    // Ded read request.
+    DedReadRequest = 69,
+    // Ded write request.
+    DedWriteRequest = 70,
+    // Ded initiate response.
+    DedInitiateResponse = 72,
+    // Ded read response.
+    DedReadResponse = 76,
+    // Ded write response.
+    DedWriteResponse = 77,
+    // Ded confirmed service error.
+    DedConfirmedServiceError = 78,
+    // Ded confirmed write request.
+    DedUnconfirmedWriteRequest = 86,
+    // Ded information report request.
+    DedInformationReportRequest = 88,
     // Ded get request.
     DedGetRequest = $D0,
     // Ded get response.

@@ -164,51 +164,55 @@ begin
   case e.Index Of
     1: Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
     2:
-    try
+    begin
       data := TGXByteBuffer.Create();
-      data.SetUInt8(Integer(TDataType.dtStructure));
-      data.SetUInt8(4);
-      if FChangedParameter = Nil Then
-      begin
-        TGXCommon.SetData(data, TDataType.dtUInt16, 0);
-        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(emptyLn));
-        TGXCommon.SetData(data, TDataType.dtInt8, 1);
-        TGXCommon.SetData(data, TDataType.dtNone, Nil);
-      end
-      else
-      begin
-        TGXCommon.SetData(data, TDataType.dtUInt16, Integer(ChangedParameter.Target.ObjectType));
-        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(ChangedParameter.Target.LogicalName)));
-        TGXCommon.SetData(data, TDataType.dtInt8, ChangedParameter.AttributeIndex);
-        TGXCommon.SetData(data, TGXCommon.GetDLMSDataType(ChangedParameter.Value), ChangedParameter.Value);
+      try
+        data.SetUInt8(Integer(TDataType.dtStructure));
+        data.SetUInt8(4);
+        if FChangedParameter = Nil Then
+        begin
+          TGXCommon.SetData(data, TDataType.dtUInt16, 0);
+          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(emptyLn));
+          TGXCommon.SetData(data, TDataType.dtInt8, 1);
+          TGXCommon.SetData(data, TDataType.dtNone, Nil);
+        end
+        else
+        begin
+          TGXCommon.SetData(data, TDataType.dtUInt16, Integer(ChangedParameter.Target.ObjectType));
+          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(ChangedParameter.Target.LogicalName)));
+          TGXCommon.SetData(data, TDataType.dtInt8, ChangedParameter.AttributeIndex);
+          TGXCommon.SetData(data, TGXCommon.GetDLMSDataType(ChangedParameter.Value), ChangedParameter.Value);
+        end;
+        Result := TValue.From(data.ToArray());
+      finally
+        freeAndNil(data);
       end;
-      Result := TValue.From(data.ToArray());
-    finally
-      freeAndNil(data);
     end;
     3: Result := FCaptureTime;
     4:
-    try
+    begin
       data := TGXByteBuffer.Create();
-      data.SetUInt8(Integer(TDataType.dtArray));
-      if FParameters = Nil Then
-        data.SetUInt8(0)
-      else
-      begin
-        data.SetUInt8(FParameters.Count);
-        for it in FParameters do
+      try
+        data.SetUInt8(Integer(TDataType.dtArray));
+        if FParameters = Nil Then
+          data.SetUInt8(0)
+        else
         begin
-          data.SetUInt8(Integer(TDataType.dtStructure));
-          data.SetUInt8(3);
-          TGXCommon.SetData(data, TDataType.dtUInt16, Integer(it.Target.ObjectType));
-          TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(it.Target.LogicalName)));
-          TGXCommon.SetData(data, TDataType.dtInt8, it.AttributeIndex);
+          data.SetUInt8(FParameters.Count);
+          for it in FParameters do
+          begin
+            data.SetUInt8(Integer(TDataType.dtStructure));
+            data.SetUInt8(3);
+            TGXCommon.SetData(data, TDataType.dtUInt16, Integer(it.Target.ObjectType));
+            TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(TGXCommon.LogicalNameToBytes(it.Target.LogicalName)));
+            TGXCommon.SetData(data, TDataType.dtInt8, it.AttributeIndex);
+          end;
         end;
+        Result := TValue.From(data.ToArray());
+      finally
+        freeAndNil(data);
       end;
-      Result := TValue.From(data.ToArray());
-    finally
-      freeAndNil(data);
-    end;
+    end
     else
       raise Exception.Create('GetValue failed. Invalid attribute index.');
   end;
@@ -266,15 +270,20 @@ case e.Index of
           arr := tmp.AsType<TArray<TValue>>;
 
           t := TGXDLMSTarget.Create();
-          ot := TObjectType(arr[0].AsInteger);
-          ln := TGXCommon.ToLogicalName(arr[1]);
-          t.Target := e.Settings.Objects.FindByLN(ot, ln);
-          if t.Target = Nil Then
-          begin
-            t.Target := TGXObjectFactory.CreateObject(ot);
-            t.Target.LogicalName := ln;
+          try
+            ot := TObjectType(arr[0].AsInteger);
+            ln := TGXCommon.ToLogicalName(arr[1]);
+            t.Target := e.Settings.Objects.FindByLN(ot, ln);
+            if t.Target = Nil Then
+            begin
+              t.Target := TGXObjectFactory.CreateObject(ot);
+              t.Target.LogicalName := ln;
+            end;
+            t.AttributeIndex := arr[2].AsInteger;
+          except
+            t.Free;
+            raise;
           end;
-          t.AttributeIndex := arr[2].AsInteger;
           Parameters.Add(t);
       end;
   end

@@ -187,10 +187,15 @@ begin
       for item in e.Value.AsType<TArray<TValue>> do
       begin
           it := TGXDLMSSpecialDay.Create();
-          it.Index := item.GetArrayElement(0).AsType<TValue>.AsInteger;
-          tmp := item.GetArrayElement(1).AsType<TValue>;
-          it.Date := TGXCommon.ChangeType(tmp.AsType<TBytes>, TDataType.dtDate).AsType<TGXDateTime>();
-          it.DayId := item.GetArrayElement(2).AsType<TValue>.AsInteger;
+          try
+            it.Index := item.GetArrayElement(0).AsType<TValue>.AsInteger;
+            tmp := item.GetArrayElement(1).AsType<TValue>;
+            it.Date := TGXCommon.ChangeType(tmp.AsType<TBytes>, TDataType.dtDate).AsType<TGXDateTime>();
+            it.DayId := item.GetArrayElement(2).AsType<TValue>.AsInteger;
+          except
+            it.Free;
+            raise;
+          end;
           FEntries.Add(it);
       end;
     end;

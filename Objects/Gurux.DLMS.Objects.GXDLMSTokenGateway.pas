@@ -171,7 +171,7 @@ end;
 function TGXDLMSTokenGateway.GetValues() : TArray<TValue>;
 begin
   Result := TArray<TValue>.Create(FLogicalName, TValue.From(FToken), FTime, TValue.From(FDescriptions),
-  TValue.From(FDeliveryMethod), TValue.From(TArray<TValue>.Create(Integer(FStatusCode), Integer(FDataValue))));
+  TValue.From(FDeliveryMethod), TValue.From(TArray<TValue>.Create(Integer(FStatusCode), TValue.From(FDataValue))));
 end;
 
 function TGXDLMSTokenGateway.GetAttributeIndexToRead: TArray<Integer>;
@@ -244,8 +244,9 @@ begin
       2: Result := TValue.From(FToken);
       3: Result := FTime;
       4:
-      try
-          bb := TGXByteBuffer.Create();
+      begin
+        bb := TGXByteBuffer.Create();
+        try
           bb.SetUInt8(Integer(TDataType.dtArray));
           bb.SetUInt8(Length(FDescriptions));
           for it in FDescriptions do
@@ -255,21 +256,24 @@ begin
               bb.SetArray(TGXCommon.GetBytes(it));
           end;
           Result := TValue.From(bb.ToArray());
-      finally
-        FreeAndNil(bb);
+        finally
+          FreeAndNil(bb);
+        end;
       end;
       5: Result := Integer(FDeliveryMethod);
       6:
-       try
-          bb := TGXByteBuffer.Create();
+      begin
+        bb := TGXByteBuffer.Create();
+        try
           bb.SetUInt8(Integer(TDataType.dtStructure));
           bb.SetUInt8(2);
           TGXCommon.SetData(bb, TDataType.dtEnum, Integer(FStatusCode));
           TGXCommon.SetData(bb, TDataType.dtBitString, DataValue);
           Result := TValue.From(bb.ToArray());
-       finally
-        FreeAndNil(bb);
-      end;
+        finally
+          FreeAndNil(bb);
+        end;
+      end
       else
        raise Exception.Create('GetValue failed. Invalid attribute index.');
     end;
@@ -286,9 +290,9 @@ begin
     3:
     begin
       FreeAndNil(FTime);
-      if Not e.Value.IsEmpty Then
+      if e.Value.IsEmpty Then
         FTime := TGXDateTime.Create(TGXDateTime.MinDateTime)
-        else
+      else
         begin
           if e.Value.IsType<TBytes> Then
             e.Value := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtDateTime);
@@ -297,17 +301,19 @@ begin
     end;
     4:
     begin
-    FDescriptions := Nil;
-    if Not e.Value.IsEmpty Then
-    try
-      list := TList<string>.Create;
-      for it in e.Value.AsType<TArray<TValue>> do
-        list.Add(TEncoding.ASCII.GetString(it.AsType<TBytes>));
+      FDescriptions := Nil;
+      if Not e.Value.IsEmpty Then
+        begin
+          list := TList<string>.Create;
+          try
+            for it in e.Value.AsType<TArray<TValue>> do
+              list.Add(TEncoding.ASCII.GetString(it.AsType<TBytes>));
 
-      FDescriptions := list.ToArray();
-    finally
-      FreeAndNil(list);
-    end;
+            FDescriptions := list.ToArray();
+          finally
+            FreeAndNil(list);
+          end;
+        end;
     end;
     5: FDeliveryMethod := TTokenDelivery(e.Value.AsInteger);
     6:

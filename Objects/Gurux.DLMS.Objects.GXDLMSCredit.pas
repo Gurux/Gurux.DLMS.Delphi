@@ -290,28 +290,30 @@ begin
   5: FWarningThreshold := e.Value.AsInteger;
   6: FLimit := e.Value.AsInteger;
   7:
-  try
-    bb := TGXByteBuffer.Create();
-    TGXCommon.SetBitString(bb, e.Value);
-    FCreditConfiguration := TCreditConfiguration(bb.GetUInt8(1));
-  finally
-    FreeAndNil(bb);
-  end;
+    begin
+      bb := TGXByteBuffer.Create();
+      try
+        TGXCommon.SetBitString(bb, e.Value, True);
+        FCreditConfiguration := TCreditConfiguration(bb.GetUInt8(1));
+      finally
+        FreeAndNil(bb);
+      end;
+    end;
   8: FStatus := TCreditStatus(e.Value.AsInteger);
   9: FPresetCreditAmount := e.Value.AsInteger;
   10: FCreditAvailableThreshold := e.Value.AsInteger;
   11:
     begin
-    FreeAndNil(FPeriod);
-    if e.Value.IsEmpty Then
-      FPeriod := TGXDateTime.Create(TGXDateTime.MinDateTime)
+      FreeAndNil(FPeriod);
+      if e.Value.IsEmpty Then
+        FPeriod := TGXDateTime.Create(TGXDateTime.MinDateTime)
       else
-      begin
-        if e.Value.IsType<TBytes> Then
-          e.Value := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtDateTime);
+        begin
+          if e.Value.IsType<TBytes> Then
+            e.Value := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtDateTime);
 
-        FPeriod := e.Value.AsType<TGXDateTime>;
-      end;
+          FPeriod := e.Value.AsType<TGXDateTime>;
+        end;
     end
   else
     raise Exception.Create('SetValue failed. Invalid attribute index.');
