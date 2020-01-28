@@ -289,6 +289,10 @@ public
   // Result : Data as hex string.
   function ToHex(addSpace : Boolean; index : Integer; count : Integer): String;overload;
 
+  // Get data as hex string.
+  // addSpace : Add space between bytes.
+  function ToHex(addSpace : Boolean) : String; overload;
+
   class function ToHexString(bytes : TBytes; addSpace : Boolean; Index : Integer; Count : Integer): String;overload;
 end;
 
@@ -452,10 +456,10 @@ end;
 //Remove handled bytes. This can be used in debugging to remove handled bytes.
 procedure TGXByteBuffer.Trim();
 begin
-  if size = position then
+  if FSize = FPosition then
     SetSize(0)
   else
-    Move(position, 0, size - position);
+    Move(FPosition, 0, FSize - FPosition);
   SetPosition(0);
 end;
 
@@ -999,14 +1003,14 @@ begin
   Result := ToHex(addSpace, FPosition, FSize - FPosition);
 end;
 
-//Get data as hex string.
-// addSpace : Add space between bytes.
-// index : Byte index.
-// count : Byte count.
-// Result : Data as hex string.
 function TGXByteBuffer.ToHex(addSpace : Boolean; index : Integer; count : Integer) : String;
 begin
   Result := ToHexString(FData, addSpace, index, count);
+end;
+
+function TGXByteBuffer.ToHex(addSpace : Boolean) : String;
+begin
+  Result := ToHexString(FData, addSpace, 0, FSize);
 end;
 
 class function TGXByteBuffer.ToHexString(bytes : TBytes; addSpace : Boolean; Index : Integer; Count : Integer): String;

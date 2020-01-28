@@ -212,6 +212,12 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
         data: TGXReplyData;
         notify: TGXReplyData): Boolean; overload;
 
+    // Removes the frame from the packet, and returns DLMS PDU.
+    function GetData(
+        reply: TGXByteBuffer;
+        data: TGXReplyData;
+        notify: TGXReplyData): Boolean; overload;
+
     function ReceiverReady(tp : TRequestTypes) : TBytes;
     function ReadRowsByEntry(pg: TGXDLMSProfileGeneric; Index : Integer; Count : Integer;columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;
     function ReadRowsByRange(pg: TGXDLMSProfileGeneric; startTime: TDateTime; endTime : TDateTime; columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;overload;
@@ -1396,10 +1402,18 @@ var
 begin
   tmp := TGXByteBuffer.Create(reply);
   try
-    Result := TGXDLMS.GetData(FSettings, tmp, data, notify);
+    Result := GetData(tmp, data, notify);
   finally
     FreeAndNil(tmp);
   end;
+end;
+
+function TGXDLMSClient.GetData(
+    reply: TGXByteBuffer;
+    data: TGXReplyData;
+    notify: TGXReplyData): Boolean;
+begin
+  Result := TGXDLMS.GetData(FSettings, reply, data, notify);
 end;
 
 function TGXDLMSClient.ReadRowsByRange(

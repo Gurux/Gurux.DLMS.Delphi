@@ -2018,68 +2018,69 @@ var
   tmp2: TGXByteBuffer;
   di: TGXDataInfo;
 begin
-   writeln(reply.Data.ToHex(true, 0, reply.Data.Size));
-    start := reply.Data.Position - 1;
-    // Get invoke id.
-    invokeId := reply.Data.GetUInt32();
-    // Get date time.
-    reply.Time := 0;
-    len := reply.Data.GetUInt8();
-    tmp := Nil;
-    // If date time is given.
-    if len <> 0 Then
-    begin
-      SetLength(tmp, len);
-      reply.Data.Get(tmp);
-      dt := TDataType.dtDateTime;
-      if len = 4 Then
-        dt := TDataType.dtTime
-      else if len = 5 Then
-        dt := TDataType.dtDate;
+start := reply.Data.Position - 1;
+  // Get invoke id.
+  invokeId := reply.Data.GetUInt32();
+  // Get date time.
+  reply.Time := 0;
+  len := reply.Data.GetUInt8();
+  tmp := Nil;
+  // If date time is given.
+  if len <> 0 Then
+  begin
+    SetLength(tmp, len);
+    reply.Data.Get(tmp);
+    dt := TDataType.dtDateTime;
+    if len = 4 Then
+      dt := TDataType.dtTime
+    else if len = 5 Then
+      dt := TDataType.dtDate;
 
-      info := TGXDataInfo.Create();
+    info := TGXDataInfo.Create();
+    try
+      info.&Type := dt;
+      tmp2 := TGXByteBuffer.Create();
       try
-        info.&Type := dt;
-        tmp2 := TGXByteBuffer.Create();
-        try
-          tmp2.SetArray(tmp);
-          ret := TGXCommon.GetData(tmp2, info);
-        finally
-          FreeAndNil(tmp2);
-        end;
-        reply.Time := ret.AsType<TGXDateTime>.LocalTime;
+        tmp2.SetArray(tmp);
+        ret := TGXCommon.GetData(tmp2, info);
       finally
-        info.Free;
+        FreeAndNil(tmp2);
       end;
+      reply.Time := ret.AsType<TGXDateTime>.LocalTime;
+    finally
+      if ret.IsType<TGXDateTime> then
+        ret.AsType<TGXDateTime>.Free;
+      info.Free;
     end;
-    if reply.Xml <> Nil Then
-    begin
-      reply.Xml.AppendStartTag(LONGWORD(TCommand.DataNotification));
-      reply.Xml.AppendLine(LONGWORD(TTranslatorTags.LongInvokeId), '',
-          reply.Xml.IntegerToHex(invokeId, 8));
-      if reply.Time <> 0 Then
-          reply.Xml.AppendComment(DateTimeToStr(reply.Time));
+  end;
+  if reply.Xml <> Nil Then
+  begin
+    reply.Xml.AppendStartTag(LONGWORD(TCommand.DataNotification));
+    reply.Xml.AppendLine(LONGWORD(TTranslatorTags.LongInvokeId), '',
+        reply.Xml.IntegerToHex(invokeId, 8));
+    if reply.Time <> 0 Then
+        reply.Xml.AppendComment(DateTimeToStr(reply.Time));
 
-      reply.Xml.AppendLine(LONGWORD(TTranslatorTags.DateTime), '',
-          TGXCommon.ToHexString(tmp, False, 0, Length(tmp)));
-      reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.NotificationBody));
-      reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.DataValue));
-      try
-        di := TGXDataInfo.Create();
-        di.Xml := reply.Xml;
-        TGXCommon.GetData(reply.Data, di);
-      finally
-        FreeAndNil(di);
-      end;
-      reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.DataValue));
-      reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.NotificationBody));
-      reply.Xml.AppendEndTag(LONGWORD(TCommand.DataNotification));
-    end
-    else
-    begin
-      GetDataFromBlock(reply.Data, start);
-      GetValueFromData(settings, reply);
+    reply.Xml.AppendLine(LONGWORD(TTranslatorTags.DateTime), '',
+        TGXCommon.ToHexString(tmp, False, 0, Length(tmp)));
+    reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.NotificationBody));
+    reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.DataValue));
+    try
+      di := TGXDataInfo.Create();
+      di.Xml := reply.Xml;
+      TGXCommon.GetData(reply.Data, di);
+    finally
+      FreeAndNil(di);
     end;
+    reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.DataValue));
+    reply.Xml.AppendEndTag(LONGWORD(TTranslatorTags.NotificationBody));
+    reply.Xml.AppendEndTag(LONGWORD(TCommand.DataNotification));
+  end
+  else
+  begin
+    GetDataFromBlock(reply.Data, start);
+    GetValueFromData(settings, reply);
+  end;
 end;
 
 // Handle set response and update error status.
@@ -2700,7 +2701,11 @@ begin
       FreeAndNil(bb);
     end;
     data.Command := TCommand.NONE;
-    GetPdu(settings, data);
+    try
+      GetPdu(settings, data);
+    except on E: EArgumentException do
+      //Skip data If keys are wrong.
+    end;
     data.CipherIndex := data.Data.Size;
   end;
 end;

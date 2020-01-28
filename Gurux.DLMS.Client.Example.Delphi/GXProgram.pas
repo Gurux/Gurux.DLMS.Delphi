@@ -924,48 +924,68 @@ end;
 //Read DLMS packet from the meter.
 procedure TGXProgram.ReadDLMSPacket(data: TBytes; reply: TGXReplyData);
 var
-  pos, cnt: Integer;
-  eop: Variant;
+  size, cnt: Integer;
   stream: TWinSocketStream;
-  Result: TBytes;
+  Result: TGXByteBuffer;
+  notify: TGXReplyData;
 begin
   if (data = nil) then
       Exit;
+  stream := Nil;
+  notify := TGXReplyData.Create();
+  Result := TGXByteBuffer.Create();
   try
     stream := TWinSocketStream.Create(socket.Socket, WaitTime);
     if FTrace = tlVerbose then
-      WriteTrace('<- ' + TimeToStr(Time) + chr(9) + TGXByteBuffer.ToHexString(data));
+      WriteTrace('TX:' + chr(9) + TimeToStr(Time) + chr(9) + TGXByteBuffer.ToHexString(data));
 
     //Send data.
     stream.Write(data, 0, Length(data));
-    pos := 0;
-    eop := (Byte(126));
-    if Client.InterfaceType = TInterfaceType.WRAPPER then
-      eop := VarEmpty;
+    //Wait a new data.
+    if stream.WaitForData(WaitTime) = false then
+      raise Exception.Create('Failed to received reply from the meter.');
 
-    repeat
-      //Wait new data.
-      if stream.WaitForData(WaitTime) = false then
-        raise Exception.Create('Failed to received reply from the meter.');
+    cnt := socket.Socket.ReceiveLength;
+    Result.Capacity(Result.Size + cnt);
+    socket.Socket.ReceiveBuf(Result.GetData()[Result.Size], cnt);
+    Result.Size := Result.Size + cnt;
+    size := 0;
 
-      cnt := socket.Socket.ReceiveLength;
-      if cnt <> 0 then
+    //Loop until whole COSEM packet is received.
+    while not Client.GetData(Result, reply, notify) do
+    begin
+      if (notify.Data.Size <> size) Then
       begin
-        SetLength(Result, pos + cnt);
-        socket.Socket.ReceiveBuf(Result[pos], cnt);
-        pos := pos + cnt;
-        //If all data is received.
-         //Loop until whole COSEM packet is received.
-        if Client.GetData(Result, reply) Then
-          break;
+        Result.Trim();
+        size := notify.Data.Size;
+        //Handle notify.
+        if Not notify.IsMoreData Then
+        begin
+          //Show received push message.
+          notify.Clear();
+          continue;
+        end;
+      end
+      else
+      begin
+        //Wait a new data.
+        if stream.WaitForData(WaitTime) = false then
+          raise Exception.Create('Failed to received reply from the meter.');
+
+        cnt := socket.Socket.ReceiveLength;
+        Result.Capacity(Result.Size + cnt);
+        socket.Socket.ReceiveBuf(Result.GetData()[Result.Size], cnt);
+        Result.Size := Result.Size + cnt;
       end;
-    Until False;
+    end;
     if FTrace = tlVerbose then
-      WriteTrace('-> ' + TimeToStr(Time) + chr(9) + TGXByteBuffer.ToHexString(Result));
+      WriteTrace('RX:' + chr(9) + TimeToStr(Time) + chr(9) + Result.ToHex(True));
 
     if reply.Error <> 0 Then
       raise TGXDLMSException.Create(reply.Error);
   finally
+    FreeAndNil(Result);
+    FreeAndNil(notify);
     FreeAndNil(stream);
   end;
 end;
