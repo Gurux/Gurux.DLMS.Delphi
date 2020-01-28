@@ -96,6 +96,22 @@ begin
       // Get shared secret
       if settings.Authentication = TAuthentication.atHighGMAC Then
         challenge.SetArray(data)
+      else if settings.Authentication = TAuthentication.atHighSHA256 Then
+      begin
+        challenge.SetArray(secret);
+        challenge.SetArray(settings.Cipher.SystemTitle);
+        challenge.SetArray(settings.SourceSystemTitle);
+        if settings.IsServer Then
+        begin
+          challenge.SetArray(settings.CtoSChallenge);
+          challenge.SetArray(settings.StoCChallenge);
+        end
+        else
+        begin
+          challenge.SetArray(settings.StoCChallenge);
+          challenge.SetArray(settings.CtoSChallenge);
+        end;
+      end
       else
       begin
         challenge.SetArray(data);

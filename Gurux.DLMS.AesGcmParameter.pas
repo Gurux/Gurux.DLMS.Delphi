@@ -111,6 +111,7 @@ begin
   FBlockCipherKey := blockCipherKey;
   FAuthenticationKey := authenticationKey;
   FType := TCountType.Packet;
+  xml := Nil;
 end;
 
 constructor TAesGcmParameter.Create(

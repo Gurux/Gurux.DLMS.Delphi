@@ -38,7 +38,8 @@ uses GXCommon, SysUtils, Rtti,
 System.Generics.Collections,
 Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
 Gurux.DLMS.GXDLMSScriptAction, Gurux.DLMS.GXDLMSScriptActionType,
-GXByteBuffer, Gurux.DLMS.Objects.GXDLMSScript;
+GXByteBuffer, Gurux.DLMS.Objects.GXDLMSScript,
+Gurux.DLMS.GXDLMSClient;
 
 type
   TGXDLMSScriptTable = class(TGXDLMSObject)
@@ -62,6 +63,14 @@ type
   function GetValue(e: TValueEventArgs): TValue;override;
   procedure SetValue(e: TValueEventArgs);override;
   function Invoke(e: TValueEventArgs): TBytes;override;
+
+  // Executes selected script by id.
+  // client: DLMS client.
+  // scriptId: Executed script id.
+  // Returns action bytes.
+  function Execute(
+      client: TGXDLMSClient;
+      scriptId: UInt16): TArray<TBytes>;
 end;
 
 implementation
@@ -86,6 +95,15 @@ destructor TGXDLMSScriptTable.Destroy;
 begin
   inherited;
   FreeAndNil(FScripts);
+end;
+
+// Executes selected script by id.
+// client: DLMS client.
+// scriptId: Executed script id.
+// Returns action bytes.
+function TGXDLMSScriptTable.Execute(client: TGXDLMSClient; scriptId: UInt16): TArray<TBytes>;
+begin
+  Result := client.Method(Self, 1, scriptId, TDataType.dtUInt16);
 end;
 
 function TGXDLMSScriptTable.GetValues() : TArray<TValue>;

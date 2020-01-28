@@ -438,11 +438,10 @@ end;
 // count : Item count.
 procedure TGXByteBuffer.Move(srcPos : Word; destPos : Word; count : Word);
 begin
-  if count <> 0 then
+  if destPos + count <> 0 then
   begin
     if destPos + count > Capacity Then
       Capacity(destPos + count);
-
     System.Move(FData[srcPos], FData[destPos], count);
     SetSize(destPos + count);
     if (FPosition > FSize) then

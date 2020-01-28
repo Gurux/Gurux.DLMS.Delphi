@@ -72,6 +72,7 @@ implementation
     FCount := 0;
     FType := TDataType.dtNone;
     FCompleate := False;
+    FXml := Nil;
   end;
 
   procedure TGXDataInfo.Clear;

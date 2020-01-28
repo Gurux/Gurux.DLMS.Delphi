@@ -254,7 +254,10 @@ begin
       data.SetUInt8(2);
 
   //Add system title if cipher or GMAC authentication is used..
-  if Not settings.IsServer and ciphered or (settings.Authentication = TAuthentication.atHighGMAC) Then
+  if Not settings.IsServer and ciphered or
+  ((settings.Authentication = TAuthentication.atHighGMAC) or
+  (settings.Authentication = TAuthentication.atHighSHA256) or
+  (settings.Authentication = TAuthentication.atHighECDSA)) Then
   begin
     if Length(cipher.SystemTitle) <> 8 Then
       raise EArgumentException.Create('Invalid SystemTitle');
@@ -1375,7 +1378,11 @@ begin
     data.SetUInt8(Byte(diagnostic)); //diagnostic
 
     //SystemTitle
-    if (cipher <> Nil) and (cipher.IsCiphered or (settings.Authentication = TAuthentication.atHighGMAC)) Then
+    if (cipher <> Nil) and
+        (cipher.IsCiphered or
+        (settings.Authentication = TAuthentication.atHighGMAC) or
+        (settings.Authentication = TAuthentication.atHighSHA256) or
+        (settings.Authentication = TAuthentication.atHighECDSA)) Then
     begin
       data.SetUInt8(Byte(TBerType.btContext) or Byte(TBerType.btConstructed) or Byte(TPduType.CalledApInvocationId));
       data.SetUInt8(2 + Length(cipher.SystemTitle));

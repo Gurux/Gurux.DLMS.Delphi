@@ -67,6 +67,7 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
     FSettings: TGXDLMSSettings;
     FAutoIncreaseInvokeID : Boolean;
   private
+    function GetSourceSystemTitle: TBytes;
     function GetPassword: TBytes;
     procedure SetPassword(Value: TBytes);
 
@@ -161,6 +162,7 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
     property ClientAddress : Integer read get_ClientAddress write set_ClientAddress;
     property ServerAddress : Integer read get_ServerAddress write set_ServerAddress;
     property AutoIncreaseInvokeID : Boolean read FAutoIncreaseInvokeID write FAutoIncreaseInvokeID;
+    property SourceSystemTitle : TBytes read GetSourceSystemTitle;
 
     //Gateway settings.
     property Gateway : TGXDLMSGateway read GetGateway write SetGateway;
@@ -201,7 +203,14 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
     procedure ParseApplicationAssociationResponse(reply : TGXByteBuffer);
     procedure ParseObjects(data: TGXByteBuffer; onlyKnownObjects: Boolean);
     // Removes the frame from the packet, and returns DLMS PDU.
-    function GetData(reply: TBytes; data: TGXReplyData): Boolean;
+    function GetData(
+        reply: TBytes;
+        data: TGXReplyData): Boolean; overload;
+    // Removes the frame from the packet, and returns DLMS PDU.
+    function GetData(
+        reply: TBytes;
+        data: TGXReplyData;
+        notify: TGXReplyData): Boolean; overload;
 
     function ReceiverReady(tp : TRequestTypes) : TBytes;
     function ReadRowsByEntry(pg: TGXDLMSProfileGeneric; Index : Integer; Count : Integer;columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;
@@ -419,6 +428,11 @@ end;
 procedure TGXDLMSClient.SetPassword(Value: TBytes);
 begin
   FSettings.Password := value;
+end;
+
+function TGXDLMSClient.GetSourceSystemTitle: TBytes;
+begin
+  Result := FSettings.SourceSystemTitle;
 end;
 
 procedure TGXDLMSClient.set_ClientAddress(Value: Integer);
@@ -1366,13 +1380,23 @@ begin
   Result := TGXDLMS.ReceiverReady(FSettings, tp);
 end;
 
-function TGXDLMSClient.GetData(reply: TBytes; data: TGXReplyData): Boolean;
+function TGXDLMSClient.GetData(
+    reply: TBytes;
+    data: TGXReplyData): Boolean;
+begin
+  Result := GetData(reply, data, Nil);
+end;
+
+function TGXDLMSClient.GetData(
+    reply: TBytes;
+    data: TGXReplyData;
+    notify: TGXReplyData): Boolean;
 var
   tmp: TGXByteBuffer;
 begin
   tmp := TGXByteBuffer.Create(reply);
   try
-    Result := TGXDLMS.GetData(FSettings, tmp, data);
+    Result := TGXDLMS.GetData(FSettings, tmp, data, notify);
   finally
     FreeAndNil(tmp);
   end;

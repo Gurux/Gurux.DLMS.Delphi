@@ -74,11 +74,18 @@ type
   FPeek: Boolean;
   FXml: TGXDLMSTranslatorStructure;
 
+  // Is GBT streaming in use.
   FStreaming: Boolean;
+  //GBT Window size.
   FWindowSize: BYTE;
+  //GBT block number.
   FBlockNumber: BYTE;
+  //GBT block number ACK.
   FBlockNumberAck: BYTE;
-
+  // Client address of the notification message.
+  FClientAddress: Integer;
+  //Server address of the notification message.
+  FServerAddress: Integer;
   public
 
   // Constructor.
@@ -145,12 +152,19 @@ type
 
   property Xml: TGXDLMSTranslatorStructure read FXml write FXml;
 
+  //Is GBT streaming in use.
   property Streaming: Boolean read FStreaming write FStreaming;
-
+  //GBT Window size.
   property WindowSize : Byte read FWindowSize write FWindowSize;
+  //GBT block number.
   property BlockNumber : Byte read FBlockNumber write FBlockNumber;
+  //GBT block number ACK.
   property BlockNumberAck : Byte read FBlockNumberAck write FBlockNumberAck;
 
+  // Client address of the notification message.
+  property ClientAddress : Integer read FClientAddress write FClientAddress;
+  //Server address of the notification message.
+  property ServerAddress : Integer read FServerAddress write FServerAddress;
 end;
 
 implementation
@@ -165,6 +179,8 @@ begin
   FData := buff;
   FComplete := AComplete;
   FError := error;
+  FClientAddress := 0;
+  FServerAddress := 0;
 end;
 
 constructor TGXReplyData.Create();
@@ -196,8 +212,8 @@ begin
   FTime := 0;
   FStreaming := False;
   FWindowSize := 0;
+  FXml := Nil;
 end;
-
 
 function TGXReplyData.ToString : String;
 begin

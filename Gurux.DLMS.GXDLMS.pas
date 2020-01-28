@@ -85,16 +85,28 @@ type
   class function GetSnMessages(p: TGXDLMSSNParameters): TArray<TBytes>;
   class procedure GetSNPdu(p: TGXDLMSSNParameters; reply: TGXByteBuffer);
   class function AppendMultipleSNBlocks(p: TGXDLMSSNParameters; header: TGXByteBuffer; reply: TGXByteBuffer): Integer;
-  class procedure CheckWrapperAddress(settings: TGXDLMSSettings; buff: TGXByteBuffer; data: TGXReplyData);
+  class function CheckWrapperAddress(
+      settings: TGXDLMSSettings;
+      buff: TGXByteBuffer;
+      notify: TGXReplyData): Boolean;
   // Get data from Block.
   class function GetDataFromBlock(data: TGXByteBuffer; index: Integer) : Integer;
   // Handle read response and get data from block and/or update error status.
   class function HandleReadResponse(settings: TGXDLMSSettings; reply: TGXReplyData; index: Integer) : Boolean;
   // Get value from data.
   class procedure GetValueFromData(settings: TGXDLMSSettings; reply: TGXReplyData);
-  class function GetData(settings: TGXDLMSSettings; reply: TGXByteBuffer; data: TGXReplyData) : Boolean;
+
+  class function GetData(
+      settings: TGXDLMSSettings;
+      reply: TGXByteBuffer;
+      data: TGXReplyData;
+      notify: TGXReplyData) : Boolean;
+
   // Get data from HDLC or wrapper frame.
-  class procedure GetDataFromFrame(reply: TGXByteBuffer; info: TGXReplyData);
+  class procedure GetDataFromFrame(
+    reply: TGXByteBuffer;
+    info: TGXReplyData;
+    hdlc: Boolean);
 
   class procedure HandleAccessResponse(settings: TGXDLMSSettings; reply: TGXReplyData);
   // Handle set response and update error status.
@@ -117,11 +129,27 @@ type
   class function GetWrapperFrame(settings: TGXDLMSSettings; data: TGXByteBuffer): TBytes;static;
   class function GetAddress(value: LongWord; size: WORD): Variant;static;
   class function GetAddressBytes(value: LongWord; size: WORD): TBytes;static;
-  class function GetHdlcData(server: Boolean; settings: TGXDLMSSettings; reply: TGXByteBuffer; data: TGXReplyData): Byte;static;
+  // Get data from HDLC frame.
+  class function GetHdlcData(
+      server: Boolean;
+      settings: TGXDLMSSettings;
+      reply: TGXByteBuffer;
+      data: TGXReplyData;
+      notify: TGXReplyData): Byte;static;
   // Get data from TCP/IP frame.
-  class procedure GetTcpData(settings: TGXDLMSSettings; buff: TGXByteBuffer; data: TGXReplyData);static;
+  class function GetTcpData(
+      settings: TGXDLMSSettings;
+      buff: TGXByteBuffer;
+      data: TGXReplyData;
+      notify: TGXReplyData): Boolean;static;
   // Check that client and server address match.
-  class function CheckHdlcAddress(server: Boolean; settings: TGXDLMSSettings; reply: TGXByteBuffer; index: Integer): Boolean;
+  class function CheckHdlcAddress(
+      server: Boolean;
+      settings: TGXDLMSSettings;
+      reply: TGXByteBuffer;
+      index: Integer;
+      source: PInteger;
+      target: PInteger): Boolean;
 
  // Get physical and logical address from server address.
   class procedure GetServerAddress(address: Integer; logical: PInteger; physical: PInteger);static;
@@ -1147,157 +1175,196 @@ begin
     Result :=data.Compare(LLCReplyBytes);
 end;
 
-class function TGXDLMS.GetHdlcData(server: Boolean; settings: TGXDLMSSettings; reply: TGXByteBuffer; data: TGXReplyData): Byte;
+class function TGXDLMS.GetHdlcData(
+    server: Boolean;
+    settings: TGXDLMSSettings;
+    reply: TGXByteBuffer;
+    data: TGXReplyData;
+    notify: TGXReplyData): Byte;
 var
   ch, frame: Byte;
   tmp, crc, crcRead: WORD;
-  pos, eopPos, packetStartID, frameLen: Integer;
+  source, target, pos, eopPos, packetStartID, frameLen: Integer;
+  isNotify: Boolean;
 begin
-    packetStartID := reply.Position;
-    frameLen := 0;
-    // If whole frame is not received yet.
-    if (reply.Size - reply.Position < 9) Then
-    begin
-      data.Complete := false;
-      Result := 0;
-      Exit;
-    end;
-    data.Complete := true;
-    // Find start of HDLC frame.
-    for pos := reply.Position to reply.Size - 1 do
-    begin
-      ch := reply.GetUInt8();
-      if ch = HDLCFrameStartEnd Then
-      begin
-        packetStartID := pos;
-        break;
-      end;
-    end;
-    // Not a HDLC frame.
-    // Sometimes meters can send some strange data between DLMS frames.
-    if reply.position = reply.Size Then
-    begin
-        data.Complete := false;
-        // Not enough data to parse;
-        Result := 0;
-        Exit;
-    end;
-    frame := reply.GetUInt8();
-    if (frame and $F0) <> $A0 Then
-    begin
-      // If same data.
-      Result := getHdlcData(server, settings, reply, data);
-      Exit;
-    end;
+  isNotify := False;
+  packetStartID := reply.Position;
+  frameLen := 0;
+  // If whole frame is not received yet.
+  if (reply.Size - reply.Position < 9) Then
+  begin
+    data.Complete := false;
+    Result := 0;
+    Exit;
+  end;
+  data.Complete := true;
+  if notify <> Nil Then
+    notify.Complete := True;
 
-    // Check frame length.
-    if (frame and $7) <> 0 Then
-      frameLen := (frame and $7) shl 8;
-
+  // Find start of HDLC frame.
+  for pos := reply.Position to reply.Size - 1 do
+  begin
     ch := reply.GetUInt8();
-    // If not enough data.
-    frameLen := frameLen + ch;
-    if (reply.Size - reply.Position + 1 < frameLen) Then
+    if ch = HDLCFrameStartEnd Then
     begin
-      data.Complete := false;
-      reply.Position := packetStartID;
-      // Not enough data to parse;
-      Result :=  0;
+      packetStartID := pos;
+      break;
+    end;
+  end;
+  // Not a HDLC frame.
+  // Sometimes meters can send some strange data between DLMS frames.
+  if reply.position = reply.Size Then
+  begin
+    data.Complete := false;
+    if notify <> Nil Then
+      notify.Complete := True;
+    // Not enough data to parse;
+    Result := 0;
+    Exit;
+  end;
+  frame := reply.GetUInt8();
+  if (frame and $F0) <> $A0 Then
+  begin
+    // If same data.
+    Result := getHdlcData(server, settings, reply, data, notify);
+    Exit;
+  end;
+
+  // Check frame length.
+  if (frame and $7) <> 0 Then
+    frameLen := (frame and $7) shl 8;
+
+  ch := reply.GetUInt8();
+  // If not enough data.
+  frameLen := frameLen + ch;
+  if (reply.Size - reply.Position + 1 < frameLen) Then
+  begin
+    data.Complete := false;
+    reply.Position := packetStartID;
+    // Not enough data to parse;
+    Result :=  0;
+    Exit;
+  end;
+  eopPos := frameLen + packetStartID + 1;
+  ch := reply.getUInt8(eopPos);
+  if ch <> HDLCFrameStartEnd Then
+  begin
+    reply.Position := reply.Position - 2;
+    Result := GetHdlcData(server, settings, reply, data, notify);
+    Exit;
+  end;
+  // Check addresses.
+  if Not CheckHdlcAddress(server, settings, reply, eopPos, @source, @target) Then
+  begin
+    //If not notify.
+    if Not ((reply.Position < reply.Size) and (reply.GetUInt8(reply.Position) = $13)) Then
+    begin
+      //If echo.
+      reply.Position := 1 + eopPos;
+      Result := GetHdlcData(server, settings, reply, data, notify);
       Exit;
-    end;
-    eopPos := frameLen + packetStartID + 1;
-    ch := reply.getUInt8(eopPos);
-    if ch <> HDLCFrameStartEnd Then
-      raise TGXDLMSException.Create('Invalid data format.');
-
-    // Check addresses.
-    if Not CheckHdlcAddress(server, settings, reply, eopPos) Then
-    begin
-        // If echo,
-        Result := GetHdlcData(server, settings, reply, data);
-        Exit;
-    end;
-
-    // Is there more data available.
-    if ((frame and $8) <> 0) Then
-        data.MoreData := TRequestTypes(Integer(data.MoreData) or Integer(TRequestTypes.rtFrame))
-    else
-        data.MoreData := TRequestTypes(Integer(data.MoreData) and Not Integer(TRequestTypes.rtFrame));
-
-    // Get frame type.
-    frame := reply.GetUInt8();
-    if Not settings.CheckFrame(frame) Then
-    begin
-        reply.Position := (eopPos + 1);
-        Result := GetHdlcData(server, settings, reply, data);
-        Exit;
-    end;
-    // Check that header CRC is correct.
-    crc := TGXFCS16.CountFCS16(reply.GetData, packetStartID + 1, reply.position - packetStartID - 1);
-    crcRead := reply.getUInt16();
-    if (crc <> crcRead) Then
-      raise TGXDLMSException.Create('Wrong CRC.');
-
-    // Check that packet CRC match only if there is a data part.
-    if (reply.Position <> packetStartID + frameLen + 1) Then
-    begin
-      crc := TGXFCS16.CountFCS16(reply.GetData, packetStartID + 1, frameLen - 2);
-      crcRead := reply.GetUInt16(packetStartID + frameLen - 1);
-      if crc <> crcRead Then
-        raise TGXDLMSException.Create('Wrong CRC.');
-      // Remove CRC and EOP from packet length.
-      data.PacketLength := eopPos - 2;
     end
+    else if notify <> Nil Then
+    begin
+      isNotify := true;
+      notify.ClientAddress := target;
+      notify.ServerAddress := source;
+    end;
+
+  end;
+
+  // Is there more data available.
+  if ((frame and $8) <> 0) Then
+    if isNotify Then
+      notify.MoreData := TRequestTypes(Integer(data.MoreData) or Integer(TRequestTypes.rtFrame))
+    else
+      data.MoreData := TRequestTypes(Integer(data.MoreData) or Integer(TRequestTypes.rtFrame))
+  else
+    if isNotify Then
+      notify.MoreData := TRequestTypes(Integer(data.MoreData) and Not Integer(TRequestTypes.rtFrame))
+    else
+      data.MoreData := TRequestTypes(Integer(data.MoreData) and Not Integer(TRequestTypes.rtFrame));
+
+  // Get frame type.
+  frame := reply.GetUInt8();
+  if Not settings.CheckFrame(frame) Then
+  begin
+    reply.Position := (eopPos + 1);
+    Result := GetHdlcData(server, settings, reply, data, notify);
+    Exit;
+  end;
+  // Check that header CRC is correct.
+  crc := TGXFCS16.CountFCS16(reply.GetData, packetStartID + 1, reply.position - packetStartID - 1);
+  crcRead := reply.getUInt16();
+  if (crc <> crcRead) Then
+    raise TGXDLMSException.Create('Wrong CRC.');
+
+  // Check that packet CRC match only if there is a data part.
+  if (reply.Position <> packetStartID + frameLen + 1) Then
+  begin
+    crc := TGXFCS16.CountFCS16(reply.GetData, packetStartID + 1, frameLen - 2);
+    crcRead := reply.GetUInt16(packetStartID + frameLen - 1);
+    if crc <> crcRead Then
+      raise TGXDLMSException.Create('Wrong CRC.');
+    // Remove CRC and EOP from packet length.
+    if isNotify Then
+      notify.PacketLength := eopPos - 2
+    else
+      data.PacketLength := eopPos - 2;
+  end
+  else
+    if isNotify Then
+      notify.PacketLength := reply.Position + 1
     else
       data.PacketLength := reply.Position + 1;
 
-    if (frame <> $13) and ((frame and Integer(THdlcFrameType.Uframe)) = Integer(THdlcFrameType.Uframe)) Then
-    begin
+  if (frame <> $13) and ((frame and Integer(THdlcFrameType.Uframe)) = Integer(THdlcFrameType.Uframe)) Then
+  begin
+    // Get Eop if there is no data.
+    if (reply.Position = packetStartID + frameLen + 1) Then
+      // Get EOP.
+      reply.GetUInt8();
+
+    if frame = $97 Then
+      data.Error := Integer(TErrorCode.ecUnacceptableFrame)
+    else if frame = $1f Then
+      data.Error := Integer(TErrorCode.ecDisconnectMode);
+
+    data.Command := TCommand(frame);
+  end
+  else if (frame <> $13) and ((frame and Integer(THdlcFrameType.Sframe)) = Integer(THdlcFrameType.Sframe)) Then
+  begin
+      // If S-frame
+      tmp := (frame shr 2) and $3;
+      // If frame is rejected.
+      if tmp = Integer(THdlcControlFrame.cfReject) Then
+        data.Error := Integer(TErrorCode.ecRejected)
+      else if tmp = Integer(THdlcControlFrame.cfReceiveNotReady) Then
+        data.Error := Integer(TErrorCode.ecReceiveNotReady)
+      else if tmp = Integer(THdlcControlFrame.cfReceiveReady) Then
+        data.Error := Integer(TErrorCode.ecOK);
+      // Get next frame.
+
       // Get Eop if there is no data.
       if (reply.Position = packetStartID + frameLen + 1) Then
         // Get EOP.
         reply.GetUInt8();
-
-      if frame = $97 Then
-        data.Error := Integer(TErrorCode.ecUnacceptableFrame)
-      else if frame = $1f Then
-        data.Error := Integer(TErrorCode.ecDisconnectMode);
-
-      data.Command := TCommand(frame);
-    end
-    else if (frame <> $13) and ((frame and Integer(THdlcFrameType.Sframe)) = Integer(THdlcFrameType.Sframe)) Then
+  end
+  else
+  begin
+    // I-frame
+    // Get Eop if there is no data.
+    if (reply.Position = packetStartID + frameLen + 1) Then
     begin
-        // If S-frame
-        tmp := (frame shr 2) and $3;
-        // If frame is rejected.
-        if tmp = Integer(THdlcControlFrame.cfReject) Then
-          data.Error := Integer(TErrorCode.ecRejected)
-        else if tmp = Integer(THdlcControlFrame.cfReceiveNotReady) Then
-          data.Error := Integer(TErrorCode.ecReceiveNotReady)
-        else if tmp = Integer(THdlcControlFrame.cfReceiveReady) Then
-          data.Error := Integer(TErrorCode.ecOK);
-        // Get next frame.
-
-        // Get Eop if there is no data.
-        if (reply.Position = packetStartID + frameLen + 1) Then
-          // Get EOP.
-          reply.GetUInt8();
+      // Get EOP.
+      reply.GetUInt8();
+      if (frame and $1) = $1 Then
+        data.MoreData := TRequestTypes.rtFrame;
     end
-    else
-    begin
-      // I-frame
-      // Get Eop if there is no data.
-      if (reply.Position = packetStartID + frameLen + 1) Then
-      begin
-        // Get EOP.
-        reply.GetUInt8();
-        if (frame and $1) = $1 Then
-          data.MoreData := TRequestTypes.rtFrame;
-      end
-      else if Not GetLLCBytes(server, reply) Then
-        GetLLCBytes(Not server, reply);
-    end;
-    Result := frame;
+    else if Not GetLLCBytes(server, reply) Then
+      GetLLCBytes(Not server, reply);
+  end;
+  Result := frame;
 end;
 
 // Get physical and logical address from server address.
@@ -1316,51 +1383,57 @@ begin
 end;
 
 // Check that client and server address match.
-class function TGXDLMS.CheckHdlcAddress(server: Boolean; settings: TGXDLMSSettings; reply: TGXByteBuffer; index: Integer): Boolean;
+class function TGXDLMS.CheckHdlcAddress(
+    server: Boolean;
+    settings: TGXDLMSSettings;
+    reply: TGXByteBuffer;
+    index: Integer;
+    source: PInteger;
+    target: PInteger): Boolean;
 var
-  readLogical, readPhysical, logical, physical, source, target: Integer;
+  readLogical, readPhysical, logical, physical: Integer;
 begin
   // Get destination and source addresses.
-  target := TGXCommon.GetHDLCAddress(reply);
-  source := TGXCommon.GetHDLCAddress(reply);
+  target^ := TGXCommon.GetHDLCAddress(reply);
+  source^ := TGXCommon.GetHDLCAddress(reply);
   if server Then
   begin
       // Check that server addresses match.
-      if (settings.ServerAddress <> 0) and (settings.ServerAddress <> target) Then
+      if (settings.ServerAddress <> 0) and (settings.ServerAddress <> target^) Then
       begin
         if reply.GetUInt8(reply.Position) = Integer(TCommand.SNRM) Then
-          settings.ServerAddress := target
+          settings.ServerAddress := target^
         else
           raise TGXDLMSException.Create('Server addresses do not match. It is '
-                + IntToStr(target) + '. It should be '
+                + IntToStr(target^) + '. It should be '
                 + IntToStr(settings.ServerAddress)
                 + '.');
 
       end;
-      settings.ServerAddress := target;
+      settings.ServerAddress := target^;
 
       // Check that client addresses match.
-      if (settings.ClientAddress <> 0) and (settings.ClientAddress <> source) Then
+      if (settings.ClientAddress <> 0) and (settings.ClientAddress <> source^) Then
       begin
         if reply.GetUInt8(reply.Position) = Integer(TCommand.SNRM) Then
-          settings.ClientAddress := source
+          settings.ClientAddress := source^
         else
           raise TGXDLMSException.Create(
             'Client addresses do not match. It is '
-                    + IntToStr(source) + '. It should be '
+                    + IntToStr(source^) + '. It should be '
                     + IntToStr(settings.ClientAddress)
                     + '.');
       end
       else
-        settings.ClientAddress := source;
+        settings.ClientAddress := source^;
   end
   else
   begin
     // Check that client addresses match.
-    if settings.ClientAddress <> target Then
+    if settings.ClientAddress <> target^ Then
     begin
         // If echo.
-        if (settings.ClientAddress = source) and (settings.ServerAddress = target) Then
+        if (settings.ClientAddress = source^) and (settings.ServerAddress = target^) Then
         begin
           reply.Position := (index + 1);
           Result := false;
@@ -1368,22 +1441,24 @@ begin
         end;
         raise TGXDLMSException.Create(
                 'Destination addresses do not match. It is '
-                        + IntToStr(target) + '. It should be '
+                        + IntToStr(target^) + '. It should be '
                         + IntToStr(settings.ClientAddress)
                         + '.');
     end;
     // Check that server addresses match.
-    if settings.ServerAddress <> source Then
+    if (settings.ServerAddress <> source^) and
+        // If All-station (Broadcast).
+        (settings.ServerAddress <> $7F) and (settings.ServerAddress <> $3FFF) Then
     begin
         // Check logical and physical address separately.
         // This is done because some meters might send four bytes
         // when only two bytes is needed.
-        GetServerAddress(source, @readLogical, @readPhysical);
+        GetServerAddress(source^, @readLogical, @readPhysical);
         GetServerAddress(settings.ServerAddress, @logical, @physical);
         if (readLogical <> logical) or (readPhysical <> physical) Then
             raise TGXDLMSException.Create(
                     'Source addresses do not match. It is '
-                            + IntToStr(source) + '. It should be '
+                            + IntToStr(source^) + '. It should be '
                             + IntToStr(
                                     settings.ServerAddress)
                             + '.');
@@ -1393,11 +1468,15 @@ end;
   Result := true;
 end;
 
-class procedure TGXDLMS.GetTcpData(settings: TGXDLMSSettings; buff: TGXByteBuffer; data: TGXReplyData);
+class function TGXDLMS.GetTcpData(
+    settings: TGXDLMSSettings;
+    buff: TGXByteBuffer;
+    data: TGXReplyData;
+    notify: TGXReplyData): Boolean;
 var
   pos, value : Integer;
-  compleate: Boolean;
 begin
+  Result := True;
   // If whole frame is not received yet.
   if buff.Size - buff.position < 8 Then
   begin
@@ -1405,76 +1484,102 @@ begin
     Exit;
   end;
   pos := buff.Position;
-  // Get version
-  value := buff.GetUInt16();
-  if value <> 1 Then
-    raise TGXDLMSException.Create('Unknown version.');
+  data.Complete := false;
+  if notify <> Nil Then
+    notify.Complete := false;
 
-
-  // Check TCP/IP addresses.
-  CheckWrapperAddress(settings, buff, data);
-  // Get length.
-  value := buff.getUInt16();
-  compleate := Not((buff.Size - buff.Position) < value);
-  data.Complete := compleate;
-  if Not compleate Then
-    buff.Position := pos
-  else
-    data.PacketLength := buff.Position + value;
+  while buff.Available > 1 do
+  begin
+    // Get version
+    value := buff.GetUInt16();
+    if value = 1 Then
+    begin
+      // Check TCP/IP addresses.
+      if Not CheckWrapperAddress(settings, buff, notify) Then
+      begin
+        data := notify;
+        Result := false;
+      end;
+      // Get length.
+      value := buff.getUInt16();
+      data.Complete := Not((buff.Size - buff.Position) < value);
+      if Not data.Complete Then
+        buff.Position := pos
+      else
+        data.PacketLength := buff.Position + value;
+      break;
+    end
+    else
+      buff.Position := buff.Position - 1;
+  end;
 end;
 
-class procedure TGXDLMS.CheckWrapperAddress(settings: TGXDLMSSettings; buff: TGXByteBuffer; data: TGXReplyData);
+class function TGXDLMS.CheckWrapperAddress(
+    settings: TGXDLMSSettings;
+    buff: TGXByteBuffer;
+    notify: TGXReplyData): Boolean;
 var
   value: Integer;
 begin
-    if settings.IsServer Then
+  Result := True;
+  if settings.IsServer Then
+  begin
+    value := buff.GetUInt16();
+    // Check that client addresses match.
+    if (settings.ClientAddress <> 0) and (settings.ClientAddress <> value) Then
+      raise TGXDLMSException.Create(
+                'Source addresses do not match. It is '
+                        + IntToStr(value) + '. It should be '
+                        + IntToStr(settings.ClientAddress)
+                        + '.')
+    else
+      settings.ClientAddress := value;
+
+    value := buff.GetUInt16();
+    // Check that server addresses match.
+    if (settings.ServerAddress <> 0) and (settings.ServerAddress <> value) Then
+      raise TGXDLMSException.Create(
+                'Destination addresses do not match. It is '
+                        + IntToStr(value) + '. It should be '
+                        + IntToStr(settings.ServerAddress)
+                        + '.')
+    else
+      settings.ServerAddress := value;
+  end
+  else
+  begin
+    value := buff.getUInt16();
+    // Check that server addresses match.
+    if (settings.ClientAddress <> 0) and (settings.ServerAddress <> value) Then
     begin
-      value := buff.GetUInt16();
-      // Check that client addresses match.
-      if (settings.ClientAddress <> 0) and (settings.ClientAddress <> value) Then
+      if notify = Nil Then
         raise TGXDLMSException.Create(
                   'Source addresses do not match. It is '
                           + IntToStr(value) + '. It should be '
-                          + IntToStr(settings.ClientAddress)
-                          + '.')
-      else
-        settings.ClientAddress := value;
-
-      value := buff.GetUInt16();
-      // Check that server addresses match.
-      if (settings.ServerAddress <> 0) and (settings.ServerAddress <> value) Then
-        raise TGXDLMSException.Create(
-                  'Destination addresses do not match. It is '
-                          + IntToStr(value) + '. It should be '
                           + IntToStr(settings.ServerAddress)
-                          + '.')
-      else
-        settings.ServerAddress := value;
+                          + '.');
+      notify.ServerAddress := value;
+      Result := False;
     end
     else
-    begin
-      value := buff.getUInt16();
-      // Check that server addresses match.
-      if (settings.ClientAddress <> 0) and (settings.ServerAddress <> value) Then
-        raise TGXDLMSException.Create(
-                  'Source addresses do not match. It is '
-                          + IntToStr(value) + '. It should be '
-                          + IntToStr(settings.ServerAddress)
-                          + '.')
-      else
-        settings.ServerAddress := value;
+      settings.ServerAddress := value;
 
-      value := buff.getUInt16();
-      // Check that client addresses match.
-      if (settings.ClientAddress <> 0) and (settings.ClientAddress <> value) Then
+    value := buff.getUInt16();
+    // Check that client addresses match.
+    if (settings.ClientAddress <> 0) and (settings.ClientAddress <> value) Then
+    begin
+      if notify = Nil Then
         raise TGXDLMSException.Create(
-                  'Destination addresses do not match. It is '
-                          + IntToStr(value) + '. It should be '
-                          + IntToStr(settings.ClientAddress)
-                          + '.')
-      else
-        settings.ClientAddress := value;
-    end;
+                'Destination addresses do not match. It is '
+                        + IntToStr(value) + '. It should be '
+                        + IntToStr(settings.ClientAddress)
+                        + '.');
+      notify.ClientAddress := value;
+      Result := False;
+    end
+    else
+      settings.ClientAddress := value;
+  end;
 end;
 
 // Handle read response data block result.
@@ -1747,7 +1852,7 @@ begin
         raise TGXDLMSException.Create('HandleActionResponseNormal failed. '
                           + 'Invalid tag.');
 
-    if (data.Xml <> Nil) and (data.Error <> 0) or (data.Data.Position < data.Data.Size) Then
+    if (data.Xml <> Nil) and ((data.Error <> 0) or (data.Data.Position < data.Data.Size)) Then
     begin
         data.Xml.AppendStartTag(LONGWORD(TTranslatorTags.ReturnParameters));
         if ret <> 0 Then
@@ -1913,6 +2018,7 @@ var
   tmp2: TGXByteBuffer;
   di: TGXDataInfo;
 begin
+   writeln(reply.Data.ToHex(true, 0, reply.Data.Size));
     start := reply.Data.Position - 1;
     // Get invoke id.
     invokeId := reply.Data.GetUInt32();
@@ -2329,10 +2435,9 @@ begin
             GetPdu(settings, data);
         end;
         // Get data if all data is read or we want to peek data.
-        if (data.Data.Position <> data.Data.Size) and (
-            (data.Command = TCommand.ReadResponse) or
-             (data.Command = TCommand.GetResponse) and
-             ((data.MoreData = TRequestTypes.rtNone) or data.Peek)) Then
+        if (data.Data.Position <> data.Data.Size) and
+            ((data.Command = TCommand.ReadResponse) or (data.Command = TCommand.GetResponse))
+             and ((data.MoreData = TRequestTypes.rtNone) or data.Peek) Then
         begin
             data.Data.Position := 0;
             GetValueFromData(settings, data);
@@ -2732,19 +2837,36 @@ begin
   end;
 end;
 
-class function TGXDLMS.GetData(settings: TGXDLMSSettings; reply: TGXByteBuffer; data: TGXReplyData) : Boolean;
+class function TGXDLMS.GetData(
+    settings: TGXDLMSSettings;
+    reply: TGXByteBuffer;
+    data: TGXReplyData;
+    notify: TGXReplyData) : Boolean;
 var
-    frame, cnt : Integer;
+  frame, cnt : Integer;
 begin
   frame := 0;
+  Result := True;
   // If DLMS frame is generated.
   if settings.InterfaceType = TInterfaceType.HDLC then
   begin
-    frame := GetHdlcData(settings.isServer, settings, reply, data);
+    frame := GetHdlcData(settings.isServer, settings, reply, data, notify);
+    if (notify <> Nil) and (frame = $13) Then
+    begin
+      data := notify;
+      Result := False;
+    end;
     data.FrameId := frame;
   end
   else if settings.InterfaceType = TInterfaceType.WRAPPER Then
-    GetTcpData(settings, reply, data)
+  begin
+    if Not GetTcpData(settings, reply, data, notify) Then
+    begin
+      if notify <> Nil then
+        data := notify;
+      Result := False;
+    end;
+  end
   else if settings.InterfaceType = TInterfaceType.PDU Then
   begin
     data.PacketLength := reply.Size;
@@ -2759,40 +2881,41 @@ begin
     Exit;
   end;
 
-  GetDataFromFrame(reply, data);
-
+  GetDataFromFrame(reply, data, settings.InterfaceType = TInterfaceType.HDLC);
   // If keepalive or get next frame request.
-  if ((frame <> $13) and ((frame and $1) <> 0)) Then
+  if ((data.Xml <> Nil) or ((frame <> $13) or data.IsMoreData) and ((frame and $1) <> 0)) Then
   begin
-      if (settings.InterfaceType = TInterfaceType.HDLC) and
-        ((data.Error = Byte(TErrorCode.ecRejected)) or (data.Data.Size <> 0)) Then
-      begin
-        if reply.Position <> reply.Size Then
-          reply.Position := (reply.Position + 3);
-      end;
-      Result := true;
-      Exit;
+    Exit;
   end;
   GetPdu(settings, data);
-  if data.Command = TCommand.DataNotification Then
+  if (notify <> Nil) and Result Then
   begin
-      // Check is there more messages left. This is Push message special case.
-      if (reply.Position = reply.Size) Then
+    //Check command to make sure it's not notify message.
+    case data.Command of
+      TCommand.DataNotification,
+      TCommand.GloEventNotificationRequest,
+      TCommand.InformationReport,
+      TCommand.EventNotification,
+      TCommand.DedInformationReportRequest,
+      TCommand.DedEventNotificationRequest:
       begin
-          reply.clear();
+        Result := False;
+        notify.Command := data.Command;
+        data.Command := TCommand.None;
+        notify.Time := data.Time;
+        data.Time := 0;
+        notify.Data.SetArray(data.Data);
+        data.Data.Trim();
       end
-      else
-      begin
-          cnt := reply.Size - reply.Position;
-          reply.Move(reply.Position, 0, cnt);
-          reply.Position := 0;
-      end;
+    end;
   end;
-  Result := true;
 end;
 
 // Get data from HDLC or wrapper frame.
-class procedure TGXDLMS.GetDataFromFrame(reply: TGXByteBuffer; info: TGXReplyData);
+class procedure TGXDLMS.GetDataFromFrame(
+    reply: TGXByteBuffer;
+    info: TGXReplyData;
+    hdlc: Boolean);
 var
   offset, cnt : Integer;
 begin
@@ -2802,7 +2925,9 @@ begin
     begin
       info.Data.Capacity(offset + cnt);
       info.Data.SetArray(reply.GetData(), reply.Position, cnt);
-      reply.Position := (reply.Position + cnt);
+      reply.Position := reply.Position + cnt;
+      if hdlc then
+        reply.Position := reply.Position + 3;
     end;
     // Set position to begin of new data.
     info.Data.Position := offset;
