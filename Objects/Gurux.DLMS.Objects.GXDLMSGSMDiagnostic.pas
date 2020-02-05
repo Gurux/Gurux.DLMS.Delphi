@@ -116,7 +116,7 @@ type
 
     function GetValues() : TArray<TValue>;override;
 
-    function GetAttributeIndexToRead: TArray<Integer>;override;
+    function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
     function GetAttributeCount: Integer;override;
     function GetMethodCount: Integer;override;
     function GetDataType(index: Integer): TDataType;override;
@@ -152,42 +152,42 @@ begin
 end;
 
 
-function TGXDLMSGSMDiagnostic.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSGSMDiagnostic.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
 
     //Operator
-    if not IsRead(2) Then
+    if All or not IsRead(2) Then
       items.Add(2);
 
     //Status
-    if CanRead(3) Then
+    if All or CanRead(3) Then
       items.Add(3);
 
     //CS Attachment
-    if CanRead(4) Then
+    if All or CanRead(4) Then
       items.Add(4);
 
     //PS Status
-    if CanRead(5) Then
+    if All or CanRead(5) Then
       items.Add(5);
 
     //CelLInfo
-    if CanRead(6) Then
+    if All or CanRead(6) Then
       items.Add(6);
 
     //AdjacentCells
-    if CanRead(7) Then
+    if All or CanRead(7) Then
       items.Add(7);
 
     //CaptureTime
-    if CanRead(8) Then
+    if All or CanRead(8) Then
       items.Add(8);
 
     Result := items.ToArray;

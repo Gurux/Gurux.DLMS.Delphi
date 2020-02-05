@@ -62,7 +62,7 @@ TGXDLMSActionSchedule = class(TGXDLMSObject)
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -102,28 +102,24 @@ begin
         Integer(FType), TValue.From(FExecutionTime));
 end;
 
-function TGXDLMSActionSchedule.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSActionSchedule.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-
     //ExecutedScriptLogicalName is static and read only once.
-    if Not IsRead(2) Then
+    if All or Not IsRead(2) Then
       items.Add(2);
-
     //Type is static and read only once.
-    if Not IsRead(3) Then
+    if All or Not IsRead(3) Then
       items.Add(3);
-
     //ExecutionTime is static and read only once.
-    if Not IsRead(4) Then
+    if All or Not IsRead(4) Then
       items.Add(4);
-
     Result := items.ToArray;
   finally
     FreeAndNil(items);

@@ -227,6 +227,9 @@ contains
   Gurux.DLMS.Objects.SingleReadResponse in 'Objects\Gurux.DLMS.Objects.SingleReadResponse.pas',
   Gurux.DLMS.Objects.GXDLMSAccount in 'Objects\Gurux.DLMS.Objects.GXDLMSAccount.pas',
   Gurux.DLMS.Objects.GXDLMSActionSchedule in 'Objects\Gurux.DLMS.Objects.GXDLMSActionSchedule.pas',
-  Gurux.DLMS.SingleReadResponse in 'Gurux.DLMS.SingleReadResponse.pas';
+  Gurux.DLMS.SingleReadResponse in 'Gurux.DLMS.SingleReadResponse.pas',
+  Gurux.DLMS.Objects.GXDLMSIECLocalPortSetup in 'Objects\Gurux.DLMS.Objects.GXDLMSIECLocalPortSetup.pas',
+  Gurux.DLMS.Objects.Enums.MBusEncryptionKeyStatus in 'Objects\Enums\Gurux.DLMS.Objects.Enums.MBusEncryptionKeyStatus.pas',
+  Gurux.DLMS.SetCommandType in 'Gurux.DLMS.SetCommandType.pas';
 
 end.

@@ -30,16 +30,20 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.Objects.GXDLMSIECOpticalPortSetup;
+unit Gurux.DLMS.Objects.Enums.MBusEncryptionKeyStatus;
 
 interface
 
-uses Gurux.DLMS.Objects.GXDLMSIECLocalPortSetup;
-
 type
-//This class is Obsolete. Use GXDLMSIECLocalPortSetup instead.
-TGXDLMSIECOpticalPortSetup = class(TGXDLMSIECLocalPortSetup)
-end;
+
+TMBusEncryptionKeyStatus =
+(
+  NoEncryptionKey = 0,
+  EncryptionKeySet,
+  EncryptionKeyTransferred,
+  EncryptionKeySetAndTransferred,
+  EncryptionKeyInUse
+);
 
 implementation
 

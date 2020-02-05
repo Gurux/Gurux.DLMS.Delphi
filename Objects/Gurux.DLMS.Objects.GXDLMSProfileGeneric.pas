@@ -102,7 +102,7 @@ TGXDLMSProfileGeneric = class(TGXDLMSObject)
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
 
@@ -170,38 +170,38 @@ begin
                 TValue.From(FSortObject), FEntriesInUse, FProfileEntries);
 end;
 
-function TGXDLMSProfileGeneric.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSProfileGeneric.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
 
     //CaptureObjects
-    if (FCaptureObjects.Count = 0) and (Not IsRead(3)) then
+    if All or (FCaptureObjects.Count = 0) and (Not IsRead(3)) then
       items.Add(3);
 
     //Buffer
     items.Add(2);
     //CapturePeriod
-    if Not IsRead(4) then
+    if All or Not IsRead(4) then
       items.Add(4);
 
     //SortMethod
-    if Not IsRead(5) then
+    if All or Not IsRead(5) then
       items.Add(5);
 
     //SortObject
-    if Not IsRead(6) then
+    if All or Not IsRead(6) then
       items.Add(6);
 
     //EntriesInUse
     items.Add(7);
     //ProfileEntries
-    if Not IsRead(8) Then
+    if All or Not IsRead(8) Then
       items.Add(8);
 
     Result := items.ToArray;
@@ -450,7 +450,7 @@ end;
 procedure TGXDLMSProfileGeneric.SetValue(e: TValueEventArgs);
 var
   it: TValue;
-  ot : TObjectType;
+  ot : WORD;
   tmp : TArray<TValue>;
   ln : string;
   attributeIndex, dataIndex : Integer;
@@ -473,11 +473,11 @@ begin
       if Length(tmp) <> 4 then
         raise Exception.Create('Invalid structure format.');
 
-      ot := TObjectType(tmp[0].AsInteger);
+      ot := tmp[0].AsInteger;
       ln := TGXDLMSObject.toLogicalName(tmp[1].ASType<TBytes>);
       attributeIndex := tmp[2].AsInteger;
       dataIndex := tmp[3].AsInteger;
-      obj := e.Settings.Objects.FindByLN(ot, ln);
+      obj := e.Settings.Objects.FindByLN(TObjectType(ot), ln);
       if obj = Nil then
       begin
         obj := TGXObjectFactory.CreateObject(ot);
@@ -503,14 +503,14 @@ begin
     tmp := e.Value.AsType<TArray<TValue>>;
     if Length(tmp) <> 4 then
       raise Exception.Create('SetValue failed. Invalid structure format.');
-    ot := TObjectType(tmp[0].AsInteger);
+    ot := tmp[0].AsInteger;
     ln := TGXDLMSObject.toLogicalName(tmp[1].AsType<TBytes>);
     FSortAttributeIndex := tmp[2].AsInteger;
     FSortDataIndex := tmp[3].AsInteger;
     FSortObject := Nil;
     for item in FCaptureObjects do
     begin
-        if (item.Target.ObjectType = ot) and (item.Target.LogicalName = ln) Then
+        if (item.Target.ObjectType = TObjectType(ot)) and (item.Target.LogicalName = ln) Then
         begin
           FSortObject := item.Target;
           break;

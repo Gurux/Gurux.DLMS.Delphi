@@ -182,7 +182,7 @@ private
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -227,62 +227,62 @@ begin
   FTotalAmountRemaining, FProportion);
 end;
 
-function TGXDLMSCharge.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSCharge.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
 
     // TotalAmountPaid
-    if CanRead(2) Then
+    if All or CanRead(2) Then
       items.Add(2);
 
     // ChargeType
-    if CanRead(3) Then
+    if All or CanRead(3) Then
       items.Add(3);
 
     // Priority
-    if CanRead(4) Then
+    if All or CanRead(4) Then
       items.Add(4);
 
     // UnitChargeActive
-    if CanRead(5) Then
+    if All or CanRead(5) Then
       items.Add(5);
 
     // UnitChargePassive
-    if CanRead(6) Then
+    if All or CanRead(6) Then
       items.Add(6);
 
     // UnitChargeActivationTime
-    if CanRead(7) Then
+    if All or CanRead(7) Then
       items.Add(7);
 
     // Period
-    if CanRead(8) Then
+    if All or CanRead(8) Then
       items.Add(8);
 
     // ChargeConfiguration
-    if CanRead(9) Then
+    if All or CanRead(9) Then
       items.Add(9);
 
     // LastCollectionTime
-    if CanRead(10) Then
+    if All or CanRead(10) Then
       items.Add(10);
 
     // LastCollectionAmount
-    if CanRead(11) Then
+    if All or CanRead(11) Then
       items.Add(11);
 
     // TotalAmountRemaining
-    if CanRead(12) Then
+    if All or CanRead(12) Then
       items.Add(12);
 
     // Proportion
-    if CanRead(13) Then
+    if All or CanRead(13) Then
       items.Add(13);
 
     Result := items.ToArray;

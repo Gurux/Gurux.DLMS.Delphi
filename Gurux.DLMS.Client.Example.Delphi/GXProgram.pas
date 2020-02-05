@@ -118,6 +118,8 @@ TGXProgram = class
 
   // Read list of attributes.
   procedure ReadList(list: TList<TPair<TGXDLMSObject, Integer>>);
+  // Write list of attributes.
+  procedure WriteList(list: TList<TPair<TGXDLMSObject, Integer>>);
 
   end;
 
@@ -275,6 +277,26 @@ begin
   end;
 end;
 
+procedure TGXProgram.WriteList(list: TList<TPair<TGXDLMSObject, Integer>>);
+var
+  reply: TGXReplyData;
+  data: TArray<TBytes>;
+  it: TBytes;
+  pos: Integer;
+begin
+  data := Client.WriteList(list);
+  reply := TGXReplyData.Create();
+  try
+    for it in data do
+    begin
+      ReadDataBlock(it, reply);
+      reply.Clear();
+    end;
+  finally
+    FreeAndNil(reply);
+  end;
+end;
+
 procedure TGXProgram.GetProfileGenericColumns;
 var
   cols, tmp: TArray<TGXDLMSObject>;
@@ -349,7 +371,7 @@ begin
 
     if FTrace > TTraceLevel.tlWarning Then
       WriteValue('-------- Reading ' + TGXDLMSSecureClient.ObjectTypeToString(it.ObjectType) + ' ' + it.LogicalName + ' ' + it.Description);
-    for pos in it.GetAttributeIndexToRead() do
+    for pos in it.GetAttributeIndexToRead(true) do
     begin
       try
         val := Read(it, pos);

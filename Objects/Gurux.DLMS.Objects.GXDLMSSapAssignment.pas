@@ -56,7 +56,7 @@ TGXDLMSSapAssignment = class(TGXDLMSObject)
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
 end;
@@ -93,20 +93,18 @@ begin
   Result := TArray<TValue>.Create(FLogicalName, FSapAssignmentList);
 end;
 
-function TGXDLMSSapAssignment.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSSapAssignment.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-
     //SapAssignmentList
-    if Not IsRead(2) Then
+    if All or Not IsRead(2) Then
       items.Add(2);
-
     Result := items.ToArray;
   finally
     FreeAndNil(items);

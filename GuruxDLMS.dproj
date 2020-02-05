@@ -276,11 +276,15 @@
         <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSAccount.pas"/>
         <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSActionSchedule.pas"/>
         <DCCReference Include="Gurux.DLMS.SingleReadResponse.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSIECLocalPortSetup.pas"/>
+        <DCCReference Include="Objects\Enums\Gurux.DLMS.Objects.Enums.MBusEncryptionKeyStatus.pas"/>
+        <DCCReference Include="Gurux.DLMS.SetCommandType.pas"/>
         <RcItem Include="OBISCodes.txt">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>Text</ResourceType>
             <ResourceId>OBIS_CODES</ResourceId>
         </RcItem>
+        <None Include="Objects\Enums\__history"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

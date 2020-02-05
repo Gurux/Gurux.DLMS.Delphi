@@ -65,7 +65,7 @@ TGXDLMSPushSetup = class(TGXDLMSObject)
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -118,39 +118,33 @@ begin
   Result := client.Method(Self, 1, 0, TDataType.dtInt8);
 end;
 
-function TGXDLMSPushSetup.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSPushSetup.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-
     //PushObjectList
-    if CanRead(2) then
+    if All or CanRead(2) then
       items.Add(2);
-
     //SendDestinationAndMethod
-    if (CanRead(3)) then
+    if All or CanRead(3) then
       items.Add(3);
     //CommunicationWindow
-    if (CanRead(4)) then
+    if All or CanRead(4) then
       items.Add(4);
-
     //RandomisationStartInterval
-    if (CanRead(5)) then
+    if All or CanRead(5) then
       items.Add(5);
-
     //NumberOfRetries
-    if (CanRead(6)) then
+    if All or CanRead(6) then
       items.Add(6);
-
     //RepetitionDelay
-    if (CanRead(7)) then
+    if All or CanRead(7) then
       items.Add(7);
-
     Result := items.ToArray;
   finally
     FreeAndNil(items);
@@ -259,7 +253,7 @@ var
   starttm, endtm : TGXDateTime;
   co: TGXDLMSCaptureObject;
   ln: String;
-  ot: TObjectType;
+  ot: WORD;
 begin
   if (e.Index = 1) then
   begin
@@ -273,9 +267,9 @@ begin
       for it in e.Value.AsType<TArray<TValue>> do
       begin
         tmp := it.AsType<TArray<TValue>>();
-        ot := TObjectType(tmp[0].AsInteger);
+        ot := tmp[0].AsInteger;
         ln := TGXCommon.ToLogicalName(tmp[1]);
-        obj := e.Settings.Objects.FindByLN(ot, ln);
+        obj := e.Settings.Objects.FindByLN(TObjectType(ot), ln);
         if obj = Nil then
         begin
           obj := TGXObjectFactory.CreateObject(ot);

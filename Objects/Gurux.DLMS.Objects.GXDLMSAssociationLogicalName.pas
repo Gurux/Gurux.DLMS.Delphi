@@ -34,16 +34,25 @@ unit Gurux.DLMS.Objects.GXDLMSAssociationLogicalName;
 
 interface
 
-uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-Gurux.DLMS.AssociationStatus, Gurux.DLMS.GXAttributeCollection,
-Gurux.DLMS.AccessMode, Gurux.DLMS.MethodAccessMode,
-Gurux.DLMS.GXAuthenticationMechanismName,
-Gurux.DLMS.GXApplicationContextName,
-Gurux.DLMS.TGXxDLMSContextType,
-GXByteBuffer,
-Gurux.DLMS.IGXDLMSClient, Gurux.DLMS.Authentication,
-Gurux.DLMS.Conformance;
+uses GXCommon,
+  Classes,
+  SysUtils,
+  Rtti,
+  System.Generics.Collections,
+  Gurux.DLMS.ObjectType,
+  Gurux.DLMS.DataType,
+  Gurux.DLMS.GXDLMSObject,
+  Gurux.DLMS.AssociationStatus,
+  Gurux.DLMS.GXAttributeCollection,
+  Gurux.DLMS.AccessMode,
+  Gurux.DLMS.MethodAccessMode,
+  Gurux.DLMS.GXAuthenticationMechanismName,
+  Gurux.DLMS.GXApplicationContextName,
+  Gurux.DLMS.TGXxDLMSContextType,
+  GXByteBuffer,
+  Gurux.DLMS.IGXDLMSClient,
+  Gurux.DLMS.Authentication,
+  Gurux.DLMS.Conformance;
 
 type
 TGXDLMSAssociationLogicalName = class(TGXDLMSObject)
@@ -56,6 +65,8 @@ TGXDLMSAssociationLogicalName = class(TGXDLMSObject)
   FApplicationContextName : TGXApplicationContextName;
   FClientSAP : byte;
   FServerSAP : Word;
+  FUserList : TStringList;
+  FCurrentUser: string;
 
   destructor Destroy; override;
 
@@ -89,9 +100,12 @@ TGXDLMSAssociationLogicalName = class(TGXDLMSObject)
 
   property SecuritySetupReference: string read FSecuritySetupReference write FSecuritySetupReference;
 
+  property UserList: TStringList read FUserList write FUserList;
+  property CurrentUser: string read FCurrentUser write FCurrentUser;
+
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -121,6 +135,8 @@ begin
   FApplicationContextName := TGXApplicationContextName.Create();
   FXDLMSContextInfo := TGXxDLMSContextType.Create();
   FAuthenticationMechanismName := TGXAuthenticationMechanismName.Create();
+  FUserList :=  TStringList.Create();
+  FVersion := 3;
 end;
 
 destructor TGXDLMSAssociationLogicalName.Destroy;
@@ -129,6 +145,7 @@ begin
   FreeAndNil(FObjectList);
   FreeAndNil(FApplicationContextName);
   FreeAndNil(FAuthenticationMechanismName);
+  FreeAndNil(FUserList);
   inherited;
 end;
 
@@ -152,52 +169,59 @@ begin
   Result := TArray<TValue>.Create(FLogicalName, FObjectList,
           IntToStr(FClientSAP) + '/' + IntToStr(FServerSAP),
           FApplicationContextName, FXDLMSContextInfo, FAuthenticationMechanismName, TValue.From(FSecret),
-            Integer(FAssociationStatus), FSecuritySetupReference);
+            Integer(FAssociationStatus), FSecuritySetupReference, FUserList, FCurrentUser);
 end;
 
-function TGXDLMSAssociationLogicalName.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSAssociationLogicalName.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
 
     //ObjectList is static and read only once.
-    if Not IsRead(2) Then
+    if All or Not IsRead(2) Then
       items.Add(2);
 
     //associated_partners_id is static and read only once.
-    if Not IsRead(3) Then
+    if All or Not IsRead(3) Then
       items.Add(3);
 
     //Application Context Name is static and read only once.
-    if Not IsRead(4) Then
+    if All or Not IsRead(4) Then
       items.Add(4);
 
     //xDLMS Context Info
-    if Not IsRead(5) Then
+    if All or Not IsRead(5) Then
       items.Add(5);
 
     // Authentication Mechanism Name
-    if Not IsRead(6) Then
+    if All or Not IsRead(6) Then
       items.Add(6);
 
     // Secret
-    if Not IsRead(7) Then
+    if All or Not IsRead(7) Then
       items.Add(7);
 
     // Association Status
-    if Not IsRead(8) Then
+    if All or Not IsRead(8) Then
       items.Add(8);
 
     //Security Setup Reference is from version 1.
-    if (Version > 0) and (Not IsRead(9)) Then
+    if (Version > 0) and (All or Not IsRead(9)) Then
       items.Add(9);
-
-    Result := items.ToArray;
+    //User list and current user are in version 2.
+    if Version > 1 Then
+    begin
+        if All or Not IsRead(10) Then
+          items.Add(10);
+        if All or Not IsRead(11) Then
+          items.Add(11);
+    end;
+  Result := items.ToArray;
   finally
     FreeAndNil(items);
   end;
@@ -205,16 +229,21 @@ end;
 
 function TGXDLMSAssociationLogicalName.GetAttributeCount: Integer;
 begin
-  //Security Setup Reference is from version 1.
   if FVersion > 0 Then
+    Result := 11
+  //Security Setup Reference is from version 1.
+  else if FVersion > 0 Then
     Result := 9
   else
-    Result := 9;
+    Result := 8;
 end;
 
 function TGXDLMSAssociationLogicalName.GetMethodCount: Integer;
 begin
-  Result := 4;
+  if FVersion > 1 Then
+    Result := 6
+  else
+    Result := 4;
 end;
 
 // Returns Association View.
@@ -287,49 +316,52 @@ end;
 
 function TGXDLMSAssociationLogicalName.GetDataType(index: Integer): TDataType;
 begin
-  if (index = 1) then
-  begin
-    Result := TDataType.dtOctetString;
-  end
-  else if index = 2 Then
-  begin
-    Result := TDataType.dtArray;
-  end
-  else if index = 3 Then
-  begin
-    Result := TDataType.dtStructure;
-  end
-  else if index = 4 Then
-  begin
-    Result := TDataType.dtStructure;
-  end
-  else if index = 5 Then
-  begin
-    Result := TDataType.dtStructure;
-  end
-  else if index = 6 Then
-  begin
-    Result := TDataType.dtStructure;
-  end
-  else if index = 7 Then
-  begin
-    Result := TDataType.dtOctetString;
-  end
-  else if index = 8 Then
-  begin
-    Result := TDataType.dtEnum;
-  end
-  else if index = 9 Then
-  begin
-    Result := TDataType.dtOctetString;
-  end
+  case index of
+  1: Result := TDataType.dtOctetString;
+  2: Result := TDataType.dtArray;
+  3: Result := TDataType.dtStructure;
+  4: Result := TDataType.dtStructure;
+  5: Result := TDataType.dtStructure;
+  6: Result := TDataType.dtStructure;
+  7: Result := TDataType.dtOctetString;
+  8: Result := TDataType.dtEnum;
+  9: Result := TDataType.dtOctetString;
+  10: Result := TDataType.dtArray;
+  11: Result := TDataType.dtStructure;
   else
   	raise Exception.Create('GetDataType failed. Invalid attribute index.');
+  end;
+end;
+
+/// Returns User list.
+function GetUserList(AUserList: TStringList; e: TValueEventArgs): TBytes;
+var
+  it: string;
+  data: TGXByteBuffer;
+  tmp: TStrings;
+begin
+  try
+    data:= TGXByteBuffer.Create();
+    for it in AUserList do
+    begin
+      ExtractStrings(['='], [], PChar(it), tmp);
+      data.SetUInt8(Integer(TDataType.dtStructure));
+      data.SetUInt8(2); //Count
+      TGXCommon.SetData(data, TDataType.dtUInt8, tmp[0]); //Id
+      TGXCommon.SetData(data, TDataType.dtString, tmp[1]); //Name
+      tmp.Clear();
+    end;
+    Result := data.ToArray();
+  finally
+    FreeAndNil(tmp);
+    FreeAndNil(data);
+  end;
 end;
 
 function TGXDLMSAssociationLogicalName.GetValue(e: TValueEventArgs): TValue;
 var
   data, bb : TGXByteBuffer;
+  list: TStrings;
 begin
   if e.Index = 1 then
   begin
@@ -426,6 +458,35 @@ begin
   end
   else if e.Index = 9 Then
     Result := TValue.From(TGXDLMSObject.GetLogicalName(FSecuritySetupReference))
+  else if e.Index = 10 Then
+    Result := TValue.From(GetUserList(FUserList, e))
+  else if e.Index = 11 Then
+  begin
+    list:= Nil;
+    data:= TGXByteBuffer.Create;
+    try
+      if FCurrentUser = '' then
+      begin
+        //Add structure size.
+        data.SetUInt8(2);
+        TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+        TGXCommon.SetData(data, TDataType.dtString, '');
+      end
+      else
+      begin
+        data.SetUInt8(Integer(TDataType.dtStructure));
+        ExtractStrings(['='], [], PChar(FCurrentUser), List);
+        //Add structure size.
+        data.SetUInt8(2);
+        TGXCommon.SetData(data, TDataType.dtUInt8, List[0]);
+        TGXCommon.SetData(data, TDataType.dtString, List[1]);
+      end;
+      Result := TValue.From(data.ToArray());
+    finally
+      FreeAndNil(list);
+      FreeAndNil(data);
+    end;
+  end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');
 end;
@@ -547,6 +608,22 @@ begin
   end
   else if e.Index = 9 Then
     FSecuritySetupReference := TGXCommon.ToLogicalName(e.Value)
+  else if e.Index = 10 Then
+  begin
+    FUserList.Clear();
+    if Not e.Value.IsEmpty Then
+    begin
+      for item in e.Value.AsType<TArray<TValue>> do
+        FUserList.Add(IntToStr(item.GetArrayElement(0).AsInteger()) + '=' + item.GetArrayElement(1).ToString());
+    end;
+  end
+  else if e.Index = 11 Then
+  begin
+    if Not e.Value.IsEmpty Then
+      FCurrentUser := IntToStr(e.Value.GetArrayElement(0).AsInteger()) + '=' + e.Value.GetArrayElement(1).ToString()
+    else
+      FCurrentUser := '';
+  end
   else
     raise Exception.Create('SetValue failed. Invalid attribute index.');
 end;

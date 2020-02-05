@@ -57,7 +57,7 @@ TGXDLMSRegisterMonitor = class(TGXDLMSObject)
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -99,28 +99,24 @@ begin
   Result := TArray<TValue>.Create(FLogicalName, TValue.From(FThresholds), TValue.From(FMonitoredValue), TValue.From(FActions));
 end;
 
-function TGXDLMSRegisterMonitor.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSRegisterMonitor.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-
     //Thresholds
-    if Not IsRead(2) Then
+    if All or Not IsRead(2) Then
       items.Add(2);
-
     //MonitoredValue
-    if Not IsRead(3) Then
+    if All or Not IsRead(3) Then
       items.Add(3);
-
     //Actions
-    if Not IsRead(4) Then
+    if All or Not IsRead(4) Then
       items.Add(4);
-
     Result := items.ToArray;
   finally
     FreeAndNil(items);

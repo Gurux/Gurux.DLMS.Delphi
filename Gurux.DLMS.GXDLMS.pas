@@ -716,11 +716,8 @@ begin
     try
 
       frame := 0;
-      if p.Command = TCommand.AARQ Then
-        frame := $10
-      else if (p.Command = TCommand.EventNotification) or (p.Command = TCommand.DataNotification) Then
+      if (p.Command = TCommand.EventNotification) or (p.Command = TCommand.DataNotification) Then
         frame := $13;
-
       repeat
       begin
         GetLNPdu(p, bb);
@@ -744,17 +741,16 @@ begin
             else if (p.Settings.InterfaceType = TInterfaceType.PDU) Then
             begin
               list.add(bb.ToArray());
-              frame := 0;
               break;
             end
             else
               raise EArgumentException.Create('InterfaceType');
         end;
         bb.Clear();
+        frame := 0;
       end;
       until (p.Data = Nil) or (p.Data.position = p.Data.Size);
       Result := list.ToArray();
-
     finally
       list.Free;
     end;
@@ -772,59 +768,49 @@ var
   bb: TGXByteBuffer;
   list: TList<TBytes>;
 begin
-
   bb := TGXByteBuffer.Create();
   try
-
     list := TList<TBytes>.Create();
     try
-
       frame := $0;
-      if p.Command = TCommand.AARQ Then
-        frame := $10
-      else if p.Command = TCommand.InformationReport Then
-        frame := $13
-      else if p.Command = TCommand.NONE Then
-        frame := p.Settings.NextSend(true);
-
+      if (p.Command = TCommand.InformationReport) or (p.Command = TCommand.DataNotification) Then
+        frame := $13;
       repeat
       begin
-          GetSNPdu(p, bb);
-          if (p.Command <> TCommand.AARQ) and (p.Command <> TCommand.AARE) Then
-            Assert(Not p.Settings.MaxPduSize > bb.Size);
+        GetSNPdu(p, bb);
+        if (p.Command <> TCommand.AARQ) and (p.Command <> TCommand.AARE) Then
+          Assert(Not p.Settings.MaxPduSize > bb.Size);
 
-          // Command is not add to next PDUs.
-          while (bb.Position <> bb.Size) do
+        // Command is not add to next PDUs.
+        while (bb.Position <> bb.Size) do
+        begin
+          if p.Settings.InterfaceType = TInterfaceType.WRAPPER Then
+            list.Add(GetWrapperFrame(p.Settings, bb))
+          else if p.Settings.InterfaceType = TInterfaceType.HDLC Then
           begin
-              if p.Settings.InterfaceType = TInterfaceType.WRAPPER Then
-                list.Add(GetWrapperFrame(p.Settings, bb))
-              else if p.Settings.InterfaceType = TInterfaceType.HDLC Then
-              begin
-                  list.add(GetHdlcFrame(p.Settings, frame, bb));
-                  if bb.position <> bb.Size Then
-                    frame := p.Settings.NextSend(false);
-              end
-              else if p.Settings.InterfaceType = TInterfaceType.PDU Then
-              begin
-                  list.Add(bb.ToArray());
-                  break;
-              end
-              else
-                raise EArgumentException.Create('InterfaceType');
-          end;
-          bb.clear();
+            list.add(GetHdlcFrame(p.Settings, frame, bb));
+            if bb.position <> bb.Size Then
+              frame := p.Settings.NextSend(false);
+          end
+          else if p.Settings.InterfaceType = TInterfaceType.PDU Then
+          begin
+            list.Add(bb.ToArray());
+            break;
+          end
+          else
+            raise EArgumentException.Create('InterfaceType');
+        end;
+        bb.clear();
+        frame := 0;
       end;
       until (p.Data = Nil) or (p.Data.Position = p.Data.Size);
       Result := list.ToArray;
-
     finally
       list.Free;
     end;
-
   finally
     bb.Free;
   end;
-
 end;
 
 class function TGXDLMS.AppendMultipleSNBlocks(p: TGXDLMSSNParameters; header: TGXByteBuffer; reply: TGXByteBuffer): Integer;
@@ -1653,7 +1639,7 @@ begin
   if cnt <> 1 Then
   begin
     values := TList<TValue>.Create();
-    if reply.Value.GetArrayLength <> 0 Then
+    if reply.Value.IsArray and (reply.Value.GetArrayLength <> 0) Then
       values.AddRange(reply.Value.AsType<TArray<TValue>>);
     reply.Value := Nil;
   end;

@@ -103,7 +103,7 @@ TGXDLMSLimiter = class(TGXDLMSObject)
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -151,56 +151,45 @@ begin
             TValue.From(TArray<TValue>.Create(FActionOverThreshold, FActionUnderThreshold)));
 end;
 
-function TGXDLMSLimiter.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSLimiter.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-
     //MonitoredValue
-    if CanRead(2) Then
+    if All or CanRead(2) Then
       items.Add(2);
-
     //ThresholdActive
-    if CanRead(3) Then
+    if All or CanRead(3) Then
       items.Add(3);
-
     //ThresholdNormal
-    if CanRead(4) Then
+    if All or CanRead(4) Then
       items.Add(4);
-
     //ThresholdEmergency
-    if CanRead(5) Then
+    if All or CanRead(5) Then
       items.Add(5);
-
     //MinOverThresholdDuration
-    if CanRead(6) Then
+    if All or CanRead(6) Then
       items.Add(6);
-
     //MinUnderThresholdDuration
-    if CanRead(7) Then
+    if All or CanRead(7) Then
       items.Add(7);
-
     //EmergencyProfile
-    if CanRead(8) Then
+    if All or CanRead(8) Then
       items.Add(8);
-
     //EmergencyProfileGroup
-    if CanRead(9) Then
+    if All or CanRead(9) Then
       items.Add(9);
-
     //EmergencyProfileActive
-    if CanRead(10) Then
+    if All or CanRead(10) Then
       items.Add(10);
-
     //Actions
-    if CanRead(11) Then
+    if All or CanRead(11) Then
       items.Add(11);
-
     Result := items.ToArray;
   finally
     FreeAndNil(items);

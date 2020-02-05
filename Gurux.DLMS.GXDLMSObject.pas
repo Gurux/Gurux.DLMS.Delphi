@@ -96,7 +96,7 @@ TGXDLMSObject = class
 
   public
 
-  function GetAttributeIndexToRead: TArray<Integer>;virtual;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;overload;virtual;
 
   function GetAttributeCount: Integer;virtual;
   function GetMethodCount: Integer;virtual;
@@ -443,9 +443,9 @@ begin
   raise Exception.Create('GetValues not implemented.');
 end;
 
-function TGXDLMSObject.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSObject.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 begin
-  raise Exception.Create('GetAttributeIndexToRead not implemented.');
+  raise Exception.Create('GetAttributeIndexToRead(All: Boolean) not implemented.');
 end;
 
 function TGXDLMSObject.GetAttributeCount: Integer;
@@ -953,11 +953,11 @@ begin
     if IsServer then
     begin
         FSenderFrame := $1E;
-        FReceiverFrame := $EE;
+        FReceiverFrame := $FE;
     end
     else
     begin
-        FSenderFrame := $10;
+        FSenderFrame := $FE;
         FReceiverFrame := $E;
     end;
 end;

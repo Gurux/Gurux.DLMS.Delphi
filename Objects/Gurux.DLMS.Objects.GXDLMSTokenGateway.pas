@@ -134,7 +134,7 @@ private
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -174,36 +174,30 @@ begin
   TValue.From(FDeliveryMethod), TValue.From(TArray<TValue>.Create(Integer(FStatusCode), TValue.From(FDataValue))));
 end;
 
-function TGXDLMSTokenGateway.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSTokenGateway.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-
     //Token
-    if CanRead(2) Then
+    if All or CanRead(2) Then
       items.Add(2);
-
     //Time
-    if CanRead(3) Then
+    if All or CanRead(3) Then
       items.Add(3);
-
     //Description
-    if CanRead(4) Then
+    if All or CanRead(4) Then
       items.Add(4);
-
     //DeliveryMethod
-    if CanRead(5) Then
+    if All or CanRead(5) Then
       items.Add(5);
-
     //Status
-    if CanRead(6) Then
+    if All or CanRead(6) Then
       items.Add(6);
-
     Result := items.ToArray;
   finally
     FreeAndNil(items);

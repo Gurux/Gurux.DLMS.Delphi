@@ -86,7 +86,7 @@ public
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -144,52 +144,42 @@ begin
                 TValue.From(FDayProfileTablePassive), FTime);
 end;
 
-function TGXDLMSActivityCalendar.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSActivityCalendar.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-
     //CalendarNameActive
-    if CanRead(2) Then
+    if All or CanRead(2) Then
       items.Add(2);
-
     //SeasonProfileActive
-    if CanRead(3) Then
+    if All or CanRead(3) Then
       items.Add(3);
-
     //WeekProfileTableActive
-    if CanRead(4) Then
+    if All or CanRead(4) Then
       items.Add(4);
-
     //DayProfileTableActive
-    if CanRead(5) Then
+    if All or CanRead(5) Then
       items.Add(5);
-
     //CalendarNamePassive
-    if CanRead(6) Then
+    if All or CanRead(6) Then
       items.Add(6);
-
     //SeasonProfileActive
-    if CanRead(7) Then
+    if All or CanRead(7) Then
       items.Add(7);
-
     //WeekProfileTableActive
-    if CanRead(8) Then
+    if All or CanRead(8) Then
       items.Add(8);
-
     //DayProfileTableActive
-    if CanRead(9) Then
+    if All or CanRead(9) Then
       items.Add(9);
-
     //Time.
-    if CanRead(10) Then
+    if All or CanRead(10) Then
       items.Add(10);
-
     Result := items.ToArray;
   finally
     FreeAndNil(items);

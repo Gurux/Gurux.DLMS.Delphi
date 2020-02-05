@@ -264,6 +264,9 @@ public
   class function ToLogicalName(buff: TBytes): string;overload;
   class function IsAsciiString(value: TBytes): Boolean;static;
   class function ToHexString(bytes : TBytes; addSpace : Boolean; Index : Integer; Count : Integer): String; static;
+
+  //Is Numeric Value
+  class function IsNumeric(value: TValue): Boolean;static;
 end;
 
 implementation
@@ -1092,6 +1095,7 @@ begin
   begin
     if (info.Xml.Comments and (Length(value) <> 0)) Then
     begin
+      isString := False;
       // This might be logical name.
       if (Length(value) = 6) and (value[5] = $FF) Then
       begin
@@ -1117,15 +1121,15 @@ begin
             isString := false;
           end;
         end;
-        end;
-        if isString Then
-          isString := TGXCommon.IsAsciiString(value);
+      end;
+      if isString Then
+        isString := TGXCommon.IsAsciiString(value);
 
-        if isString Then
-        begin
-          str := str + TEncoding.ASCII.GetString(value);
-          info.Xml.AppendComment(str);
-        end;
+      if isString Then
+      begin
+        str := str + TEncoding.ASCII.GetString(value);
+        info.Xml.AppendComment(str);
+      end;
     end;
     str := TGXCommon.ToHexString(value, False, 0, Length(value));
     info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', str);
@@ -1680,7 +1684,7 @@ class procedure TGXCommon.SetData(buff : TGXByteBuffer; dataType : TDataType; va
 begin
   if ((dataType = TDataType.dtArray) or (dataType = TDataType.dtSTRUCTURE)) and value.IsType<TBytes> then
     // If byte array is added do not add type.
-    buff.SetData(value.AsType<TBytes>)
+    buff.SetArray(value.AsType<TBytes>)
  else
  begin
     buff.setUInt8(Integer(dataType));
@@ -2107,4 +2111,15 @@ begin
     end;
 end;
 
+class function TGXCommon.IsNumeric(value: TValue): Boolean;
+begin
+  Result := (value.TypeInfo = TypeInfo(BYTE)) or
+            (value.TypeInfo = TypeInfo(UInt16)) or
+            (value.TypeInfo = TypeInfo(UInt32)) or
+            (value.TypeInfo = TypeInfo(UInt64)) or
+            (value.TypeInfo = TypeInfo(char)) or
+            (value.TypeInfo = TypeInfo(Int16)) or
+            (value.TypeInfo = TypeInfo(Int32)) or
+            (value.TypeInfo = TypeInfo(Int64));
+end;
 end.

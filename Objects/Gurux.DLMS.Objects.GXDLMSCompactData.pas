@@ -66,7 +66,7 @@ public
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -101,29 +101,29 @@ begin
           TValue.From(FCaptureMethod));
 end;
 
-function TGXDLMSCompactData.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSCompactData.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
     // Buffer
-    if CanRead(2) then
+    if All or CanRead(2) then
       items.Add(2);
     // CaptureObjects
-    if CanRead(3) then
+    if All or CanRead(3) then
       items.Add(3);
     // TemplateId
-    if CanRead(4) then
+    if All or CanRead(4) then
       items.Add(4);
     // TemplateDescription
-    if CanRead(5) then
+    if All or CanRead(5) then
       items.Add(5);
     // CaptureMethod
-    if CanRead(6) then
+    if All or CanRead(6) then
       items.Add(6);
     Result := items.ToArray;
   finally
@@ -200,7 +200,7 @@ end;
 procedure TGXDLMSCompactData.SetCaptureObjects(e: TValueEventArgs);
 var
   it: TValue;
-  ot : TObjectType;
+  ot : WORD;
   tmp : TArray<TValue>;
   ln : string;
   attributeIndex, dataIndex : Integer;
@@ -214,11 +214,11 @@ begin
     if Length(tmp) <> 4 then
       raise Exception.Create('Invalid structure format.');
 
-    ot := TObjectType(tmp[0].AsInteger);
+    ot := tmp[0].AsInteger;
     ln := TGXDLMSObject.toLogicalName(tmp[1].ASType<TBytes>);
     attributeIndex := tmp[2].AsInteger;
     dataIndex := tmp[3].AsInteger;
-    obj := e.Settings.Objects.FindByLN(ot, ln);
+    obj := e.Settings.Objects.FindByLN(TObjectType(ot), ln);
     if obj = Nil then
     begin
       obj := TGXObjectFactory.CreateObject(ot);

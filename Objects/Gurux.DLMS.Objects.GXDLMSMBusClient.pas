@@ -35,7 +35,8 @@ unit Gurux.DLMS.Objects.GXDLMSMBusClient;
 interface
 
 uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject;
+Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
+Gurux.DLMS.Objects.Enums.MBusEncryptionKeyStatus;
 
 type
 TGXDLMSMBusClient = class(TGXDLMSObject)
@@ -46,6 +47,8 @@ TGXDLMSMBusClient = class(TGXDLMSObject)
   FPrimaryAddress, FDataHeaderVersion, FDeviceType, FAccessNumber,
   FStatus, FAlarm : Integer;
   FManufacturerID: UInt16;
+  FConfiguration: UInt16;
+  FEncryptionKeyStatus: TMBusEncryptionKeyStatus;
 
   public
   destructor Destroy;override;
@@ -79,10 +82,12 @@ TGXDLMSMBusClient = class(TGXDLMSObject)
   property Status: Integer read FStatus write FStatus;
 
   property Alarm: Integer read FAlarm write FAlarm;
+  property Configuration: UInt16 read FConfiguration write FConfiguration;
+  property EncryptionKeyStatus: TMBusEncryptionKeyStatus read FEncryptionKeyStatus write FEncryptionKeyStatus;
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -119,66 +124,72 @@ end;
 
 function TGXDLMSMBusClient.GetValues() : TArray<TValue>;
 begin
-  Result := TArray<TValue>.Create(FLogicalName, FMBusPortReference,
+  if FVersion = 0 Then
+    Result := TArray<TValue>.Create(FLogicalName, FMBusPortReference,
+              FCaptureDefinition, FCapturePeriod,
+              FPrimaryAddress, FIdentificationNumber, FManufacturerID,
+              FDataHeaderVersion, DeviceType, AccessNumber,
+              FStatus, FAlarm)
+  Else
+    Result := TArray<TValue>.Create(FLogicalName, FMBusPortReference,
             FCaptureDefinition, FCapturePeriod,
-            FPrimaryAddress, FIdentificationNumber, FManufacturerID, FDataHeaderVersion, DeviceType, AccessNumber,
-            FStatus, FAlarm);
+            FPrimaryAddress, FIdentificationNumber, FManufacturerID,
+            FDataHeaderVersion, DeviceType, AccessNumber,
+            FStatus, FAlarm, FConfiguration, TValue.From(FEncryptionKeyStatus));
 end;
 
-function TGXDLMSMBusClient.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSMBusClient.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-
     //MBusPortReference
-    if CanRead(2) Then
+    if All or CanRead(2) Then
       items.Add(2);
-
     //CaptureDefinition
-    if CanRead(3) Then
+    if All or CanRead(3) Then
       items.Add(3);
-
     //CapturePeriod
-    if CanRead(4) Then
+    if All or CanRead(4) Then
       items.Add(4);
-
     //PrimaryAddress
-    if CanRead(5) Then
+    if All or CanRead(5) Then
       items.Add(5);
-
     //IdentificationNumber
-    if CanRead(6) Then
+    if All or CanRead(6) Then
       items.Add(6);
-
     //ManufacturerID
-    if CanRead(7) Then
+    if All or CanRead(7) Then
       items.Add(7);
-
     //Version
-    if CanRead(8) Then
+    if All or CanRead(8) Then
       items.Add(8);
-
     //DeviceType
-    if CanRead(9) Then
+    if All or CanRead(9) Then
       items.Add(9);
-
     //AccessNumber
-    if CanRead(10) Then
+    if All or CanRead(10) Then
       items.Add(10);
-
     //Status
-    if CanRead(11) Then
+    if All or CanRead(11) Then
       items.Add(11);
-
     //Alarm
-    if CanRead(12) Then
+    if All or CanRead(12) Then
       items.Add(12);
+    if FVersion > 0 Then
+    begin
+      //Configuration
+      if all or CanRead(13) Then
+        items.Add(13);
 
+      //EncryptionKeyStatus
+      if all or CanRead(14) Then
+        items.Add(14);
+    end;
     Result := items.ToArray;
   finally
     FreeAndNil(items);
@@ -187,7 +198,10 @@ end;
 
 function TGXDLMSMBusClient.GetAttributeCount: Integer;
 begin
-  Result := 12;
+  if FVersion = 0 Then
+    Result := 12
+  else
+    Result := 14;
 end;
 
 function TGXDLMSMBusClient.GetMethodCount: Integer;
@@ -197,110 +211,46 @@ end;
 
 function TGXDLMSMBusClient.GetDataType(index: Integer): TDataType;
 begin
-  if (index = 1) then
-  begin
-    Result := TDataType.dtOctetString;
-  end
-  else if index = 2 Then
-  begin
-    Result := TDataType.dtOctetString;
-  end
-  else if index = 3 Then
-  begin
-    Result := TDataType.dtArray;
-  end
-  else if index = 4 Then
-  begin
-    Result := TDataType.dtUInt32;
-  end
-  else if index = 5 Then
-  begin
-    Result := TDataType.dtUInt8;
-  end
-  else if index = 6 Then
-  begin
-    Result := TDataType.dtUInt32;
-  end
-  else if index = 7 Then
-  begin
-    Result := TDataType.dtUInt16;
-  end
-  else if index = 8 Then
-  begin
-    Result := TDataType.dtUInt8;
-  end
-  else if index = 9 Then
-  begin
-    Result := TDataType.dtUInt8;
-  end
-  else if index = 10 Then
-  begin
-    Result := TDataType.dtUInt8;
-  end
-  else if index = 11 Then
-  begin
-    Result := TDataType.dtUInt8;
-  end
-  else if index = 12 Then
-  begin
-    Result := TDataType.dtUInt8;
-  end
+  case index of
+  1:Result := TDataType.dtOctetString;
+  2: Result := TDataType.dtOctetString;
+  3: Result := TDataType.dtArray;
+  4: Result := TDataType.dtUInt32;
+  5: Result := TDataType.dtUInt8;
+  6: Result := TDataType.dtUInt32;
+  7: Result := TDataType.dtUInt16;
+  8: Result := TDataType.dtUInt8;
+  9: Result := TDataType.dtUInt8;
+  10: Result := TDataType.dtUInt8;
+  11: Result := TDataType.dtUInt8;
+  12: Result := TDataType.dtUInt8;
+  13: Result := TDataType.dtUInt16;
+  14: Result := TDataType.dtEnum;
   else
   	raise Exception.Create('GetDataType failed. Invalid attribute index.');
+  end;
 end;
 
 function TGXDLMSMBusClient.GetValue(e: TValueEventArgs): TValue;
 begin
-  if e.Index = 1 then
-  begin
-    Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
-  end
-  else if e.Index = 2 Then
-  begin
-    Result := TValue.From(TGXDLMSObject.GetLogicalName(MBusPortReference));
-  end
-  else if e.Index = 3 Then
-  begin
-    Result := CaptureDefinition;//TODO:
-  end
-  else if e.Index = 4 Then
-  begin
-    Result := CapturePeriod;
-  end
-  else if e.Index = 5 Then
-  begin
-    Result := PrimaryAddress;
-  end
-  else if e.Index = 6 Then
-  begin
-    Result := IdentificationNumber;
-  end
-  else if e.Index = 7 Then
-  begin
-    Result := ManufacturerID;
-  end
-  else if e.Index = 8 Then
-  begin
-    Result := DataHeaderVersion;
-  end
-  else if e.Index = 9 Then
-  begin
-    Result := DeviceType;
-  end
-  else if e.Index = 10 Then
-  begin
-    Result := AccessNumber;
-  end
-  else if e.Index = 11 Then
-  begin
-    Result := Status;
-  end
-  else if e.Index = 12 Then
-  begin
-    Result := Alarm;
-  end
+  case e.Index of
+  1: Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
+  2: Result := TValue.From(TGXDLMSObject.GetLogicalName(MBusPortReference));
+  3: Result := FCaptureDefinition;//TODO:
+  4: Result := FCapturePeriod;
+  5: Result := FPrimaryAddress;
+  6: Result := FIdentificationNumber;
+  7: Result := FManufacturerID;
+  8: Result := FDataHeaderVersion;
+  9: Result := FDeviceType;
+  10: Result := FAccessNumber;
+  11: Result := FStatus;
+  12: Result := FAlarm;
+  13: Result := FConfiguration;
+  14: Result := Integer(FEncryptionKeyStatus);
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');
+  end;
 end;
 
 procedure TGXDLMSMBusClient.SetValue(e: TValueEventArgs);
@@ -366,6 +316,14 @@ begin
   else if e.Index = 12 Then
   begin
     FAlarm := e.Value.AsInteger;
+  end
+  else if e.Index = 13 Then
+  begin
+    FConfiguration := e.Value.AsInteger;
+  end
+  else if e.Index = 14 Then
+  begin
+    FEncryptionKeyStatus := TMBusEncryptionKeyStatus(e.Value.AsInteger);
   end
   else
     raise Exception.Create('SetValue failed. Invalid attribute index.');

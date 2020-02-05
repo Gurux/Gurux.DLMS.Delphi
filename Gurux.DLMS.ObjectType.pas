@@ -306,7 +306,9 @@ TObjectType =
 
   otTokenGateway = 115,
 
-  otCompactData = 62
+  otCompactData = 62,
+
+  otInvalid = $FFFF
 );
 implementation
 

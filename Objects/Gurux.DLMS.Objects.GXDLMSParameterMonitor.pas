@@ -65,7 +65,7 @@ TGXDLMSParameterMonitor = class(TGXDLMSObject)
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -109,23 +109,23 @@ begin
     FParameters);
 end;
 
-function TGXDLMSParameterMonitor.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSParameterMonitor.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
     //ChangedParameter
-    if CanRead(2) Then
+    if All or CanRead(2) Then
       items.Add(2);
     //CaptureTime
-    if CanRead(3) Then
+    if All or CanRead(3) Then
       items.Add(3);
     //Parameters
-    if CanRead(4) Then
+    if All or CanRead(4) Then
       items.Add(4);
     Result := items.ToArray;
   finally
@@ -220,7 +220,7 @@ end;
 
 procedure TGXDLMSParameterMonitor.SetValue(e: TValueEventArgs);
 var
-  ot: TObjectType;
+  ot: WORD;
   tmp: TValue;
   t: TGXDLMSTarget;
   ln: string;
@@ -235,9 +235,9 @@ case e.Index of
     if e.Value.GetArrayLength <> 4 Then
       raise Exception.Create('Invalid structure format.');
 
-    ot := TObjectType(arr[0].AsInteger);
+    ot := arr[0].AsInteger;
     ln := TGXCommon.ToLogicalName(arr[1]);
-    FChangedParameter.Target := e.Settings.Objects.FindByLN(ot, ln);
+    FChangedParameter.Target := e.Settings.Objects.FindByLN(TObjectType(ot), ln);
     if FChangedParameter.Target = Nil Then
     begin
       FChangedParameter.Target := TGXObjectFactory.CreateObject(ot);
@@ -271,9 +271,9 @@ case e.Index of
 
           t := TGXDLMSTarget.Create();
           try
-            ot := TObjectType(arr[0].AsInteger);
+            ot := arr[0].AsInteger;
             ln := TGXCommon.ToLogicalName(arr[1]);
-            t.Target := e.Settings.Objects.FindByLN(ot, ln);
+            t.Target := e.Settings.Objects.FindByLN(TObjectType(ot), ln);
             if t.Target = Nil Then
             begin
               t.Target := TGXObjectFactory.CreateObject(ot);

@@ -30,17 +30,24 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.Objects.GXDLMSIECOpticalPortSetup;
+unit Gurux.DLMS.SetCommandType;
 
 interface
 
-uses Gurux.DLMS.Objects.GXDLMSIECLocalPortSetup;
-
 type
-//This class is Obsolete. Use GXDLMSIECLocalPortSetup instead.
-TGXDLMSIECOpticalPortSetup = class(TGXDLMSIECLocalPortSetup)
-end;
-
+//Enumerates Set request types.
+TSetCommandType = (
+  // Normal Get.
+  ctNormal = 1,
+  // First data block.
+  ctFirstBlock = 2,
+  // With data block.
+  ctWIthDataBlock = 3,
+  // Set request with list.
+  ctWithList = 4,
+  // Set request with list and first data block.
+  ctFirstBlockWithList = 5
+);
 implementation
 
 end.

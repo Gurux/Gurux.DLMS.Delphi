@@ -246,7 +246,7 @@ private
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -301,86 +301,86 @@ begin
   FMaxProvisionPeriod);
 end;
 
-function TGXDLMSAccount.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSAccount.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
 
      // PaymentMode, AccountStatus
-    if CanRead(2) Then
+    if All or CanRead(2) Then
         items.Add(2);
 
     // CurrentCreditInUse
-    if CanRead(3) Then
+    if All or CanRead(3) Then
         items.Add(3);
 
     // CurrentCreditStatus
-    if CanRead(4) Then
+    if All or CanRead(4) Then
         items.Add(4);
 
     // AvailableCredit
-    if CanRead(5) Then
+    if All or CanRead(5) Then
         items.Add(5);
 
     // AmountToClear
-    if CanRead(6) Then
+    if All or CanRead(6) Then
         items.Add(6);
 
     // ClearanceThreshold
-    if CanRead(7) Then
+    if All or CanRead(7) Then
         items.Add(7);
 
     // AggregatedDebt
-    if CanRead(8) Then
+    if All or CanRead(8) Then
         items.Add(8);
 
     // CreditReferences
-    if CanRead(9) Then
+    if All or CanRead(9) Then
         items.Add(9);
 
     // ChargeReferences
-    if CanRead(10) Then
+    if All or CanRead(10) Then
         items.Add(10);
 
     // CreditChargeConfigurations
-    if CanRead(11) Then
+    if All or CanRead(11) Then
         items.Add(11);
 
     // TokenGatewayConfigurations
-    if CanRead(12) Then
+    if All or CanRead(12) Then
         items.Add(12);
 
     // AccountActivationTime
-    if CanRead(13) Then
+    if All or CanRead(13) Then
         items.Add(13);
 
     // AccountClosureTime
-    if CanRead(14) Then
+    if All or CanRead(14) Then
         items.Add(14);
 
     // Currency
-    if CanRead(15) Then
+    if All or CanRead(15) Then
         items.Add(15);
 
     // LowCreditThreshold
-    if CanRead(16) Then
+    if All or CanRead(16) Then
         items.Add(16);
 
     // NextCreditAvailableThreshold
-    if CanRead(17) Then
+    if All or CanRead(17) Then
         items.Add(17);
 
     // MaxProvision
-    if CanRead(18) Then
+    if All or CanRead(18) Then
         items.Add(18);
 
     // MaxProvisionPeriod
-    if CanRead(19) Then
+    if All or CanRead(19) Then
         items.Add(19);
 
     Result := items.ToArray;

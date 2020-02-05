@@ -59,7 +59,7 @@ TGXDLMSAssociationShortName = class(TGXDLMSObject)
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -102,14 +102,14 @@ begin
                   FSecuritySetupReference);
 end;
 
-function TGXDLMSAssociationShortName.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSAssociationShortName.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
 
     //ObjectList is static and read only once.
@@ -119,11 +119,11 @@ begin
     if FVersion > 1 Then
     begin
       //AccessRightsList is static and read only once.
-      if Not IsRead(3) Then
+      if All or Not IsRead(3) Then
         items.Add(3);
 
       //SecuritySetupReference is static and read only once.
-      if Not IsRead(4) Then
+      if All or Not IsRead(4) Then
         items.Add(4);
     end;
 

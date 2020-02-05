@@ -96,7 +96,7 @@ TGXDLMSDemandRegister = class(TGXDLMSObject)
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
 end;
@@ -149,48 +149,39 @@ begin
     Result := inherited IsRead(index);
 end;
 
-function TGXDLMSDemandRegister.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSDemandRegister.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if string.IsNullOrEmpty(LogicalName) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-
-     //ScalerUnit
-    if Not IsRead(4) Then
+    //ScalerUnit
+    if All or Not IsRead(4) Then
       items.Add(4);
-
     //CurrentAvarageValue
-    if CanRead(2) Then
+    if All or CanRead(2) Then
       items.Add(2);
-
     //LastAvarageValue
-    if CanRead(3) Then
+    if All or CanRead(3) Then
       items.Add(3);
-
     //Status
-    if CanRead(5) Then
+    if All or CanRead(5) Then
       items.Add(5);
-
     //CaptureTime
-    if CanRead(6) Then
+    if All or CanRead(6) Then
       items.Add(6);
-
     //StartTimeCurrent
-    if CanRead(7) Then
+    if All or CanRead(7) Then
       items.Add(7);
-
     //Period
-    if CanRead(8) Then
+    if All or CanRead(8) Then
       items.Add(8);
-
     //NumberOfPeriods
-    if CanRead(9) Then
+    if All or CanRead(9) Then
       items.Add(9);
-
     Result := items.ToArray;
   finally
     FreeAndNil(items);
@@ -272,7 +263,7 @@ begin
       data.Add(Integer(TDataType.dtStructure));
       data.Add(2);
       TGXCommon.SetData(data, TDataType.dtUInt8, FScaler);
-      TGXCommon.SetData(data, TDataType.dtUInt8, Integer(FUnit));
+      TGXCommon.SetData(data, TDataType.dtEnum, Integer(FUnit));
       Result := TValue.From(data.ToArray());
     finally
       data.Free;

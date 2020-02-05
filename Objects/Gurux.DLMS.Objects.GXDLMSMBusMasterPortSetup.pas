@@ -49,7 +49,7 @@ TGXDLMSMBusMasterPortSetup = class(TGXDLMSObject)
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -80,20 +80,18 @@ begin
   Result := TArray<TValue>.Create(FLogicalName, FValue);
 end;
 
-function TGXDLMSMBusMasterPortSetup.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSMBusMasterPortSetup.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-
     //Value
-    if CanRead(2) then
+    if All or CanRead(2) then
       items.Add(2);
-
     Result := items.ToArray;
   finally
     FreeAndNil(items);
@@ -142,14 +140,7 @@ procedure TGXDLMSMBusMasterPortSetup.SetValue(e: TValueEventArgs);
 begin
   if (e.Index = 1) then
   begin
-    if value.IsType<string> then
-    begin
-      FLogicalName := value.ToString();
-    end
-    else
-    begin
-      FLogicalName := TGXCommon.ChangeType(value.AsType<TBytes>, TDataType.dtOctetString).ToString();
-    end;
+    FLogicalName := TGXCommon.ToLogicalName(e.Value);
   end
   else if (e.Index = 2) then
   begin

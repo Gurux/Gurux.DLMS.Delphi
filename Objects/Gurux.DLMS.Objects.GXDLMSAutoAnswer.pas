@@ -67,7 +67,7 @@ TGXDLMSAutoAnswer = class(TGXDLMSObject)
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -119,14 +119,14 @@ begin
                 FNumberOfRingsInListeningWindow.ToString + '/' + FNumberOfRingsOutListeningWindow.ToString());
 end;
 
-function TGXDLMSAutoAnswer.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSAutoAnswer.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
 
   //Mode is static and read only once.
@@ -134,19 +134,19 @@ begin
       items.Add(2);
 
     //ListeningWindow is static and read only once.
-    if Not IsRead(3) Then
+    if All or Not IsRead(3) Then
         items.Add(3);
 
     //Status is not static.
-    if CanRead(4) Then
+    if All or CanRead(4) Then
       items.Add(4);
 
     //NumberOfCalls is static and read only once.
-    if Not IsRead(5) Then
+    if All or Not IsRead(5) Then
       items.Add(5);
 
     //NumberOfRingsInListeningWindow is static and read only once.
-    if Not IsRead(6) Then
+    if All or Not IsRead(6) Then
       items.Add(6);
 
     Result := items.ToArray;

@@ -57,7 +57,8 @@ Gurux.DLMS.GetCommandType, Gurux.DLMS.GXDLMSCaptureObject,
 Gurux.DLMS.GXReplyData, Gurux.DLMS.IGXDLMSClient,
 Gurux.DLMS.SerialnumberCounter,
 Gurux.DLMS.GXDLMSGateway,
-Gurux.DLMS.ConnectionState;
+Gurux.DLMS.ConnectionState,
+Gurux.DLMS.SetCommandType;
 
 type
   CaptureObject = TGXDLMSCaptureObject;
@@ -112,7 +113,7 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
     class function CreateDLMSObject(ClassID : Word; Version : Word; BaseName : Word;
                 LN : TValue; AccessRights : TValue) : TGXDLMSObject; static;
 
-   class procedure UpdateObjectData(obj : TGXDLMSObject; objectType : TObjectType;
+   class procedure UpdateObjectData(obj : TGXDLMSObject; objectType : WORD;
               version : Word; baseName : TValue; logicalName : TValue;
               accessRights : TValue); static;
     function ReadRowsByRange(pg: TGXDLMSProfileGeneric; startTime: TValue; endTime : TValue; columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;overload;
@@ -173,6 +174,9 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
 
     // Read list of COSEM objects.
     function ReadList(list: TList<TPair<TGXDLMSObject, Integer>>): TArray<TBytes>;
+
+    // Write list of COSEM objects.
+    function WriteList(list: TList<TPair<TGXDLMSObject, Integer>>): TArray<TBytes>;
 
     // Generates a read message.
     function Read(it : TGXDLMSObject; attributeIndex : Integer) : TArray<TBytes>;overload;
@@ -917,7 +921,6 @@ var
   sn: WORD;
   ln: LogicalName;
 begin
-
   if (VarType(name) = VarEmpty) or (index < 1) then
     raise TGXDLMSException.Create('Invalid parameter. Unknown value type.');
 
@@ -934,13 +937,10 @@ begin
     if dt = TDataType.dtNone Then
       raise EArgumentException.Create('Invalid parameter. Unknown value type.');
   end;
-
   attributeDescriptor := TGXByteBuffer.Create();
   try
-
     data := TGXByteBuffer.Create();
     try
-
       TGXCommon.SetData(data, dt, value);
       if UseLogicalNameReferencing Then
       begin
@@ -1000,9 +1000,10 @@ var
 begin
   if (list = Nil) or (list.Count = 0) Then
     raise EArgumentException.Create('Invalid parameter.');
+  if (Integer(NegotiatedConformance) and Integer(TConformance.cfMultipleReferences)) = 0 Then
+    raise EArgumentException.Create('Meter does not support multiple objects reading with one request.');
 
   FSettings.ResetBlockIndex();
-
   messages := TList<TBytes>.Create();
   try
 
@@ -1082,7 +1083,106 @@ begin
   finally
     messages.Free;
   end;
+end;
 
+function TGXDLMSClient.WriteList(list: TList<TPair<TGXDLMSObject, Integer>>): TArray<TBytes>;
+var
+  sn, pos, count: Integer;
+  data: TGXByteBuffer;
+  p: TObject;
+  it: TPair<TGXDLMSObject, Integer>;
+  messages: TList<TBytes>;
+  ln: LogicalName;
+  dt: TDataType;
+  value: TValue;
+  a: TValueEventArgs;
+begin
+  if (list = Nil) or (list.Count = 0) Then
+    raise EArgumentException.Create('Invalid parameter.');
+ if (Integer(NegotiatedConformance) and Integer(TConformance.cfMultipleReferences)) = 0 Then
+    raise EArgumentException.Create('Meter does not support multiple objects writing with one request.');
+
+  FSettings.ResetBlockIndex();
+  messages := TList<TBytes>.Create();
+  try
+    data := TGXByteBuffer.Create();
+    try
+      if UseLogicalNameReferencing Then
+      begin
+        p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.SetRequest, BYTE(TSetCommandType.ctWithList), Nil, data, $ff, TCommand.None);
+        try
+          // Add length.
+          TGXCommon.SetObjectCount(list.Count, data);
+          for it in list do
+          begin
+            // CI.
+            data.SetUInt16(Integer(it.Key.ObjectType));
+            // Add LN
+            ln := TGXCommon.LogicalNameToBytes(it.Key.LogicalName);
+            data.SetArray(ln);
+            // Attribute ID.
+            data.SetUInt8(BYTE(it.Value));
+            // Attribute selector is not used.
+            data.SetUInt8(0);
+          end;
+          // Add length.
+          TGXCommon.SetObjectCount(list.Count, data);
+          for it in list do
+          begin
+            a := TValueEventArgs.Create(FSettings, it.Key, it.Value, 0, Nil);
+            try
+              value := TGXDLMSObject(it.Key).GetValue(a);
+              dt := it.Key.GetDataType(it.Value);
+              if dt = TDataType.dtNone then
+                dt := TGXCommon.GetDLMSDataType(value);
+              TGXCommon.SetData(data, dt, value);
+            finally
+              FreeAndNil(a);
+            end;
+          end;
+          messages.AddRange(TGXDLMS.GetLnMessages(TGXDLMSLNParameters(p)));
+        finally
+          p.Free;
+        end;
+      end
+      else
+      begin
+        p := TGXDLMSSNParameters.Create(FSettings, TCommand.WriteRequest, list.Count, $FF, Nil, data);
+        try
+          for it in list do
+          begin
+            // Add variable type.
+            data.SetUInt8(BYTE(TVariableAccessSpecification.VariableName));
+            sn := it.Key.ShortName + ((it.Value - 1) * 8);
+            data.SetUInt16(Integer(sn));
+          end;
+          // Add length.
+          TGXCommon.SetObjectCount(list.Count, data);
+          for it in list do
+          begin
+            a := TValueEventArgs.Create(FSettings, it.Key, it.Value, 0, Nil);
+            try
+              value := it.Key.GetValue(a);
+              dt := it.Key.GetDataType(it.Value);
+              if dt = TDataType.dtNone then
+                dt := TGXCommon.GetDLMSDataType(value);
+              TGXCommon.SetData(data, dt, value);
+            finally
+              FreeAndNil(a);
+            end;
+          end;
+          messages.AddRange(TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p)));
+        finally
+          p.Free;
+        end;
+      end;
+      Result := messages.ToArray();
+    finally
+      data.Free;
+    end;
+  finally
+    messages.Free;
+  end;
 end;
 
 function TGXDLMSClient.Read(it : TGXDLMSObject; attributeIndex : Integer) : TArray<TBytes>;
@@ -1196,13 +1296,10 @@ end;
 // Reserved for internal use.
 class function TGXDLMSClient.CreateDLMSObject(ClassID : Word; Version : Word; BaseName : Word;
           LN : TValue; AccessRights : TValue) : TGXDLMSObject;
-var
-  tp : TObjectType;
 begin
-  tp := TObjectType(ClassID);
-  Result := TGXObjectFactory.CreateObject(tp);
+  Result := TGXObjectFactory.CreateObject(ClassID);
   try
-    UpdateObjectData(Result, tp, Version, BaseName, LN,
+    UpdateObjectData(Result, ClassID, Version, BaseName, LN,
             AccessRights);
   except
     result.Free;
@@ -1212,11 +1309,11 @@ end;
 
 function TGXDLMSClient.CreateObject(ot: TObjectType) : TGXDLMSObject;
 begin
-  Result := TGXObjectFactory.CreateObject(ot);
+  Result := TGXObjectFactory.CreateObject(Integer(ot));
 end;
 
 // Reserved for internal use.
-class procedure TGXDLMSClient.UpdateObjectData(obj : TGXDLMSObject; objectType : TObjectType;
+class procedure TGXDLMSClient.UpdateObjectData(obj : TGXDLMSObject; objectType : WORD;
   version : Word; baseName : TValue; logicalName : TValue; accessRights : TValue);
 var
   mode : Integer;
@@ -1224,7 +1321,7 @@ var
   tmp, access : TArray<TValue>;
   attributeAccess, methodAccess : TValue;
 begin
-    obj.ObjectType := objectType;
+    obj.ObjectType := TObjectType(objectType);
     // Check access rights...
     if (Not accessRights.IsEmpty) then
     begin
@@ -1314,7 +1411,6 @@ begin
           comp.Free;
           raise;
         end;
-
         comp.Parent := FSettings.Objects;
         if (Not onlyKnownObjects) or (comp.ClassType <> TGXDLMSObject) then
           FSettings.Objects.Add(comp)
@@ -1367,9 +1463,8 @@ begin
         comp.Free;
         raise;
       end;
-
       comp.Parent := FSettings.Objects;
-      if (comp.ClassType <> TGXDLMSObject) or Not onlyKnownObjects then
+      if (comp.ClassType <> TGXDLMSObject) or (Not onlyKnownObjects) then
         FSettings.Objects.Add(comp)
       else
         FreeAndNil(comp);

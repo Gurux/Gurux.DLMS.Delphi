@@ -79,7 +79,7 @@ TGXDLMSImageTransfer = class(TGXDLMSObject)
 
   function GetValues() : TArray<TValue>;override;
 
-  function GetAttributeIndexToRead: TArray<Integer>;override;
+  function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
   function GetDataType(index: Integer): TDataType;override;
@@ -209,40 +209,33 @@ begin
   FImageTransferEnabled, Integer(FImageTransferStatus), FImageActivateInfo);
 end;
 
-function TGXDLMSImageTransfer.GetAttributeIndexToRead: TArray<Integer>;
+function TGXDLMSImageTransfer.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
   items := TList<Integer>.Create;
   try
     //LN is static and read only once.
-    if (string.IsNullOrEmpty(LogicalName)) then
+    if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-
     //ImageBlockSize
-    if Not IsRead(2) Then
+    if All or Not IsRead(2) Then
       items.Add(2);
-
     //ImageTransferredBlocksStatus
-    if Not IsRead(3) Then
+    if All or Not IsRead(3) Then
       items.Add(3);
-
     //ImageFirstNotTransferredBlockNumber
-    if Not IsRead(4) Then
+    if All or Not IsRead(4) Then
       items.Add(4);
-
     //ImageTransferEnabled
-    if Not IsRead(5) Then
+    if All or Not IsRead(5) Then
       items.Add(5);
-
     //ImageTransferStatus
-    if Not IsRead(6) Then
+    if All or Not IsRead(6) Then
       items.Add(6);
-
     //ImageActivateInfo
-    if Not IsRead(7) Then
+    if All or Not IsRead(7) Then
       items.Add(7);
-
     Result := items.ToArray;
   finally
     FreeAndNil(items);

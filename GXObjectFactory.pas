@@ -38,7 +38,7 @@ uses Gurux.DLMS.ObjectType, Gurux.DLMS.GXDLMSObject;
 
 type
 TGXObjectFactory = class
-    class function CreateObject(tp : TObjectType) : TGXDLMSObject;static;
+    class function CreateObject(tp : WORD) : TGXDLMSObject;static;
 end;
 implementation
 
@@ -47,7 +47,7 @@ Gurux.DLMS.Objects.GXDLMSData, Gurux.DLMS.Objects.GXDLMSRegister,
 Gurux.DLMS.Objects.GXDLMSClock, Gurux.DLMS.Objects.GXDLMSRegisterMonitor,
 Gurux.DLMS.Objects.GXDLMSActivityCalendar,
 Gurux.DLMS.Objects.GXDLMSHdlcSetup,
-Gurux.DLMS.Objects.GXDLMSIECOpticalPortSetup,
+Gurux.DLMS.Objects.GXDLMSIECLocalPortSetup,
 Gurux.DLMS.Objects.GXDLMSSapAssignment,
 Gurux.DLMS.Objects.GXDLMSSpecialDaysTable,
 Gurux.DLMS.Objects.GXDLMSExtendedRegister,
@@ -84,9 +84,9 @@ Gurux.DLMS.Objects.GXDLMSParameterMonitor,
 Gurux.DLMS.Objects.GXDLMSCompactData;
 
 // Reserved for internal use.
-class function TGXObjectFactory.CreateObject(tp : TObjectType) : TGXDLMSObject;
+class function TGXObjectFactory.CreateObject(tp : WORD) : TGXDLMSObject;
 begin
-  case tp of
+  case TObjectType(tp) of
   TObjectType.otActionSchedule:
     Result := TGXDLMSActionSchedule.Create();
   TObjectType.otActivityCalendar:
@@ -110,7 +110,7 @@ begin
   TObjectType.otMacAddressSetup :
      Result := TGXDLMSMacAddressSetup.Create();
   TObjectType.otEVENT :
-      Result := TGXDLMSObject.Create(tp);
+      Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otExtendedRegister :
       Result := TGXDLMSExtendedRegister.Create();
   TObjectType.otGprsSetup :
@@ -120,9 +120,9 @@ begin
   TObjectType.otIecHdlcSetup :
       Result := TGXDLMSHdlcSetup.Create();
   TObjectType.otIecLocalPortSetup :
-      Result := TGXDLMSIECOpticalPortSetup.Create();
+      Result := TGXDLMSIECLocalPortSetup.Create();
   TObjectType.otIecTwistedPairSetup :
-      Result := TGXDLMSObject.Create(tp);
+      Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otIp4Setup :
       Result := TGXDLMSIp4Setup.Create();
   TObjectType.otMBusSlavePortSetup :
@@ -148,29 +148,29 @@ begin
   TObjectType.otRegisterMonitor :
       Result := TGXDLMSRegisterMonitor.Create();
   TObjectType.otRegisterTable :
-      Result := TGXDLMSObject.Create(tp);
+      Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otRemoteAnalogueControl :
-      Result := TGXDLMSObject.Create(tp);
+      Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otRemoteDigitalControl :
-      Result := TGXDLMSObject.Create(tp);
+      Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otSapAssignment :
       Result := TGXDLMSSapAssignment.Create();
   TObjectType.otSchedule :
-      Result := TGXDLMSObject.Create(tp);
+      Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otScriptTable :
       Result := TGXDLMSScriptTable.Create();
   TObjectType.otSmtpSetup :
-      Result := TGXDLMSObject.Create(tp);
+      Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otSpecialDaysTable :
       Result := TGXDLMSSpecialDaysTable.Create();
   TObjectType.otStatusMapping :
-    Result := TGXDLMSObject.Create(tp);
+    Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otTcpUdpSetup:
     Result := TGXDLMSTcpUdpSetup.Create();
   TObjectType.otTunnel :
-    Result := TGXDLMSObject.Create(tp);
+    Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otUtilityTables :
-    Result := TGXDLMSObject.Create(tp);
+    Result := TGXDLMSObject.Create(TObjectType(tp));
    TObjectType.otMBusMasterPortSetup :
      Result := TGXDLMSMBusMasterPortSetup.Create();
   TObjectType.otPushSetup:
@@ -190,7 +190,7 @@ begin
   //TODO: TObjectType.otCompactData :
   //TODO:   Result := TGXDLMSCompactData.Create();
   else
-    Result := TGXDLMSObject.Create(tp);
+    Result := TGXDLMSObject.Create(TObjectType(tp));
   end;
 end;
 
