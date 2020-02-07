@@ -33,12 +33,27 @@
 unit Gurux.DLMS.SNCommandHandler;
 
 interface
-uses SysUtils, Rtti, Gurux.DLMS.ObjectType, Gurux.DLMS.GXDLMSTranslatorStructure,
-Gurux.DLMS.TranslatorTags, Gurux.DLMS.GXDLMSConverter, Gurux.DLMS.GXDLMSObject,
-GXByteBuffer, Gurux.DLMS.ErrorCode, GXDataInfo, GXCommon, Gurux.DLMS.Command,
-Gurux.DLMS.GXDLMSLNParameters, TranslatorOutputType, AccessServiceCommandType,
-Gurux.DLMS.GXReplyData, Gurux.DLMS.DataType, Gurux.DLMS.GXDateTime,
-Gurux.DLMS.VariableAccessSpecification;
+uses SysUtils,
+Rtti,
+Gurux.DLMS.ObjectType,
+Gurux.DLMS.GXDLMSTranslatorStructure,
+Gurux.DLMS.TranslatorTags,
+Gurux.DLMS.GXDLMSConverter,
+Gurux.DLMS.GXDLMSObject,
+GXByteBuffer,
+Gurux.DLMS.ErrorCode,
+GXDataInfo,
+GXCommon,
+Gurux.DLMS.Command,
+Gurux.DLMS.GXDLMSLNParameters,
+TranslatorOutputType,
+AccessServiceCommandType,
+Gurux.DLMS.GXReplyData,
+Gurux.DLMS.DataType,
+Gurux.DLMS.GXDateTime,
+Gurux.DLMS.VariableAccessSpecification,
+Gurux.DLMS.GXDLMSSNParameters,
+Gurux.DLMS.GXDLMS;
 
 type
   TGXDLMSSNCommandHandler = class
@@ -251,9 +266,33 @@ class procedure TGXDLMSSNCommandHandler.HandleReadBlockNumberAccess(
     replyData: TGXByteBuffer;
     xml: TGXDLMSTranslatorStructure);
 var
+  bb: TGXByteBuffer;
   blockNumber: UInt16;
+  p: TGXDLMSSNParameters;
 begin
   blockNumber := data.GetUInt16();
+   if xml <> Nil Then
+   begin
+    xml.AppendStartTag(TCommand.ReadRequest, LONGWORD(TVariableAccessSpecification.BlockNumberAccess));
+    xml.AppendLine('<BlockNumber Value="' + xml.IntegerToHex(blockNumber, 4) + '" />');
+    xml.AppendEndTag(TCommand.ReadRequest, LONGWORD(TVariableAccessSpecification.BlockNumberAccess));
+    Exit
+  end;
+  if blockNumber <> settings.BlockIndex Then
+  begin
+      bb := TGXByteBuffer.Create();
+      p:= TGXDLMSSNParameters.Create(settings, TCommand.ReadResponse, 1,
+            BYTE(TSingleReadResponse.DataAccessError), bb, Nil);
+      try
+        bb.SetUInt8(BYTE(TErrorCode.ecDataBlockNumberInvalid));
+        TGXDLMS.GetSNPdu(p, replyData);
+      finally
+        FreeAndNil(bb);
+        FreeAndNil(p);
+      end;
+      settings.ResetBlockIndex();
+      Exit;
+  end;
 end;
 
 class procedure TGXDLMSSNCommandHandler.HandleReadDataBlockAccess(

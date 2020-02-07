@@ -887,6 +887,7 @@ begin;
   FProposedConformance := TGXDLMSSettings.GetInitialConformance(false);
   ResetFrameSequence();
   FGateway := Nil;
+  FCipher := Nil;
 end;
 
 destructor TGXDLMSSettings.Destroy;

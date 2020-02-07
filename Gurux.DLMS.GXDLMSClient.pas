@@ -1087,7 +1087,7 @@ end;
 
 function TGXDLMSClient.WriteList(list: TList<TPair<TGXDLMSObject, Integer>>): TArray<TBytes>;
 var
-  sn, pos, count: Integer;
+  sn: Integer;
   data: TGXByteBuffer;
   p: TObject;
   it: TPair<TGXDLMSObject, Integer>;

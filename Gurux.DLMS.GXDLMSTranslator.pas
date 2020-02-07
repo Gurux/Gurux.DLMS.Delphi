@@ -50,10 +50,10 @@ private
   FSecurity: TSecurity;
   FSystemTitle: TBytes;
   FBlockCipherKey: TBytes;
-  FSourceSystemTitle: TBytes;
   FAuthenticationKey: TBytes;
   FInvocationCounter: LongWord;
   FServerSystemTitle: TBytes;
+  FDedicatedKey: TBytes;
   FOutputType: TTranslatorOutputType;
   FSAck, FRAck: WORD;
   FSending: Boolean;
@@ -90,7 +90,7 @@ private
   omitNameSpace: Boolean;
   allowUnknownCommand: Boolean): string; overload;
 
-  procedure GetCiphering(settings: TGXDLMSSettings);
+  procedure GetCiphering(settings: TGXDLMSSettings; AForce: Boolean);
   procedure GetUa(data: TGXByteBuffer; xml: TGXDLMSTranslatorStructure);
 public
   constructor Create(); overload;
@@ -104,6 +104,19 @@ public
   property PduOnly: Boolean read FPduOnly write FPduOnly;
   //Used security.
   property Security: TSecurity read FSecurity write FSecurity;
+
+  // System title.
+  property SystemTitle: TBytes read FSystemTitle write FSystemTitle;
+  // Block cipher key.
+  property BlockCipherKey: TBytes read FBlockCipherKey write FBlockCipherKey;
+  // Authentication key.
+  property AuthenticationKey: TBytes read FAuthenticationKey write FAuthenticationKey;
+  // Invocation Counter.
+  property InvocationCounter: LongWord read FInvocationCounter write FInvocationCounter;
+  // Server system title.
+  property ServerSystemTitle: TBytes read FServerSystemTitle write FServerSystemTitle;
+  // Dedicated key.
+  property DedicatedKey: TBytes read FDedicatedKey write FDedicatedKey;
 
   // Convert bytes to xml.
   // value: Bytes to convert.
@@ -202,7 +215,7 @@ begin
   FOmitXmlNameSpace := false;
   FMultipleFrames := false;
   FSystemTitle := TEncoding.ASCII.GetBytes('ABCDEFGH');
-  FSourceSystemTitle := TEncoding.ASCII.GetBytes('ABCDEFGH');
+  FServerSystemTitle := TEncoding.ASCII.GetBytes('ABCDEFGH');
   FBlockCipherKey := TBytes.Create($00, $01, $02, $03, $04, $05, $06, $07, $08, $09, $0A, $0B, $0C, $0D, $0E, $0F);
   FAuthenticationKey := TBytes.Create($D0, $D1, $D2, $D3, $D4, $D5, $D6, $D7, $D8, $D9, $DA, $DB, $DC, $DD, $DE, $DF);
   if AType = TTranslatorOutputType.SimpleXml Then FHex := true;
@@ -226,21 +239,23 @@ begin
   end;
 end;
 
-procedure TGXDLMSTranslator.GetCiphering(settings: TGXDLMSSettings);
+procedure TGXDLMSTranslator.GetCiphering(settings: TGXDLMSSettings; AForce: Boolean);
 begin
+  if settings.Cipher <> Nil then
+  begin
+    settings.Cipher.Free();
+    settings.Cipher := Nil;
+  end;
   if FSecurity <> TSecurity.None Then
   begin
-  settings.Cipher := TGXCiphering.Create(FSystemTitle);
-  settings.Cipher.Security := FSecurity;
-  settings.Cipher.BlockCipherKey := FBlockCipherKey;
-  settings.Cipher.AuthenticationKey := FAuthenticationKey;
-  settings.Cipher.InvocationCounter := FInvocationCounter;
-  settings.Cipher.SourceSystemTitle := FServerSystemTitle;
+    settings.Cipher := TGXCiphering.Create(FSystemTitle);
+    settings.Cipher.Security := FSecurity;
+    settings.Cipher.BlockCipherKey := FBlockCipherKey;
+    settings.Cipher.AuthenticationKey := FAuthenticationKey;
+    settings.Cipher.InvocationCounter := FInvocationCounter;
+    settings.Cipher.DedicatedKey := FDedicatedKey;
+    settings.Cipher.SourceSystemTitle := FServerSystemTitle;
   end
-  else
-  begin
-  settings.Cipher := Nil;
-  end;
 end;
 
 procedure TGXDLMSTranslator.GetUa(data: TGXByteBuffer; xml: TGXDLMSTranslatorStructure);
@@ -319,7 +334,7 @@ var
 begin
   settings := TGXDLMSSettings.Create(True);
   try
-  GetCiphering(settings);
+  GetCiphering(settings, False);
   cmd := value.GetUInt8();
   //If UA
   if cmd = $81 then
@@ -344,7 +359,7 @@ begin
     value.Position := 0;
     s := TGXDLMSSettings.Create(false);
   try
-    GetCiphering(s);
+    GetCiphering(s, True);
     TGXAPDU.ParseInitiate(true, s, s.Cipher, value, xml);
   finally
     FreeAndNil(s);
@@ -355,7 +370,7 @@ begin
     value.Position := 0;
     s := TGXDLMSSettings.Create(false);
     try
-      GetCiphering(s);
+      GetCiphering(s, True);
       TGXAPDU.ParsePDU(s, s.Cipher, value, xml);
     finally
       FreeAndNil(s);
