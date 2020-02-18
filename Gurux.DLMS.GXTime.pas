@@ -57,7 +57,8 @@ var
 begin
   DecodeTime(value.Time, hour, minute, second, millisecond);
   inherited Create($FFFF, $FF, $FF, hour, minute, second, millisecond, $FF);
-   Skip.Add(value.Skip);
+  Skip.Add(value.Skip);
+  Extra := value.Extra;
 end;
 
 constructor TGXTime.Create(AValue: TDateTime = -1);

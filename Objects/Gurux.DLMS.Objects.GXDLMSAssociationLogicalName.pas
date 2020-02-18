@@ -467,6 +467,7 @@ begin
     try
       if FCurrentUser = '' then
       begin
+        data.SetUInt8(Integer(TDataType.dtStructure));
         //Add structure size.
         data.SetUInt8(2);
         TGXCommon.SetData(data, TDataType.dtUInt8, 0);
@@ -478,8 +479,16 @@ begin
         ExtractStrings(['='], [], PChar(FCurrentUser), List);
         //Add structure size.
         data.SetUInt8(2);
-        TGXCommon.SetData(data, TDataType.dtUInt8, List[0]);
-        TGXCommon.SetData(data, TDataType.dtString, List[1]);
+        if List = Nil then
+        begin
+          TGXCommon.SetData(data, TDataType.dtUInt8, 0);
+          TGXCommon.SetData(data, TDataType.dtString, '');
+        end
+        else
+        begin
+          TGXCommon.SetData(data, TDataType.dtUInt8, List[0]);
+          TGXCommon.SetData(data, TDataType.dtString, List[1]);
+        end;
       end;
       Result := TValue.From(data.ToArray());
     finally
@@ -528,6 +537,7 @@ var
   ln : string;
   obj : TGXDLMSObject;
   bb: TGXByteBuffer;
+  arr: TArray<TValue>;
 begin
   if (e.Index = 1) then
   begin
@@ -614,13 +624,19 @@ begin
     if Not e.Value.IsEmpty Then
     begin
       for item in e.Value.AsType<TArray<TValue>> do
-        FUserList.Add(IntToStr(item.GetArrayElement(0).AsInteger()) + '=' + item.GetArrayElement(1).ToString());
+      begin
+        arr := item.AsType<TArray<TValue>>();
+        FUserList.Add(IntToStr(arr[0].AsInteger()) + '=' + arr[1].ToString());
+      end;
     end;
   end
   else if e.Index = 11 Then
   begin
     if Not e.Value.IsEmpty Then
-      FCurrentUser := IntToStr(e.Value.GetArrayElement(0).AsInteger()) + '=' + e.Value.GetArrayElement(1).ToString()
+    begin
+      arr := e.Value.AsType<TArray<TValue>>();
+      FCurrentUser := IntToStr(arr[0].AsInteger()) + '=' + arr[1].ToString();
+    end
     else
       FCurrentUser := '';
   end

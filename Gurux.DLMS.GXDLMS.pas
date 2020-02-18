@@ -595,7 +595,9 @@ begin
         end;
       end;
 
-      if ciphering and ((Integer(p.settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer)) = 0) Then
+      if ciphering and (reply.Size <> 0) and (p.command <> TCommand.ReleaseRequest) and
+        ((Not p.multipleBlocks) or
+        ((Integer(p.Settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer)) = 0)) Then
       begin
         //GBT ciphering is done for all the data, not just block.
         Cipher0(p, reply);

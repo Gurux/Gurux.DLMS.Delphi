@@ -34,8 +34,12 @@ unit Gurux.DLMS.GXDateTime;
 
 interface
 
-uses DateUtils, SysUtils, System.Generics.Collections,
-Gurux.DLMS.DateTimeSkips, Gurux.DLMS.ClockStatus;
+uses DateUtils,
+SysUtils,
+System.Generics.Collections,
+Gurux.DLMS.DateTimeSkips,
+Gurux.DLMS.Enums.DateTimeExtraInfo,
+Gurux.DLMS.ClockStatus;
 
 type
   TGXDateTime = class
@@ -43,7 +47,7 @@ type
     FValue : TDateTime;
     FDoW: Byte;
     FSkip : TDateTimeSkipsSet;
-    FDaylightSavingsBegin, FDaylightSavingsEnd : Boolean;
+    FExtra : TDateTimeExtraInfo;
     FStatus : TClockStatus;
     FTimeZone : Integer;
     FAlreadyReversed: Boolean;
@@ -60,10 +64,12 @@ type
     property LocalTime: TDateTime read GetLocalTime;
     //Get meter time.
     property Time: TDateTime read FValue write FValue;
+    // Skip selected date time fields.
     property Skip: TDateTimeSkipsSet read FSkip write FSkip;
 
-    property DaylightSavingsBegin: Boolean read FDaylightSavingsBegin write FDaylightSavingsBegin;
-    property DaylightSavingsEnd: Boolean read FDaylightSavingsEnd write FDaylightSavingsEnd;
+    // Date time extra information.
+    property Extra: TDateTimeExtraInfo read FExtra write FExtra;
+
     //Status of the clock.
     property Status: TClockStatus read FStatus write FStatus;
     //Used time zone. In default it's not used.
@@ -141,8 +147,16 @@ begin
       raise Exception.CreateFmt('Illegal year used for date. %d-%d-%d is not a valid date.',[Year,Month,Day]);
   end;
 
-  FDaylightSavingsBegin := month = $FE;
-  FDaylightSavingsEnd := month = $FD;
+  if month = $FE Then
+  begin
+    FExtra := TDateTimeExtraInfo(Integer(FExtra) or Integer(TDateTimeExtraInfo.DstBegin));
+    month := 1;
+  end;
+  if month = $FD Then
+  begin
+    FExtra := TDateTimeExtraInfo(Integer(FExtra) or Integer(TDateTimeExtraInfo.DstEnd));
+    month := 1;
+  end;
 
   case month of
     1..12: ;
@@ -157,10 +171,18 @@ begin
       raise Exception.CreateFmt('Illegal month used for date. %d-%d-%d is not a valid date.',[Year,Month,Day]);
   end;
 
+  if day = $FE Then
+  begin
+    FExtra := TDateTimeExtraInfo(Integer(FExtra) or Integer(TDateTimeExtraInfo.LastDay));
+    day := 1;
+  end;
+  if day = $FD Then
+  begin
+    FExtra := TDateTimeExtraInfo(Integer(FExtra) or Integer(TDateTimeExtraInfo.LastDay2));
+    day := 1;
+  end;
   case day of
     1..31: ;
-    $FD: day := DaysInMonth(EncodeDate(year, month, 1)) - 1;
-    $FE: day := DaysInMonth(EncodeDate(year, month, 1));
     $FF:
     begin
       day := 1;

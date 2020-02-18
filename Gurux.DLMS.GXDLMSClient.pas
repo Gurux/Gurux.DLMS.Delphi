@@ -54,7 +54,7 @@ Gurux.DLMS.GXSecure, GXDataInfo, Gurux.DLMS.ActionRequestType,
 Gurux.DLMS.VariableAccessSpecification,
 Gurux.DLMS.GXDLMSConverter, Gurux.DLMS.SetRequestType,
 Gurux.DLMS.GetCommandType, Gurux.DLMS.GXDLMSCaptureObject,
-Gurux.DLMS.GXReplyData, Gurux.DLMS.IGXDLMSClient,
+Gurux.DLMS.GXReplyData,
 Gurux.DLMS.SerialnumberCounter,
 Gurux.DLMS.GXDLMSGateway,
 Gurux.DLMS.ConnectionState,
@@ -63,7 +63,7 @@ Gurux.DLMS.SetCommandType;
 type
   CaptureObject = TGXDLMSCaptureObject;
 
-TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
+TGXDLMSClient = class (TInterfacedObject)
   protected
     FSettings: TGXDLMSSettings;
     FAutoIncreaseInvokeID : Boolean;
@@ -91,7 +91,7 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
     procedure set_InterfaceType(Value: TInterfaceType);
     procedure set_ClientAddress(Value: Integer);
     procedure set_ServerAddress(Value: Integer);
-    function get_MaxReceivePDUSize: System.UInt16;
+    function GetMaxReceivePDUSize: System.UInt16;
     function get_UseLogicalNameReferencing: Boolean;
     procedure set_MaxReceivePDUSize(Value: System.UInt16);
     procedure set_UseLogicalNameReferencing(Value: Boolean);
@@ -192,7 +192,7 @@ TGXDLMSClient = class (TInterfacedObject, IGXDLMSClient)
     // Generate Method (Action) request.
     function Method(name : Variant; ot : TObjectType; index : Integer; value : TValue; dt : TDataType) : TArray<TBytes>;overload;
     property Objects : TGXDLMSObjectCollection read Get_Objects;
-    property MaxReceivePDUSize: System.UInt16 read get_MaxReceivePDUSize write set_MaxReceivePDUSize default $FFFF;
+    property MaxReceivePDUSize: System.UInt16 read GetMaxReceivePDUSize write set_MaxReceivePDUSize default $FFFF;
     property UseLogicalNameReferencing: Boolean read get_UseLogicalNameReferencing write set_UseLogicalNameReferencing default False;
     property Password: TBytes read GetPassword write SetPassword;
     function GetKeepAlive() : TBytes;
@@ -420,7 +420,7 @@ begin
   FSettings.Gateway := Value;
 end;
 
-function TGXDLMSClient.get_MaxReceivePDUSize: System.UInt16;
+function TGXDLMSClient.GetMaxReceivePDUSize: System.UInt16;
 begin
   Result := FSettings.MaxPduSize;
 end;
@@ -642,12 +642,6 @@ begin
     bb.setUInt8($80);
     bb.setUInt8($01);
     bb.setUInt8($00);
-
-    //Increase IC.
-    if ((FSettings.Cipher <> Nil) and (FSettings.Cipher.IsCiphered())) Then
-    begin
-      FSettings.Cipher.InvocationCounter := FSettings.Cipher.InvocationCounter + 1;
-    end;
 
     TGXAPDU.generateUserInformation(FSettings, FSettings.Cipher, Nil, bb);
     bb.SetUInt8(0, (bb.Size - 1));
@@ -910,7 +904,12 @@ begin
   finally
     FreeAndNil(p);
   end;
-
+  //If values is show as string, but send as byte array.
+  if value.IsType<string> and (dt = TDataType.dtOctetString) Then
+  begin
+    if item.GetUIDataType(index) = TDataType.dtString Then
+      value := TValue.From(TEncoding.ASCII.GetBytes(value.AsType<string>()));
+  end;
   Result := Write(item.Name, value, dt, item.ObjectType, index);
 end;
 
@@ -1684,6 +1683,8 @@ var
   dt: TDataType;
   e: TValueEventArgs;
 begin
+  if Not value.IsEmpty then
+    target.SetDataType(attributeIndex, TGXCommon.GetDLMSDataType(value));
   if value.IsType<TBytes> Then
   begin
     tmp := value.asType<TBytes>;

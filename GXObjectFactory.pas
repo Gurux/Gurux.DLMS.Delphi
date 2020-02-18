@@ -54,6 +54,7 @@ Gurux.DLMS.Objects.GXDLMSExtendedRegister,
 Gurux.DLMS.Objects.GXDLMSActionSchedule,
 Gurux.DLMS.Objects.GXDLMSDemandRegister,
 Gurux.DLMS.Objects.GXDLMSIp4Setup,
+Gurux.DLMS.Objects.GXDLMSIp6Setup,
 Gurux.DLMS.Objects.GXDLMSPppSetup,
 Gurux.DLMS.Objects.GXDLMSGprsSetup,
 Gurux.DLMS.Objects.GXDLMSGSMDiagnostic,
@@ -125,6 +126,8 @@ begin
       Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otIp4Setup :
       Result := TGXDLMSIp4Setup.Create();
+  TObjectType.otIp6Setup :
+      Result := TGXDLMSIp6Setup.Create();
   TObjectType.otMBusSlavePortSetup :
       Result := TGXDLMSMBusSlavePortSetup.Create();
   TObjectType.otImageTransfer :

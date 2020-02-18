@@ -29,7 +29,8 @@ package GuruxDLMS;
 {$IMPLICITBUILD ON}
 
 requires
-  rtl;
+  rtl,
+  IndySystem;
 
 contains
   Gurux.DLMS.AccessMode in 'Gurux.DLMS.AccessMode.pas',
@@ -230,6 +231,8 @@ contains
   Gurux.DLMS.SingleReadResponse in 'Gurux.DLMS.SingleReadResponse.pas',
   Gurux.DLMS.Objects.GXDLMSIECLocalPortSetup in 'Objects\Gurux.DLMS.Objects.GXDLMSIECLocalPortSetup.pas',
   Gurux.DLMS.Objects.Enums.MBusEncryptionKeyStatus in 'Objects\Enums\Gurux.DLMS.Objects.Enums.MBusEncryptionKeyStatus.pas',
-  Gurux.DLMS.SetCommandType in 'Gurux.DLMS.SetCommandType.pas';
+  Gurux.DLMS.SetCommandType in 'Gurux.DLMS.SetCommandType.pas',
+  Gurux.DLMS.Objects.GXDLMSIp6Setup in 'Objects\Gurux.DLMS.Objects.GXDLMSIp6Setup.pas',
+  Gurux.DLMS.Enums.DateTimeExtraInfo in 'Enums\Gurux.DLMS.Enums.DateTimeExtraInfo.pas';
 
 end.

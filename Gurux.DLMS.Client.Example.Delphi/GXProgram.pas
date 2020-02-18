@@ -66,6 +66,7 @@ uses System.Generics.Collections, DateUtils, Classes, System.SysUtils, Rtti,
 
 type
 TGXProgram = class
+  FInvocationCounter: string;
   WaitTime : Integer;
   FTrace: TTraceLevel;
   socket : TClientSocket;
@@ -94,8 +95,10 @@ TGXProgram = class
     AHost: String;
     APort: Integer;
     ATrace: TTraceLevel;
-    ASecurity: TSecurity);
+    ASecurity: TSecurity;
+    AInvocationCounter: string);
 
+  procedure UpdateFrameCounter();
   procedure InitializeConnection();
   procedure Close();
   function GetAssociationView() : TGXDLMSObjectCollection;
@@ -120,7 +123,8 @@ TGXProgram = class
   procedure ReadList(list: TList<TPair<TGXDLMSObject, Integer>>);
   // Write list of attributes.
   procedure WriteList(list: TList<TPair<TGXDLMSObject, Integer>>);
-
+  procedure Release();
+  procedure Disconnect();
   end;
 
 implementation
@@ -146,10 +150,12 @@ begin
   WriteLn(' -c \t Client address. (Default: 16)');
   WriteLn(' -s \t Server address. (Default: 1)');
   WriteLn(' -n \t Server address as serial number.');
-  WriteLn(' -r [sn, sn]\t Short name or Logican Name (default) referencing is used.');
+  WriteLn(' -r [sn, ln]\t Short name or Logical Name (default) referencing is used.');
   WriteLn(' -w WRAPPER profile is used. HDLC is default.');
   WriteLn(' -t [Error, Warning, Info, Verbose] Trace messages.');
   WriteLn(' -g "0.0.1.0.0.255:1; 0.0.1.0.0.255:2" Get selected object(s) with given attribute index.');
+  WriteLn(' -C \t Security Level. (None, Authentication, Encrypted, AuthenticationEncryption)');
+  WriteLn(' -v \t Invocation counter data object Logical Name. Ex. 0.0.43.1.0.255');
   WriteLn('Example:');
   WriteLn('Read LG device using TCP/IP connection.');
   WriteLn('GuruxDlmsSample -r SN -c 16 -s 1 -h [Meter IP Address] -p [Meter Port No]');
@@ -173,8 +179,10 @@ constructor TGXProgram.Create(AUseLogicalNameReferencing : Boolean;
     AHost: String;
     APort: Integer;
     ATrace: TTraceLevel;
-    ASecurity: TSecurity);
+    ASecurity: TSecurity;
+    AInvocationCounter: string);
 begin
+  FInvocationCounter := AInvocationCounter;
   WaitTime := 5000;
   FTrace := ATrace;
 
@@ -377,7 +385,6 @@ begin
         val := Read(it, pos);
         if FTrace > TTraceLevel.tlWarning Then
           WriteValue('Index: ' + IntToStr(pos) + ' Value: ' + GetValueAsString(val));
-
       except
       on E: TGXDLMSException do
       begin
@@ -778,6 +785,39 @@ begin
   end;
 end;
 
+procedure TGXProgram.Release();
+var
+  reply: TGXReplyData;
+begin
+  if (socket <> Nil) and (Client <> Nil) then
+  begin
+    Writeln('Release.');
+    reply := TGXReplyData.Create();
+    try
+      ReadDataBlock(Client.ReleaseRequest(), reply);
+    finally
+      FreeAndNil(reply);
+    end;
+  end;
+end;
+
+procedure TGXProgram.Disconnect();
+var
+  reply: TGXReplyData;
+begin
+  if (socket <> Nil) and (Client <> Nil) then
+  begin
+    Writeln('Disconnecting from the meter.');
+    reply := TGXReplyData.Create();
+    try
+      ReadDLMSPacket(Client.DisconnectRequest(), reply);
+    finally
+      FreeAndNil(reply);
+    end;
+  end;
+end;
+
+
 //Close connection to the meter.
 procedure TGXProgram.Close();
 var
@@ -791,7 +831,7 @@ begin
       //Release is call only for secured connections.
       //All meters are not supporting Release and it's causing problems.
       if ((Client.InterfaceType = TInterfaceType.WRAPPER) or
-      ((Client.InterfaceType = TInterfaceType.HDLC) and (Client.Ciphering.Security = TSecurity.None))) Then
+      ((Client.InterfaceType = TInterfaceType.HDLC) and (Client.Ciphering.Security <> TSecurity.None))) Then
       begin
         ReadDataBlock(Client.ReleaseRequest(), reply);
       end;
@@ -804,12 +844,74 @@ begin
   end;
 end;
 
+procedure TGXProgram.UpdateFrameCounter();
+var
+  data : TBytes;
+  reply: TGXReplyData;
+  add: Integer;
+  auth: TAuthentication;
+  security: TSecurity;
+  challenge: TBytes;
+  d: TGXDLMSData;
+begin
+  if FInvocationCounter <> '' then
+  try
+    Client.ProposedConformance := TConformance(Integer(Client.ProposedConformance) or Integer(TConformance.cfGeneralProtection));
+    add := Client.ClientAddress;
+    auth := Client.Authentication;
+    security := Client.Ciphering.Security;
+    //challenge := Client.CtoSChallenge;
+    Client.ClientAddress := 16;
+    Client.Authentication := TAuthentication.atNone;
+    Client.Ciphering.Security := TSecurity.None;
+    data := Client.SNRMRequest;
+    reply := TGXReplyData.Create();
+    if (data <> nil) then
+    begin
+      if FTrace > TTraceLevel.tlWarning then
+        writeln('Send SNRM request: ');
+
+      ReadDLMSPacket(data, reply);
+      if FTrace > TTraceLevel.tlWarning then
+        writeln('Parsing UA reply: ');
+      Client.ParseUAResponse(reply.Data);
+      if FTrace > TTraceLevel.tlWarning then
+        writeln('Parsing UA reply succeeded.');
+    end;
+    for data in Client.AARQRequest() do
+    begin
+      if FTrace > TTraceLevel.tlWarning then
+        writeln('Send AARQ request: ');
+      reply.Clear;
+      ReadDLMSPacket(data, reply);
+    end;
+    if FTrace > TTraceLevel.tlWarning then
+      writeln('Parsing AARE reply: ');
+    Client.ParseAAREResponse(reply.Data);
+    reply.Clear;
+    d := TGXDLMSData.Create(FInvocationCounter);
+    Read(d, 2);
+    Client.Ciphering.InvocationCounter := 1 + d.Value.AsInteger;
+    writeln('Invocation counter: ' + IntToStr(Client.Ciphering.InvocationCounter));
+    reply.Clear();
+    Disconnect();
+    Client.ClientAddress := add;
+    Client.Authentication := auth;
+    Client.Ciphering.Security := security;
+    //Client.CtoSChallenge := challenge;
+  finally
+    FreeAndNil(d);
+    FreeAndNil(reply);
+  end;
+end;
+
 //Initialize connection to the meter.
 procedure TGXProgram.InitializeConnection();
 var
   data : TBytes;
   reply: TGXReplyData;
 begin
+  UpdateFrameCounter();
   try
     data := Client.SNRMRequest;
     reply := TGXReplyData.Create();

@@ -131,6 +131,8 @@ begin
   if ImageBlockSize = 0 Then
     raise Exception.Create('Invalid image block size.');
 
+  if FImageBlockSize > client.GetMaxReceivePDUSize Then
+                raise Exception.Create('Image block size is bigger than max PDU size.');
   data := TGXByteBuffer.Create();
   try
     data.SetUInt8(Integer(TDataType.dtStructure));

@@ -35,10 +35,15 @@ program Gurux.DLMS.Client.Example.Delphi;
 {$APPTYPE CONSOLE}
 {$R *.res}
 
-uses System.SysUtils, GXProgram, Gurux.DLMS.Authentication,
-Gurux.DLMS.InterfaceType, GXCommon, System.Generics.Collections, GXCmdParameter,
+uses System.SysUtils,
+GXProgram,
+Gurux.DLMS.Authentication,
+Gurux.DLMS.InterfaceType,
+GXCommon,
+System.Generics.Collections,
+GXCmdParameter,
 Gurux.DLMS.TraceLevel, ActiveX, Gurux.DLMS.GXDLMSObject, Gurux.DLMS.ObjectType,
-Gurux.DLMS.Security;
+Gurux.DLMS.Security, Gurux.DLMS.GXDLMSClient;
 
 var
   p : TGXProgram;
@@ -60,11 +65,11 @@ var
   parameters: TObjectList<TGXCmdParameter>;
   it: TGXCmdParameter;
   trace: TTraceLevel;
-  Iec: Boolean;
   readObjects, o: string;
   tmp: TArray<String>;
   obj: TGXDLMSObject;
   Security: TSecurity;
+  invocationCounter: string;
 begin
   Security := TSecurity.None;
   Host := String.Empty;
@@ -76,7 +81,7 @@ begin
   Authentication := TAuthentication.atNone;
   InterfaceType := TInterfaceType.HDLC;
   trace := TTraceLevel.tlInfo;
-  Iec := false;
+  invocationCounter := '';
 {$WARN SYMBOL_PLATFORM OFF}
 {$IFDEF MSWINDOWS}
 {$IFDEF DEBUG}
@@ -84,7 +89,7 @@ begin
 {$ENDIF}
 {$ENDIF}
   try
-    parameters := TGXCommon.GetParameters('h:p:c:s:r:it:a:p:wP:g:C:');
+    parameters := TGXCommon.GetParameters('h:p:c:s:r:t:a:p:wP:g:C:n:v:');
     for it in parameters do
     begin
       case it.Tag of
@@ -119,9 +124,11 @@ begin
       'p': Port := StrToInt(it.Value);
       'P'://Password
          Password := it.Value;
-      'i':
-          //IEC.
-          Iec := true;
+      'v':
+      begin
+        invocationCounter := it.Value.Trim();
+        TGXDLMSObject.GetLogicalName(invocationCounter);
+      end;
       'g':
       begin
         //Get (read) selected objects.
@@ -169,6 +176,7 @@ begin
           clientAddress := StrToInt(it.Value);
       's':
           serverAddress := StrToInt(it.Value);
+      'n': serverAddress := TGXDLMSClient.GetServerAddress(StrToInt(it.Value));
       '?':
         case it.Tag of
         'c': raise EArgumentException.Create('Missing mandatory client option.');
@@ -203,7 +211,8 @@ begin
     try
     try
       p := TGXProgram.Create(UseLogicalNameReferencing, ClientAddress,
-        ServerAddress, Authentication, Password, InterfaceType, Host, Port, trace, Security);
+        ServerAddress, Authentication, Password, InterfaceType, Host, Port, trace, security,
+        invocationCounter);
       if readObjects = '' Then
         p.ReadAll
       Else

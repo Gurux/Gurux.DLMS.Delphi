@@ -42,7 +42,7 @@ type
 TGXDLMSRegisterActivation = class(TGXDLMSObject)
   FRegisterAssignment : TObjectList<TGXDLMSObjectDefinition>;
   FActiveMask : string;
-  FMaskList : TDictionary<TBytes, TBytes>;
+  FMaskList : TList<TPair<TBytes, TBytes>>;
 
   destructor Destroy;override;
   constructor Create; overload;
@@ -51,7 +51,7 @@ TGXDLMSRegisterActivation = class(TGXDLMSObject)
 
   property RegisterAssignment: TObjectList<TGXDLMSObjectDefinition> read FRegisterAssignment;
 
-  property MaskList: TDictionary<TBytes, TBytes> read FMaskList;
+  property MaskList: TList<TPair<TBytes, TBytes>> read FMaskList;
   property ActiveMask: string read FActiveMask write FActiveMask;
 
   function GetValues() : TArray<TValue>;override;
@@ -81,7 +81,7 @@ constructor TGXDLMSRegisterActivation.Create(ln: string; sn: System.UInt16);
 begin
   inherited Create(TObjectType.otRegisterActivation, ln, 0);
   FRegisterAssignment := TObjectList<TGXDLMSObjectDefinition>.Create();
-  FMaskList := TDictionary<TBytes, TBytes>.Create();
+  FMaskList := TList<TPair<TBytes, TBytes>>.Create();
 end;
 
 destructor TGXDLMSRegisterActivation.Destroy;
@@ -266,7 +266,7 @@ begin
           index_list[pos] := it2.AsInteger;
           pos := pos + 1;
         end;
-        FMaskList.Add(tmp, index_list);
+        FMaskList.Add(TPair<TBytes, TBytes>.Create(tmp, index_list));
       end;
     end
   end

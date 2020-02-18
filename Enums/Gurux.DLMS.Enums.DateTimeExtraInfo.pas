@@ -30,50 +30,23 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.GXDate;
+unit Gurux.DLMS.Enums.DateTimeExtraInfo;
 
 interface
-uses Gurux.DLMS.GXDateTime;
 
 type
-  TGXDate = class(TGXDateTime)
-    constructor Create(year: Integer; month: Integer; day: Integer; dow: Integer = $FF); overload;
-    constructor Create(value: TGXDateTime); overload;
-    constructor Create(AValue: TDateTime = -1); overload;
-    function ToString: string; override;
-  end;
+  // Date time extra info.
+  TDateTimeExtraInfo = (
+    // No extra info.
+    None = $0,
+    // Daylight savings begin.
+    DstBegin = $1,
+    // Daylight savings end.
+    DstEnd = $2,
+    // Last day of month.
+    LastDay = $4,
+    // 2nd last day of month
+    LastDay2 = $8);
 
 implementation
-
-uses SysUtils, Gurux.DLMS.DateTimeSkips;
-
-constructor TGXDate.Create(year: Integer; month: Integer; day: Integer; dow: Integer);
-begin
-  inherited Create(year, month, day, $FF, $FF, $FF, $FF, dow);
-end;
-
-constructor TGXDate.Create(value: TGXDateTime);
-var
-  Y, M, D : Word;
-begin
-  DecodeDate(value.Time, Y, M, D);
-  inherited Create(Y, M, D, $FF, $FF, $FF, $FF, $FF);
-  Skip.Add(value.Skip);
-  Extra := value.Extra;
-end;
-
-constructor TGXDate.Create(AValue: TDateTime = -1);
-begin
-  inherited Create(AValue);
-  Skip.Add(TDateTimeSkips.dkHour);
-  Skip.Add(TDateTimeSkips.dkMinute);
-  Skip.Add(TDateTimeSkips.dkSecond);
-  Skip.Add(TDateTimeSkips.dkMs);
-end;
-
-function TGXDate.ToString: string;
-begin
-  Result := FormatDateTime('yy"-"mm"-"dd', Self.Time, TFormatSettings.Invariant)
-end;
-
 end.

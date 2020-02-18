@@ -82,6 +82,7 @@ TGXDLMSObject = class
   destructor Destroy; override;
   procedure SetAccess(index : Integer; access : TAccessMode);
   function GetAccess(index: Integer): TAccessMode;
+  class function GetLogicalName(ln: string): TBytes;static;
 
   protected
   function IsRead(index: Integer): Boolean;virtual;
@@ -91,7 +92,6 @@ TGXDLMSObject = class
     function GetAttribute(index: Integer; Attributes: TGXAttributeCollection ): TGXDLMSAttributeSettings;
 
     function GetLastReadTime(index: Integer): TDateTime;
-    class function GetLogicalName(ln: string): TBytes;static;
     function get_Name: Variant;
 
   public
@@ -606,30 +606,13 @@ begin
 end;
 
 class function TGXDLMSObject.GetLogicalName(ln: string): TBytes;
-var
-  index : Integer;
-  it: string;
-  items: TArray<string>;
 begin
-  items := ln.Split(['.']);
-  SetLength(Result, Length(items));
-  index := 0;
-  for it in items do
-  begin
-    Result[index] := (byte.Parse(it));
-    index := index + 1;
-  end;
- end;
+  Result := TGXCommon.GetLogicalName(ln);
+end;
 
 class function TGXDLMSObject.toLogicalName(buff: TBytes): string;
 begin
-  Result := '';
-  if Length(buff) = 6 then
-    begin
-      Result := Format('%d', [buff[0]])+ '.' + Format('%d', [buff[1]]) + '.' +
-      Format('%d', [buff[2]])+ '.' + Format('%d', [buff[3]]) + '.' +
-      Format('%d', [buff[4]])+ '.' + Format('%d', [buff[5]]);
-    end;
+  Result := TGXCommon.ToLogicalName(buff);
 end;
 
 constructor TGXDLMSObjectCollection.Create(AOwnsObjects: Boolean);

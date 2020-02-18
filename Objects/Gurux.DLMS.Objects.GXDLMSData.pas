@@ -116,7 +116,9 @@ begin
   end
   else if (index = 2) then
   begin
-    Result := TDataType.dtNone;
+    Result := inherited GetDataType(index);
+    if (Result = TDataType.dtNone) and (FValue.IsEmpty = False) Then
+        Result := TGXCommon.GetDLMSDataType(FValue);
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');

@@ -34,9 +34,15 @@ unit Gurux.DLMS.Objects.GXDLMSMBusClient;
 
 interface
 
-uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-Gurux.DLMS.Objects.Enums.MBusEncryptionKeyStatus;
+uses GXCommon,
+SysUtils,
+Rtti,
+System.Generics.Collections,
+Gurux.DLMS.ObjectType,
+Gurux.DLMS.DataType,
+Gurux.DLMS.GXDLMSObject,
+Gurux.DLMS.Objects.Enums.MBusEncryptionKeyStatus,
+GXByteBuffer;
 
 type
 TGXDLMSMBusClient = class(TGXDLMSObject)
@@ -232,11 +238,31 @@ begin
 end;
 
 function TGXDLMSMBusClient.GetValue(e: TValueEventArgs): TValue;
+var
+  buff: TGXByteBuffer;
+  it : TPair<string, string>;
 begin
   case e.Index of
   1: Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
   2: Result := TValue.From(TGXDLMSObject.GetLogicalName(MBusPortReference));
-  3: Result := FCaptureDefinition;//TODO:
+  3:
+  begin
+    buff := TGXByteBuffer.Create();
+    try
+      buff.SetUInt8(Integer(TDataType.dtArray));
+      TGXCommon.SetObjectCount(FCaptureDefinition.Count, buff);
+      for it in FCaptureDefinition do
+      begin
+        buff.SetUInt8(Integer(TDataType.dtStructure));
+        buff.SetUInt8(2);
+        TGXCommon.SetData(buff, TDataType.dtUInt8, it.Key);
+        TGXCommon.SetData(buff, TDataType.dtOctetString, TValue.From(TEncoding.ASCII.GetBytes(it.Value)));
+      end;
+      Result := TValue.From(buff.ToArray());
+    finally
+      freeAndNil(buff);
+    end;
+  end;
   4: Result := FCapturePeriod;
   5: Result := FPrimaryAddress;
   6: Result := FIdentificationNumber;
@@ -256,6 +282,7 @@ end;
 procedure TGXDLMSMBusClient.SetValue(e: TValueEventArgs);
 var
   it : TValue;
+  tmp: TArray<TValue>;
 begin
   if (e.Index = 1) then
   begin
@@ -263,22 +290,16 @@ begin
   end
   else if e.Index = 2 Then
   begin
-    if e.Value.IsType<string> Then
-    begin
-        FMBusPortReference := e.Value.ToString();
-    end
-    else
-    begin
-        FMBusPortReference := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtOctetString).ToString();
-    end;
+    FMBusPortReference := TGXCommon.ToLogicalName(e.Value);
   end
   else if e.Index = 3 Then
   begin
     FCaptureDefinition.Clear();
     for it in e.Value.AsType<TArray<TValue>> do
     begin
-      FCaptureDefinition.Add(TPair<string, string>.Create(TGXCommon.ChangeType(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>, TDataType.dtOctetString).ToString(),
-          TGXCommon.ChangeType(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>, TDataType.dtOctetString).ToString()));
+      tmp := it.AsType<TArray<TValue>>();
+      FCaptureDefinition.Add(TPair<string, string>.Create(TGXCommon.ChangeType(tmp[0].AsType<TBytes>, TDataType.dtOctetString).ToString(),
+          TGXCommon.ChangeType(tmp[1].AsType<TBytes>, TDataType.dtOctetString).ToString()));
     end;
   end
   else if e.Index = 4 Then

@@ -34,11 +34,21 @@ unit Gurux.DLMS.Objects.GXDLMSActionSchedule;
 
 interface
 
-uses GXCommon, DateUtils, SysUtils, Rtti, System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-Gurux.DLMS.SingleActionScheduleType, Gurux.DLMS.GXDateTime,
-Gurux.DLMS.GXDate, Gurux.DLMS.GXTime,
-Gurux.DLMS.DateTimeSkips, GXByteBuffer;
+uses GXCommon,
+DateUtils,
+SysUtils,
+Rtti,
+System.Generics.Collections,
+Gurux.DLMS.ObjectType,
+Gurux.DLMS.DataType,
+Gurux.DLMS.GXDLMSObject,
+Gurux.DLMS.SingleActionScheduleType,
+Gurux.DLMS.GXDateTime,
+Gurux.DLMS.GXDate,
+Gurux.DLMS.GXTime,
+Gurux.DLMS.DateTimeSkips,
+GXByteBuffer,
+Gurux.DLMS.Enums.DateTimeExtraInfo;
 
 type
 TGXDLMSActionSchedule = class(TGXDLMSObject)
@@ -261,6 +271,8 @@ begin
           tm.Skip.Add(TDateTimeSkips.dkDayOfWeek);
         if date.Skip.Contains(TDateTimeSkips.dkDeviation) Then
           tm.Skip.Add(TDateTimeSkips.dkDeviation);
+
+        tm.Extra := TDateTimeExtraInfo(Integer(tm.Extra) or Integer(date.Extra));
         FExecutionTime.Add(tm);
         FreeAndNil(date);
       end;

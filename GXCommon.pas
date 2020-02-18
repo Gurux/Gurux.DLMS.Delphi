@@ -35,14 +35,30 @@ unit GXCommon;
 
 interface
 
-uses System.TypInfo, System.Generics.Collections,
-SysUtils, DateUtils, Classes, Variants, Gurux.DLMS.ActionType, Gurux.DLMS.DataType,
-Gurux.DLMS.GXDateTime, Gurux.DLMS.GXDate, Gurux.DLMS.GXTime, Gurux.DLMS.DateTimeSkips, Rtti,
-Gurux.DLMS.TUnit, Windows, Gurux.DLMS.ClockStatus, GXByteBuffer, GXDataInfo,
-Gurux.DLMS.ErrorCode, GXCmdParameter, System.Types;
+uses System.TypInfo,
+System.Generics.Collections,
+SysUtils,
+DateUtils,
+Classes,
+Variants,
+Gurux.DLMS.ActionType,
+Gurux.DLMS.DataType,
+Gurux.DLMS.GXDateTime,
+Gurux.DLMS.GXDate,
+Gurux.DLMS.GXTime,
+Gurux.DLMS.DateTimeSkips,
+Rtti,
+Gurux.DLMS.TUnit,
+Windows,
+Gurux.DLMS.ClockStatus,
+GXByteBuffer,
+GXDataInfo,
+Gurux.DLMS.ErrorCode,
+GXCmdParameter,
+System.Types,
+Gurux.DLMS.Enums.DateTimeExtraInfo;
 
 const
-
   HDLCFrameStartEnd = $7E;
   LLCSendBytes : array [0..2] of Byte = ($E6, $E6, $00);
   LLCReplyBytes : array [0..2] of byte = ($E6, $E7, $00);
@@ -1055,6 +1071,8 @@ var
 begin
   items := ln.Split(['.']);
   SetLength(Result, Length(items));
+  if Length(Result) <> 6 then
+    raise EArgumentException.Create('Invalid Logical name.');
   index := 0;
   for it in items do
   begin
@@ -1504,7 +1522,9 @@ var
   Y, M, D : Word;
   dt: TDateTime;
   skip: TDateTimeSkipsSet;
+  extra: TDateTimeExtraInfo;
 begin
+ extra := TDateTimeExtraInfo.None;
  if value.IsType<TDate> Then
   begin
     dt := TDateTime(value.AsType<TDate>);
@@ -1519,6 +1539,7 @@ begin
   begin
     dt := value.AsType<TGXDateTime>.Time;
     skip.SetOnly(value.AsType<TGXDateTime>.Skip);
+    extra := value.AsType<TGXDateTime>.Extra;
   end
   else
     raise EArgumentException.Create('Invalid Time format.');
@@ -1531,13 +1552,21 @@ begin
     buff.SetUInt16(Y);
 
   // Add month
-  if skip.Contains(TDateTimeSkips.dkMonth) Then
+  if Integer(extra) and Integer(TDateTimeExtraInfo.DstBegin) <> 0 then
+    buff.SetUInt8($FE)
+  else if Integer(extra) and Integer(TDateTimeExtraInfo.DstEnd) <> 0 then
+    buff.SetUInt8($FD)
+  else if skip.Contains(TDateTimeSkips.dkMonth) Then
     buff.SetUInt8($FF)
   else
     buff.SetUInt8(M);
 
   // Add day
-  if skip.Contains(TDateTimeSkips.dkDay) Then
+  if Integer(extra) and Integer(TDateTimeExtraInfo.LastDay) <> 0 then
+    buff.SetUInt8($FE)
+  else if Integer(extra) and Integer(TDateTimeExtraInfo.LastDay2) <> 0 then
+    buff.SetUInt8($FD)
+  else if skip.Contains(TDateTimeSkips.dkDay) Then
     buff.setUInt8($FF)
   else
     buff.setUInt8(D);
@@ -1557,8 +1586,10 @@ var
   deviation: Integer;
   skip: TDateTimeSkipsSet;
   status: TClockStatus;
+  extra: TDateTimeExtraInfo;
 begin
   status := TClockStatus.ctNone;
+  extra := TDateTimeExtraInfo.None;
   deviation := $8000;
   if value.IsType<TDate> Then
   begin
@@ -1581,6 +1612,7 @@ begin
     skip.SetOnly(value.AsType<TGXDateTime>.Skip);
     deviation := value.AsType<TGXDateTime>.TimeZone;
     status := value.AsType<TGXDateTime>.Status;
+    extra := value.AsType<TGXDateTime>.Extra;
   end
   else
     raise EArgumentException.Create('Invalid Time format.');
@@ -1595,13 +1627,21 @@ begin
     buff.SetUInt16(Y);
 
   // Add month
-  if skip.Contains(TDateTimeSkips.dkMonth) Then
+  if Integer(extra) and Integer(TDateTimeExtraInfo.DstBegin) <> 0 then
+    buff.SetUInt8($FE)
+  else if Integer(extra) and Integer(TDateTimeExtraInfo.DstEnd) <> 0 then
+    buff.SetUInt8($FD)
+  else if skip.Contains(TDateTimeSkips.dkMonth) Then
     buff.SetUInt8($FF)
   else
     buff.SetUInt8(M);
 
   // Add day
-  if skip.Contains(TDateTimeSkips.dkDay) Then
+  if Integer(extra) and Integer(TDateTimeExtraInfo.LastDay) <> 0 then
+    buff.SetUInt8($FE)
+  else if Integer(extra) and Integer(TDateTimeExtraInfo.LastDay2) <> 0 then
+    buff.SetUInt8($FD)
+  else if skip.Contains(TDateTimeSkips.dkDay) Then
     buff.setUInt8($FF)
   else
     buff.setUInt8(D);
@@ -1725,7 +1765,10 @@ begin
     dtStringUTF8:
       TGXCommon.SetUtfString(buff, value);
     dtOctetString:
-      if value.IsType<TGXDate> then
+      if value.IsEmpty then
+        // Add size
+        buff.setUInt8(0)
+      else if value.IsType<TGXDate> then
       begin
         // Add size
         buff.setUInt8(5);
@@ -1919,7 +1962,7 @@ begin
      Result := TDataType.dtStructure;
      Exit;
   end;
-  if AValue.IsArray Then
+  if AValue.TypeInfo = TypeInfo(TGXArray) Then
   begin
     Result := TDataType.dtArray;
     Exit;
@@ -1934,15 +1977,15 @@ begin
     Result := TDataType.dtUInt32;
     Exit;
   end;
-  if AValue.TypeInfo = TypeInfo(TGXBitString) Then
-  begin
-     Result := TDataType.dtBitString;
-     Exit;
-  end;
   if AValue.TypeInfo = TypeInfo(String) Then
   begin
     Result := TDataType.dtString;
     Exit;
+  end;
+  if AValue.TypeInfo = TypeInfo(TGXBitString) Then
+  begin
+     Result := TDataType.dtBitString;
+     Exit;
   end;
   if AValue.TypeInfo = TypeInfo(TGXEnum) Then
   begin

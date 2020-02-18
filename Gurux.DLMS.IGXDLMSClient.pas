@@ -39,6 +39,8 @@ type
 IGXDLMSClient = Interface(IInterface)
     function Method(item: TGXDLMSObject; index: Integer; data: TValue; dt: TDataType): TArray<TBytes>;
     function Write(item : TGXDLMSObject; index : Integer): TArray<TBytes>;
+
+    function GetMaxReceivePDUSize: System.UInt16;
 end;
 
 implementation

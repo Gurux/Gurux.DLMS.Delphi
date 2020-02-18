@@ -66,6 +66,23 @@ type
     function AsString: string;
   end;
 
+  TGXDLMSGSMCellInfo = class
+    // Four byte cell ID.
+    CellId: UInt32;
+    //  Two byte location area code (LAC).
+    LocationId: UInt16;
+    //  Signal quality.
+    SignalQuality: BYTE;
+    // Bit Error Rate.
+    BER: BYTE;
+    // Mobile Country Code.
+    MobileCountryCode: UInt16;
+    //  Mobile Network Code.
+    MobileNetworkCode: UInt16;
+    //  Absolute radio frequency channel number.
+    ChannelNumber: UInt32;
+  end;
+
   TAdjacentCellInfo = record
     strict private
       FCellId: Word;
@@ -84,10 +101,10 @@ type
       FBER: Byte;
     public
       constructor Create(const ACellId: Word = 0; const ALocationId: Word = 0; const ASigQual: Byte = 0; const ABER: Byte = 0);
-      property CellId: word read FCellId;
-      property LocationId: Word read FLocationId;
-      property SignalQuality: TSignalQuality read FSignalQuality;
-      property BER: Byte read FBER;
+      property CellId: word read FCellId write FCellId;
+      property LocationId: Word read FLocationId write FLocationId;
+      property SignalQuality: TSignalQuality read FSignalQuality write FSignalQuality;
+      property BER: Byte read FBER write FBER;
   end;
 
   TGXDLMSGSMDiagnostic = class(TGXDLMSObject)
@@ -96,7 +113,7 @@ type
     FStatus: TRegStatus;
     FCSAttachment: TCSAttachment;
     FPSStatus: TPSStatus;
-    FCellInfo: TCellInfo;
+    FCellInfo: TGXDLMSGSMCellInfo;
     FAdjacentCells: TList<TAdjacentCellInfo>;
     FCaptureTime: TGXDateTime;
 
@@ -110,7 +127,7 @@ type
     property Status: TRegStatus read FStatus write FStatus;
     property CSAttachment: TCSAttachment read FCSAttachment write FCSAttachment;
     property PSStatus: TPSStatus read FPSStatus write FPSStatus;
-    property CellInfo: TCellInfo read FCellInfo write FCellInfo;
+    property CellInfo: TGXDLMSGSMCellInfo read FCellInfo write FCellInfo;
     property AdjacentCells: TList<TAdjacentCellInfo> read FAdjacentCells;
     property CaptureTime: TGXDateTime read FCaptureTime write FCaptureTime;
 
@@ -140,8 +157,9 @@ end;
 constructor TGXDLMSGSMDiagnostic.Create(ln: string; sn: System.UInt16);
 begin
   inherited Create(TObjectType.otGSMDiagnostic, ln, 0);
-  FCellInfo := TCellInfo.Create;
+  FCellInfo := TGXDLMSGSMCellInfo.Create;
   FAdjacentCells := TList<TAdjacentCellInfo>.Create;
+  FVersion := 1;
 end;
 
 destructor TGXDLMSGSMDiagnostic.Destroy;
@@ -258,14 +276,12 @@ begin
         TGXCommon.SetData(bb, TDataType.dtUInt16, FCellInfo.LocationId);
         TGXCommon.SetData(bb, TDataType.dtUInt8, BYTE(FCellInfo.SignalQuality));
         TGXCommon.SetData(bb, TDataType.dtUInt8, BYTE(FCellInfo.Ber));
-        {
-        if Version > 0 Then
+        if FVersion > 0 Then
         begin
           TGXCommon.SetData(bb, TDataType.dtUInt16, Integer(FCellInfo.MobileCountryCode));
           TGXCommon.SetData(bb, TDataType.dtUInt16, Integer(FCellInfo.MobileNetworkCode));
           TGXCommon.SetData(bb, TDataType.dtUInt32, Integer(FCellInfo.ChannelNumber));
         end;
-        }
         Result := TValue.From(bb.ToArray());
       finally
         FreeAndNil(bb);
@@ -327,27 +343,20 @@ begin
   end
   else if e.Index = 6 Then
   begin
-    if e.Value.IsEmpty Then
-      FCellInfo := TCellInfo.Create
-    else
+    if (Not e.Value.IsEmpty) and e.Value.IsType<TArray<TValue>>() Then
+    begin
+      tmp := e.Value.AsType<TArray<TValue>>();
+      FCellInfo.CellId := tmp[0].AsInteger;
+      FCellInfo.LocationId := tmp[1].AsInteger;
+      FCellInfo.SignalQuality := tmp[2].AsInteger;
+      FCellInfo.Ber := tmp[3].AsInteger;
+      if FVersion > 0 Then
       begin
-        if e.Value.IsType<TArray<TValue>>() Then
-          begin
-          tmp := e.Value.AsType<TArray<TValue>>();
-          if Length(tmp) = 0 Then
-            begin
-              FCellInfo := TCellInfo.Create;
-            end
-          else
-            begin
-              FCellInfo := TCellInfo.Create(
-                            tmp[0].AsInteger,
-                            tmp[1].AsInteger,
-                            tmp[2].AsInteger,
-                            tmp[3].AsInteger);
-            end;
-          end;
+        FCellInfo.MobileCountryCode := tmp[4].AsInteger;
+        FCellInfo.MobileNetworkCode := tmp[5].AsInteger;
+        FCellInfo.ChannelNumber := tmp[6].AsInteger;
       end;
+    end;
   end
   else if e.Index = 7 Then
   begin

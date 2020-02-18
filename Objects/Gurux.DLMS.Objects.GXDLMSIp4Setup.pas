@@ -35,7 +35,8 @@ unit Gurux.DLMS.Objects.GXDLMSIp4Setup;
 interface
 
 uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject, GXByteBuffer;
+Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject, GXByteBuffer,
+IdGlobal;
 
 type
 
@@ -87,7 +88,8 @@ end;
 
 TGXDLMSIp4Setup = class(TGXDLMSObject)
   FDataLinkLayerReference: String;
-  FSecondaryDNSAddress, FPrimaryDNSAddress, FGatewayIPAddress, FSubnetMask, FIPAddress : String;
+  FPrimaryDNSAddress, FGatewayIPAddress, FSubnetMask, FIPAddress : string;
+  FSecondaryDNSAddress: string;
   FMulticastIPAddress : TArray<String>;
   FIPOptions : TArray<TGXDLMSIp4SetupIpOption>;
   FUseDHCP : Boolean;
@@ -217,48 +219,20 @@ end;
 
 function TGXDLMSIp4Setup.GetDataType(index: Integer): TDataType;
 begin
-  if (index = 1) then
-  begin
-    Result := TDataType.dtOctetString;
-  end
-  else if index = 2 then
-  begin
-    Result := TDataType.dtOctetString;
-  end
-  else if index = 3 then
-  begin
-    Result := TDataType.dtUInt32;
-  end
-  else if index = 4 then
-  begin
-    Result := TDataType.dtArray;
-  end
-  else if index = 5 then
-  begin
-    Result := TDataType.dtArray;
-  end
-  else if index = 6 then
-  begin
-    Result := TDataType.dtUInt32;
-  end
-  else if index = 7 then
-  begin
-    Result := TDataType.dtUInt32;
-  end
-  else if index = 8 then
-  begin
-    Result := TDataType.dtBoolean;
-  end
-  else if index = 9 then
-  begin
-    Result := TDataType.dtUInt32;
-  end
-  else if index = 10 then
-  begin
-    Result := TDataType.dtUInt32;
-  end
+  case index of
+  1: Result := TDataType.dtOctetString;
+  2: Result := TDataType.dtOctetString;
+  3: Result := TDataType.dtUInt32;
+  4: Result := TDataType.dtArray;
+  5: Result := TDataType.dtArray;
+  6: Result := TDataType.dtUInt32;
+  7: Result := TDataType.dtUInt32;
+  8: Result := TDataType.dtBoolean;
+  9: Result := TDataType.dtUInt32;
+  10: Result := TDataType.dtUInt32;
   else
   	raise Exception.Create('GetDataType failed. Invalid attribute index.');
+  end;
 end;
 
 function TGXDLMSIp4Setup.GetValue(e: TValueEventArgs): TValue;
