@@ -801,7 +801,6 @@ var
   ind, count : Integer;
   ln: LogicalName;
   p: TObject;
-  requestType: Byte;
 begin
   if (VarType(name) = VarEmpty) or (index < 1) then
       raise EArgumentException.Create('Invalid parameter');
@@ -849,10 +848,6 @@ begin
       end
       else
       begin
-        if dt = TDataType.dtNone Then
-          requestType := Byte(TVariableAccessSpecification.VariableName)
-        else
-          requestType := Byte(TVariableAccessSpecification.ParameterisedAccess);
         ind := 0;
         count := 0;
         TGXDLMS.GetActionInfo(ot, @ind, @count);
@@ -868,7 +863,8 @@ begin
         if dt <> TDataType.dtNone Then
             attributeDescriptor.SetUInt8(1);
 
-        p := TGXDLMSSNParameters.Create(FSettings, TCommand.ReadRequest, 1, requestType, attributeDescriptor, data);
+        p := TGXDLMSSNParameters.Create(FSettings, TCommand.WriteRequest, 1,
+            Byte(TVariableAccessSpecification.VariableName), attributeDescriptor, data);
         try
           Result := TGXDLMS.GetSnMessages(TGXDLMSSNParameters(p));
         finally
