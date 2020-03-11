@@ -70,6 +70,8 @@ var
   obj: TGXDLMSObject;
   Security: TSecurity;
   invocationCounter: string;
+  AutoIncreaseInvokeID: boolean;
+  outputFile: string;
 begin
   Security := TSecurity.None;
   Host := String.Empty;
@@ -82,6 +84,7 @@ begin
   InterfaceType := TInterfaceType.HDLC;
   trace := TTraceLevel.tlInfo;
   invocationCounter := '';
+  AutoIncreaseInvokeID := False;
 {$WARN SYMBOL_PLATFORM OFF}
 {$IFDEF MSWINDOWS}
 {$IFDEF DEBUG}
@@ -89,7 +92,7 @@ begin
 {$ENDIF}
 {$ENDIF}
   try
-    parameters := TGXCommon.GetParameters('h:p:c:s:r:t:a:p:wP:g:C:n:v:');
+    parameters := TGXCommon.GetParameters('h:p:c:s:r:It:a:p:wP:g:C:n:v:o:');
     for it in parameters do
     begin
       case it.Tag of
@@ -124,6 +127,11 @@ begin
       'p': Port := StrToInt(it.Value);
       'P'://Password
          Password := it.Value;
+      'I':
+        // AutoIncreaseInvokeID.
+        AutoIncreaseInvokeID := True;
+      'o':
+        outputFile := it.Value;
       'v':
       begin
         invocationCounter := it.Value.Trim();
@@ -170,8 +178,6 @@ begin
           Security := TSecurity.AuthenticationEncryption
         else
           raise Exception.Create('Invalid Ciphering option. (None, Authentication, Encryption, AuthenticationEncryption)');
-      'o':
-          break;
       'c':
           clientAddress := StrToInt(it.Value);
       's':
@@ -212,9 +218,9 @@ begin
     try
       p := TGXProgram.Create(UseLogicalNameReferencing, ClientAddress,
         ServerAddress, Authentication, Password, InterfaceType, Host, Port, trace, security,
-        invocationCounter);
+        invocationCounter, AutoIncreaseInvokeID);
       if readObjects = '' Then
-        p.ReadAll
+        p.ReadAll(outputFile)
       Else
       begin
         p.GetAssociationView;

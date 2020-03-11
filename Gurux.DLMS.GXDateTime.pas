@@ -260,12 +260,12 @@ var
   formatSettings : TFormatSettings;
 begin
 {$IFDEF MSWINDOWS}
-  if FSkip.IsEmpty then
+  if FSkip.IsEmpty = False then
   begin
     formatSettings := TFormatSettings.Create();
     format := TList<string>.Create();
     try
-      format.AddRange(formatSettings.ShortDateFormat.Split(['/']));
+      format.AddRange(formatSettings.ShortDateFormat.Split([formatSettings.DateSeparator]));
 
       if FSkip.Contains(TDateTimeSkips.dkYear) then
         format.Remove('yyyy');
@@ -274,15 +274,11 @@ begin
       if FSkip.Contains(TDateTimeSkips.dkDay) then
         format.Remove('d');
 
-      if format.Count = 0 then
-        Result := ''
-      else
-      begin
-        formatSettings.ShortDateFormat := string.Join(formatSettings.DateSeparator, format.ToArray());
-        formatSettings.ShortDateFormat := formatSettings.ShortDateFormat;
+        formatSettings.LongDateFormat := string.Join(formatSettings.DateSeparator, format.ToArray());
+        formatSettings.ShortDateFormat := formatSettings.LongDateFormat;
 
         format.Clear;
-        format.AddRange(formatSettings.LongTimeFormat.Split([':']));
+        format.AddRange(formatSettings.LongTimeFormat.Split([formatSettings.TimeSeparator]));
         if FSkip.Contains(TDateTimeSkips.dkHour) then
           format.Remove('H');
         if FSkip.Contains(TDateTimeSkips.dkMinute) then
@@ -291,11 +287,11 @@ begin
           format.Remove('ss');
 
         formatSettings.LongTimeFormat := string.Join(formatSettings.TimeSeparator, format.ToArray());
-        formatSettings.ShortTimeFormat := formatSettings.LongTimeFormat;
-
-      Result := DateTimeToStr(LocalTime, formatSettings);
-      end;
-
+          formatSettings.ShortTimeFormat := formatSettings.LongTimeFormat;
+      if (formatSettings.ShortDateFormat = '') and (formatSettings.ShortTimeFormat = '') then
+        Result := ''
+      else
+        Result := DateTimeToStr(LocalTime, formatSettings);
     finally
       FreeAndNil(format);
     end;

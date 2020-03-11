@@ -102,6 +102,9 @@ public
   //Convert security enum value to string.
   class function ToString(value: TSecurity): string;overload;
 
+  //Convert string to Object type.
+  class function ValueOfObjectType(const value: string): TObjectType;
+
 end;
 
 implementation
@@ -115,6 +118,108 @@ destructor TGXDLMSConverter.Destroy;
 begin
   FreeAndNil(codes);
   inherited;
+end;
+
+class function TGXDLMSConverter.ValueOfObjectType(const value: string): TObjectType;
+begin
+  if value = 'GXDLMSActionSchedule' Then
+    Result := TObjectType.otACTIONSCHEDULE
+  else if value = 'GXDLMSActivityCalendar' Then
+    Result := TObjectType.otACTIVITYCALENDAR
+  else if value = 'GXDLMSAssociationLogicalName' Then
+    Result := TObjectType.otASSOCIATIONLOGICALNAME
+  else if value = 'GXDLMSAssociationShortName' Then
+    Result := TObjectType.otASSOCIATIONSHORTNAME
+  else if value = 'GXDLMSAutoAnswer' Then
+    Result := TObjectType.otAUTOANSWER
+  else if value = 'GXDLMSAutoConnect' Then
+    Result := TObjectType.otAUTOCONNECT
+  else if value = 'GXDLMSClock' Then
+    Result := TObjectType.otCLOCK
+  else if value = 'GXDLMSData' Then
+    Result := TObjectType.otDATA
+  else if value = 'GXDLMSDemandRegister' Then
+    Result := TObjectType.otDEMANDREGISTER
+  else if value = 'GXDLMSMacAddressSetup' Then
+    Result := TObjectType.otMACADDRESSSETUP
+  else if value = 'GXDLMSExtendedRegister' Then
+    Result := TObjectType.otEXTENDEDREGISTER
+  else if value = 'GXDLMSGprsSetup' Then
+    Result := TObjectType.otGPRSSETUP
+  else if value = 'GXDLMSSecuritySetup' Then
+    Result := TObjectType.otSECURITYSETUP
+  else if value = 'GXDLMSIecHdlcSetup' Then
+    Result := TObjectType.otIECHDLCSETUP
+  else if value = 'GXDLMSIecLocalPortSetup' Then
+    Result := TObjectType.otIECLOCALPORTSETUP
+  else if value = 'GXDLMSIECTWISTEDPAIRSETUP' Then
+    Result := TObjectType.otIECTWISTEDPAIRSETUP
+  else if value = 'GXDLMSIp4Setup' Then
+    Result := TObjectType.otIP4SETUP
+  else if value = 'GXDLMSIp6Setup' Then
+    Result := TObjectType.otIp6Setup
+  else if value = 'GXDLMSMBusSlavePortSetup' Then
+    Result := TObjectType.otMBUSSLAVEPORTSETUP
+  else if value = 'GXDLMSImageTransfer' Then
+    Result := TObjectType.otIMAGETRANSFER
+  else if value = 'GXDLMSDisconnectControl' Then
+    Result := TObjectType.otDISCONNECTCONTROL
+  else if value = 'GXDLMSLimiter' Then
+    Result := TObjectType.otLIMITER
+  else if value = 'GXDLMSMBusClient' Then
+    Result := TObjectType.otMBUSCLIENT
+  else if value = 'GXDLMSModemConfiguration' Then
+    Result := TObjectType.otMODEMCONFIGURATION
+  else if value = 'GXDLMSPppSetup' Then
+    Result := TObjectType.otPPPSETUP
+  else if value = 'GXDLMSProfileGeneric' Then
+    Result := TObjectType.otPROFILEGENERIC
+  else if value = 'GXDLMSRegister' Then
+    Result := TObjectType.otREGISTER
+  else if value = 'GXDLMSRegisterActivation' Then
+    Result := TObjectType.otREGISTERACTIVATION
+  else if value = 'GXDLMSRegisterMonitor' Then
+    Result := TObjectType.otREGISTERMONITOR
+  else if value = 'GXDLMSRegisterTable' Then
+    Result := TObjectType.otREGISTERTABLE
+  else if value = 'GXDLMSSapAssignment' Then
+    Result := TObjectType.otSAPASSIGNMENT
+  else if value = 'GXDLMSSchedule' Then
+    Result := TObjectType.otSCHEDULE
+  else if value = 'GXDLMSScriptTable' Then
+    Result := TObjectType.otSCRIPTTABLE
+  else if value = 'GXDLMSSMTPSetup' Then
+    Result := TObjectType.otSMTPSETUP
+  else if value = 'GXDLMSSpecialDaysTable' Then
+    Result := TObjectType.otSPECIALDAYSTABLE
+  else if value = 'GXDLMSStatusMapping' Then
+    Result := TObjectType.otSTATUSMAPPING
+  else if value = 'GXDLMSTcpUdpSetup' Then
+    Result := TObjectType.otTCPUDPSETUP
+  else if value = 'GXDLMSUtilityTables' Then
+    Result := TObjectType.otUtilityTables
+  else if value = 'GXDLMSMBusMasterPortSetup' Then
+    Result := TObjectType.otMBUSMASTERPORTSETUP
+  else if value = 'GXDLMSMessageHandler' Then
+    Result := TObjectType.otMESSAGEHANDLER
+  else if value = 'GXDLMSPushSetup' Then
+    Result := TObjectType.otPUSHSETUP
+  else if value = 'GXDLMSAccount' Then
+    Result := TObjectType.otACCOUNT
+  else if value = 'GXDLMSCredit' Then
+    Result := TObjectType.otCREDIT
+  else if value = 'GXDLMSCharge' Then
+    Result := TObjectType.otCHARGE
+  else if value = 'GXDLMSParameterMonitor' Then
+    Result := TObjectType.otPARAMETERMONITOR
+  else if value = 'GXDLMSTokenGateway' Then
+    Result := TObjectType.otTOKENGATEWAY
+  else if value = 'GXDLMSGSMDiagnostic' Then
+    Result := TObjectType.otGSMDIAGNOSTIC
+  else if value = 'GXDLMSCompactData' Then
+    Result := TObjectType.otCOMPACTDATA
+  else
+    raise Exception.CreateFmt('Enum %s not found', [value]);
 end;
 
 class function TGXDLMSConverter.ToString(AObjectType : TObjectType) : String;
@@ -137,6 +242,7 @@ begin
     otIecLocalPortSetup: Result := 'GXDLMSIecLocalPortSetup';
     otIecTwistedPairSetup: Result := 'GXDLMSIecTwistedPairSetup';
     otIp4Setup: Result := 'GXDLMSIp4Setup';
+    otIp6Setup: Result := 'GXDLMSIp6Setup';
     otMBusSlavePortSetup: Result := 'GXDLMSMBusSlavePortSetup';
     otModemConfiguration: Result := 'GXDLMSModemConfiguration';
     otNone: Result := 'GXDLMSNone';

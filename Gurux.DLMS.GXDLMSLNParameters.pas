@@ -33,7 +33,11 @@
 unit Gurux.DLMS.GXDLMSLNParameters;
 
 interface
-uses Gurux.DLMS.Command, Gurux.DLMS.GXDLMSObject, GXByteBuffer, Gurux.DLMS.GXDateTime;
+uses Gurux.DLMS.Command,
+Gurux.DLMS.GXDLMSObject,
+GXByteBuffer,
+Gurux.DLMS.GXDateTime,
+Gurux.DLMS.GetCommandType;
 
 type
 //LN Parameters
@@ -138,5 +142,11 @@ implementation
     FStreaming := false;
     WindowSize := 1;
     FBlockNumberAck := 0;
+    if settings <> Nil Then
+    begin
+      settings.Command := ACommand;
+      if (ACommand = TCommand.GetRequest) and (ACommandType <> BYTE(TGetCommandType.ctNextDataBlock)) Then
+        settings.CommandType := TGetCommandType(ACommandType);
+    end;
   end;
 end.

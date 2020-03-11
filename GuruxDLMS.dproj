@@ -81,6 +81,7 @@
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
         <DCCReference Include="IndySystem.dcp"/>
+        <DCCReference Include="xmlrtl.dcp"/>
         <DCCReference Include="Gurux.DLMS.AccessMode.pas"/>
         <DCCReference Include="Gurux.DLMS.ActionType.pas"/>
         <DCCReference Include="Gurux.DLMS.AssociationResult.pas"/>
@@ -282,6 +283,9 @@
         <DCCReference Include="Gurux.DLMS.SetCommandType.pas"/>
         <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSIp6Setup.pas"/>
         <DCCReference Include="Enums\Gurux.DLMS.Enums.DateTimeExtraInfo.pas"/>
+        <DCCReference Include="GXXmlReader.pas"/>
+        <DCCReference Include="GXXmlWriter.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSUtilityTables.pas"/>
         <RcItem Include="OBISCodes.txt">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>Text</ResourceType>

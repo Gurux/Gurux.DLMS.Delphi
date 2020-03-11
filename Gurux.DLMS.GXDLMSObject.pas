@@ -41,7 +41,11 @@ Gurux.DLMS.DataType, Gurux.DLMS.ErrorCode, Gurux.DLMS.Priority, Gurux.DLMS.Servi
 Gurux.DLMS.Conformance, Gurux.DLMS.SecuritySuite, Gurux.DLMS.Authentication,
 Gurux.DLMS.InterfaceType, Gurux.DLMS.GXDLMSLimits, Gurux.DLMS.GXCiphering,
 Gurux.DLMS.HdlcFrameType, Gurux.DLMS.GXDateTime, Gurux.DLMS.GXDLMSGateway,
-Gurux.DLMS.ConnectionState;
+Gurux.DLMS.ConnectionState,
+Gurux.DLMS.Command,
+Gurux.DLMS.GetCommandType,
+GXXmlWriter,
+GXXmlReader;
 
 const
 // Server frame sequence starting number.
@@ -147,6 +151,9 @@ TGXDLMSObjectCollection = class(TObjectList<TGXDLMSObject>)
   function FindBySN(sn: Word): TGXDLMSObject;
   property Parent : TObject read FParent write FParent;
   function ToString: string; override;
+
+  procedure Save(APath : String);
+  procedure Load(APath : String);
 end;
 
  //
@@ -273,6 +280,9 @@ private
   FBlockNumberAck: BYTE;
   // Ciphering.
   FCipher : TGXCiphering;
+  FCommand: TCommand;
+  FCommandType: TGetCommandType;
+  FAutoIncreaseInvokeID : Boolean;
 
   public
 
@@ -326,6 +336,9 @@ private
 
   // Used security suite.
   property SecuritySuite: TSecuritySuite read FSecuritySuite write FSecuritySuite;
+
+  property Command: TCommand read FCommand write FCommand;
+  property CommandType: TGetCommandType read FCommandType write FCommandType;
 
   //Constructor.
   constructor Create(
@@ -425,10 +438,14 @@ private
   property WindowSize : Byte read FWindowSize write FWindowSize;
   property BlockNumberAck : Byte read FBlockNumberAck write FBlockNumberAck;
 
-
+  property AutoIncreaseInvokeID : Boolean read FAutoIncreaseInvokeID write FAutoIncreaseInvokeID;
 end;
 
 implementation
+
+uses System.Generics.Collections, DateUtils,
+  ScktComp, TypInfo, ActiveX,
+  Gurux.DLMS.GXDLMSConverter, GXObjectFactory;
 
 function TGXDLMSObject.ToString: string;
 begin
@@ -750,6 +767,87 @@ begin
   end;
 end;
 
+//Load objects values.
+procedure TGXDLMSObjectCollection.Load(APath : String);
+var
+  reader: TGXXmlReader;
+  target: string;
+  obj: TGXDLMSObject;
+  ot: TObjectType;
+begin
+  reader := TGXXmlReader.Create(APath);
+  Clear;
+  try
+    obj := Nil;
+    while reader.IsEOF() = False do
+    begin
+      if reader.IsStartElement() Then
+      begin
+        target := reader.GetName();
+        if 'Objects' = target Then
+            // Skip.
+            reader.Read()
+        else if target.startsWith('GXDLMS') Then
+        begin
+          ot := TGXDLMSConverter.ValueOfObjectType(target);
+          obj := TGXObjectFactory.CreateObject(WORD(ot));
+          Add(obj);
+          reader.Read();
+        end
+        else if 'SN' = target Then
+            obj.ShortName := reader.ReadElementContentAsInt('SN')
+        else if 'LN' = target Then
+            obj.LogicalName := reader.ReadElementContentAsString('LN')
+        else if 'Description' = target Then
+            obj.Description :=reader.ReadElementContentAsString('Description')
+        else
+          reader.read();
+      end
+      else
+        reader.read();
+    end;
+  finally
+    reader.Free();
+  end;
+end;
+
+//Save objects values.
+procedure TGXDLMSObjectCollection.Save(APath : String);
+var
+  writer: TGXXmlWriter;
+  it: TGXDLMSObject;
+begin
+  writer := TGXXmlWriter.Create();
+  try
+    writer.WriteStartElement('Objects');
+    for it in Self do
+    begin
+      //Custom interfaces are not saved.
+      if it.ClassType <> TGXDLMSObject then
+      begin
+        writer.WriteStartElement(TGXDLMSConverter.ToString(it.ObjectType));
+        // Add SN
+        if it.ShortName <> 0 Then
+          writer.WriteElementString('SN', it.ShortName);
+
+        // Add LN
+        writer.WriteElementString('LN', it.LogicalName);
+        // Add description if given.
+        if it.description <> '' Then
+          writer.WriteElementString('Description', it.Description);
+
+        // Close object.
+        writer.WriteEndElement();
+      end;
+    end;
+    writer.WriteEndElement();
+    writer.Save(APath);
+  finally
+    writer.Free();
+  end;
+end;
+
+
 procedure TGXDLMSObject.SetDataType(index : Integer; tp : TDataType);
 var
   att : TGXDLMSAttributeSettings;
@@ -871,6 +969,8 @@ begin;
   ResetFrameSequence();
   FGateway := Nil;
   FCipher := Nil;
+  FCommand := TCommand.None;
+  FCommandType := TGetCommandType.ctNormal;
 end;
 
 destructor TGXDLMSSettings.Destroy;

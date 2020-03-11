@@ -581,7 +581,6 @@ var
   info2 : TGXDataInfo;
   tmp : TValue;
 begin
-  pos := 0;
   if info.Count = 0 then
     info.Count := GetObjectCount(buff);
 

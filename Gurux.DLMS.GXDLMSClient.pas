@@ -66,7 +66,6 @@ type
 TGXDLMSClient = class (TInterfacedObject)
   protected
     FSettings: TGXDLMSSettings;
-    FAutoIncreaseInvokeID : Boolean;
   private
     function GetSourceSystemTitle: TBytes;
     function GetPassword: TBytes;
@@ -113,10 +112,14 @@ TGXDLMSClient = class (TInterfacedObject)
     class function CreateDLMSObject(ClassID : Word; Version : Word; BaseName : Word;
                 LN : TValue; AccessRights : TValue) : TGXDLMSObject; static;
 
-   class procedure UpdateObjectData(obj : TGXDLMSObject; objectType : WORD;
+    class procedure UpdateObjectData(obj : TGXDLMSObject; objectType : WORD;
               version : Word; baseName : TValue; logicalName : TValue;
               accessRights : TValue); static;
     function ReadRowsByRange(pg: TGXDLMSProfileGeneric; startTime: TValue; endTime : TValue; columns: TList<TGXDLMSCaptureObject>) : TArray<TBytes>;overload;
+
+    function GetAutoIncreaseInvokeID: Boolean;
+    procedure SetAutoIncreaseInvokeID(AValue: Boolean);
+
   public
     destructor Destroy; override;
 
@@ -162,7 +165,10 @@ TGXDLMSClient = class (TInterfacedObject)
     property Limits: TGXDLMSLimits read get_Limits;
     property ClientAddress : Integer read get_ClientAddress write set_ClientAddress;
     property ServerAddress : Integer read get_ServerAddress write set_ServerAddress;
-    property AutoIncreaseInvokeID : Boolean read FAutoIncreaseInvokeID write FAutoIncreaseInvokeID;
+
+    //Auto increase Invoke ID.
+    property AutoIncreaseInvokeID : Boolean read GetAutoIncreaseInvokeID write SetAutoIncreaseInvokeID;
+
     property SourceSystemTitle : TBytes read GetSourceSystemTitle;
 
     //Gateway settings.
@@ -806,8 +812,6 @@ begin
       raise EArgumentException.Create('Invalid parameter');
 
   FSettings.ResetBlockIndex();
-  if FAutoIncreaseInvokeID Then
-    FSettings.InvokeID := ((FSettings.InvokeID + 1) and $F);
 
   if (dt = TDataType.dtNone) and Not value.IsEmpty Then
     dt := TGXDLMSConverter.GetDLMSDataType(value);
@@ -923,9 +927,6 @@ begin
     raise TGXDLMSException.Create('Invalid parameter. Unknown value type.');
 
   FSettings.ResetBlockIndex();
-  if FAutoIncreaseInvokeID Then
-    FSettings.InvokeID := ((FSettings.InvokeID + 1) and $F);
-
   if (dt = TDataType.dtNone) and Not value.IsEmpty Then
   begin
     dt := TGXDLMSConverter.GetDLMSDataType(value);
@@ -1007,7 +1008,7 @@ begin
 
       if UseLogicalNameReferencing Then
       begin
-        p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.GetRequest, BYTE(TGetCommandType.ctWithList), Nil, data, $ff, TCommand.None);
+        p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.GetRequest, BYTE(TGetCommandType.ctWithList), data, Nil, $ff, TCommand.None);
         try
           //Request service primitive shall always fit in a single APDU.
           pos := 0;
@@ -1050,7 +1051,7 @@ begin
       end
       else
       begin
-        p := TGXDLMSSNParameters.Create(FSettings, TCommand.ReadRequest, list.Count, $FF, Nil, data);
+        p := TGXDLMSSNParameters.Create(FSettings, TCommand.ReadRequest, list.Count, $FF, data, Nil);
         try
           for it in list do
           begin
@@ -1202,9 +1203,6 @@ begin
     raise TGXDLMSException.Create('Invalid parameter');
 
   FSettings.ResetBlockIndex();
-   if FAutoIncreaseInvokeID Then
-    FSettings.InvokeID := ((FSettings.InvokeID + 1) and $F);
-
   attributeDescriptor := TGXByteBuffer.Create();
   try
     if UseLogicalNameReferencing Then
@@ -1768,6 +1766,16 @@ begin
   if formula = '' Then
     formula := 'SN % 10000 + 1000';
   Result := $4000 or TSerialnumberCounter.Count(serialNumber, formula);
+end;
+
+function TGXDLMSClient.GetAutoIncreaseInvokeID: Boolean;
+begin
+  Result := FSettings.AutoIncreaseInvokeID;
+end;
+
+procedure TGXDLMSClient.SetAutoIncreaseInvokeID(AValue: Boolean);
+begin
+  FSettings.AutoIncreaseInvokeID := AValue;
 end;
 
 end.

@@ -36,7 +36,7 @@ interface
 
 //This class implements DLMS client example.
 uses System.Generics.Collections, DateUtils, Classes, System.SysUtils, Rtti,
-  ScktComp, TypInfo, Variants, ActiveX, xmldom, XMLIntf, msxmldom, XMLDoc,
+  ScktComp, TypInfo, Variants, ActiveX,
   Gurux.DLMS.DataType,
   GXByteBuffer,
   Gurux.DLMS.GXDLMSCaptureObject,
@@ -96,7 +96,8 @@ TGXProgram = class
     APort: Integer;
     ATrace: TTraceLevel;
     ASecurity: TSecurity;
-    AInvocationCounter: string);
+    AInvocationCounter: string;
+    AAutoIncreaseInvokeID: Boolean);
 
   procedure UpdateFrameCounter();
   procedure InitializeConnection();
@@ -112,12 +113,9 @@ TGXProgram = class
   procedure ReadDataBlock(data: TBytes; reply: TGXReplyData);overload;
   procedure ReadDataBlock(data: TArray<TBytes>; reply: TGXReplyData);overload;
 
-  procedure Save(APath : String);
-  function Load(APath : String) : TGXDLMSObjectCollection;
-
   class function GetValueAsString(value : TValue) : string;
   function Method(it : TGXDLMSObject; attributeIndex : Integer; data : TValue; dt : TDataType) : TValue;
-  procedure ReadAll;
+  procedure ReadAll(AOutputFile: string);
 
   // Read list of attributes.
   procedure ReadList(list: TList<TPair<TGXDLMSObject, Integer>>);
@@ -156,6 +154,8 @@ begin
   WriteLn(' -g "0.0.1.0.0.255:1; 0.0.1.0.0.255:2" Get selected object(s) with given attribute index.');
   WriteLn(' -C \t Security Level. (None, Authentication, Encrypted, AuthenticationEncryption)');
   WriteLn(' -v \t Invocation counter data object Logical Name. Ex. 0.0.43.1.0.255');
+  WriteLn(' -I \t Auto increase invoke ID');
+  WriteLn(' -o \t Cache association view to make reading faster. Ex. -o C:\device.xml');
   WriteLn('Example:');
   WriteLn('Read LG device using TCP/IP connection.');
   WriteLn('GuruxDlmsSample -r SN -c 16 -s 1 -h [Meter IP Address] -p [Meter Port No]');
@@ -180,7 +180,8 @@ constructor TGXProgram.Create(AUseLogicalNameReferencing : Boolean;
     APort: Integer;
     ATrace: TTraceLevel;
     ASecurity: TSecurity;
-    AInvocationCounter: string);
+    AInvocationCounter: string;
+    AAutoIncreaseInvokeID: Boolean);
 begin
   FInvocationCounter := AInvocationCounter;
   WaitTime := 5000;
@@ -197,6 +198,7 @@ begin
   Client := TGXDLMSSecureClient.Create(AUseLogicalNameReferencing, AClientAddress, AServerAddress,
             AAuthentication, APassword, AIntefaceType);
   Client.Ciphering.Security := ASecurity;
+  Client.AutoIncreaseInvokeID := AAutoIncreaseInvokeID;
   socket.Host := AHost;
   socket.Port := APort;
   ///////////////////////////////////////////////////////
@@ -290,7 +292,6 @@ var
   reply: TGXReplyData;
   data: TArray<TBytes>;
   it: TBytes;
-  pos: Integer;
 begin
   data := Client.WriteList(list);
   reply := TGXReplyData.Create();
@@ -370,10 +371,10 @@ begin
 
     if it.ClassType = TGXDLMSObject then
     begin
-        //If interface is not implemented.
-        //Example manufacturer spesific interface.
-        writeln('Unknown Interface: ' + IntToStr(Integer(it.ObjectType)));
-        continue;
+      //If interface is not implemented.
+      //Example manufacturer spesific interface.
+      writeln('Unknown Interface: ' + IntToStr(Integer(it.ObjectType)));
+      continue;
     end;
 
 
@@ -494,19 +495,16 @@ begin
   end;
 end;
 
-procedure TGXProgram.ReadAll;
-var
-  logFile : string;
+procedure TGXProgram.ReadAll(AOutputFile: string);
 begin
-  logFile := socket.Host.Replace('.', '_') + '_' + socket.Port.ToString() + '.xml';
   try
-  //You can save association view, but make sure that it is not change.
-  //Save Association view to the cache so it is not needed to retreave every time.
-  {
-  //Get list of objects from the meter.
-  if FileExists(logFile) Then
-    objects := Load(logFile);
-  }
+  if AOutputFile <> '' then
+  try
+    Client.Objects.Load(AOutputFile);
+  except on Ex : Exception do
+    WriteValue('Error! ' + Ex.Message);
+  end;
+
   //Read association view if objects are not saved yet.
   if Client.Objects.Count = 0 then
     GetAssociationView;
@@ -518,10 +516,11 @@ begin
   GetReadOut;
   // Read historical data.
   GetProfileGenerics();
-  Save(logFile);
   finally
     Close();
   end;
+  if AOutputFile <> '' then
+    Client.Objects.Save(AOutputFile);
 end;
 
 class function TGXProgram.GetValueAsString(value : TValue) : string;
@@ -636,155 +635,6 @@ begin
   end;
 end;
 
-//Load objects values.
-function TGXProgram.Load(APath : String) : TGXDLMSObjectCollection;
-var
-  FDOC: TXMLDocument;
-  Node, cn, access: IXMLNode;
-  ot : TObjectType;
-  obj, obj2 : TGXDLMSObject;
-  comp : TComponent;
-  index, pos, pos2 : Integer;
-  ln : string;
-  val : OleVariant;
-  co: TGXDLMSConverter;
-begin
-  Result := Client.Objects;
-  Result.Clear;
-  try
-    comp := TComponent.Create(Nil);
-    FDOC := TXMLDocument.Create(comp);
-    FDOC.Options := FDOC.Options + [doNodeAutoIndent];
-    FDOC.LoadFromFile(APath);
-    FDOC.Active := true;
-    For pos := 0 to FDOC.DocumentElement.ChildNodes.Count - 1 do
-    begin
-      Node := FDOC.DocumentElement.ChildNodes[pos];
-      ot := TObjectType(StrToInt(Node.Attributes['Type']));
-      obj := Client.CreateObject(ot);
-      val := Node.Attributes['SN'];
-      if Variants.VarIsStr(val) then
-        obj.ShortName := StrToInt(val);
-
-      obj.LogicalName := Node.Attributes['LN'];
-      obj.Version := StrToInt(Node.Attributes['Version']);
-      cn := Node.ChildNodes.FindNode('Access');
-      if cn <> Nil then
-      begin
-        For pos2 := 0 to cn.ChildNodes.Count - 1 do
-        begin
-          access := cn.ChildNodes[pos2];
-          index := StrToInt(access.Attributes['Index']);
-          obj.SetAccess(index,
-                        TAccessMode(StrToInt(access.Attributes['Access'])));
-
-          val := access.Attributes['Type'];
-          if Variants.VarIsStr(val) then
-            obj.SetDataType(index, TDataType(StrToInt(val)));
-        end;
-      end;
-
-      Client.Objects.Add(obj);
-      if obj is TGXDLMSProfileGeneric then
-      begin
-        Node := Node.ChildNodes.FindNode('Objects');
-        For pos2 := 0 to Node.ChildNodes.Count - 1 do
-        begin
-          cn := Node.ChildNodes[pos2];
-          ot := TObjectType(StrToInt(cn.Attributes['Type']));
-          ln := cn.Attributes['LN'];
-          obj2 := Client.Objects.FindByLN(ot, ln);
-          if obj2 = Nil then
-          begin
-            obj2 := Client.CreateObject(ot);
-            obj2.LogicalName := ln;
-          end;
-          obj2.Version := StrToInt(cn.Attributes['Version']);
-          (obj as TGXDLMSProfileGeneric).CaptureObjects.Add(
-          TGXDLMSCaptureObject.Create(obj2, StrToInt(cn.Attributes['AttributeIndex']),
-              StrToInt(cn.Attributes['DataIndex'])));
-        end;
-      end;
-    end;
-    //Update objects descriptions.
-    co := TGXDLMSConverter.Create();
-    co.UpdateOBISCodeInformation(Client.Objects);
-    FreeAndNil(co);
-  except
-    on E: Exception do
-    begin
-      Client.Objects.Clear;
-      DeleteFile(APath);
-      Writeln(E.ClassName, ': ', E.Message);
-    end;
-  end;
-  FDOC.Active := False;
-  Node := Nil;
-  cn := Nil;
-  access := Nil;
-  FreeAndNil(FDOC);
-  FreeAndNil(comp);
-  end;
-
-//Save objects values.
-procedure TGXProgram.Save(APath : String);
-var
-  FDOC: TXMLDocument;
-  FRootNode: IXMLNode;
-  access, Auth, Node, Node2: IXMLNode;
-  it: TGXDLMSObject;
-  it2: TGXDLMSCaptureObject;
-  pos, tp : Integer;
-begin
-  try
-    FDOC := TXMLDocument.Create(Nil);
-    FDOC.Options := FDOC.Options + [doNodeAutoIndent];
-    FDOC.Active := true;
-    FDOC.Encoding := 'UTF-8';
-    FRootNode := FDOC.CreateElement('Objects', '');
-    FDOC.DocumentElement := FRootNode;
-    for it in Client.Objects do
-    begin
-      Node := FRootNode.AddChild(it.ClassName);
-      Node.Attributes['LN'] := it.LogicalName;
-      Node.Attributes['Type'] := Integer(it.ObjectType).ToString;
-      if it.ShortName <> 0 then
-        Node.Attributes['SN'] := it.ShortName.ToString;
-      Node.Attributes['Version'] := it.Version.ToString;
-      Auth := Node.AddChild('Access');
-      for pos := 1 to it.GetAttributeCount do
-      begin
-        access := Auth.AddChild('Index');
-        access.Attributes['Index'] := pos.ToString();
-        access.Attributes['Access'] := Integer(it.GetAccess(pos));
-        tp := Integer(it.GetDataType(pos));
-        if tp <> 0 then
-          access.Attributes['Type'] := tp;
-      end;
-
-      if it is TGXDLMSProfileGeneric then
-      begin
-        Node := Node.AddChild('Objects');
-        for it2 in (it as TGXDLMSProfileGeneric).CaptureObjects do
-        begin
-          Node2 := Node.AddChild(it2.Target.ClassName);
-          Node2.Attributes['LN'] := it2.Target.LogicalName;
-          Node2.Attributes['Type'] := Integer(it2.Target.ObjectType).ToString;
-          Node2.Attributes['Version'] := it2.Target.Version.ToString;
-          Node2.Attributes['AttributeIndex'] := it2.AttributeIndex.ToString;
-          Node2.Attributes['DataIndex'] := it2.DataIndex.ToString;
-        end;
-      end;
-    end;
-    FDOC.SaveToFile(APath);
-    FDOC.Active := False;
-  finally
-    Node := Nil;
-    FRootNode := Nil;
-    FreeAndNil(FDOC);
-  end;
-end;
-
 procedure TGXProgram.Release();
 var
   reply: TGXReplyData;
@@ -851,7 +701,6 @@ var
   add: Integer;
   auth: TAuthentication;
   security: TSecurity;
-  challenge: TBytes;
   d: TGXDLMSData;
 begin
   if FInvocationCounter <> '' then

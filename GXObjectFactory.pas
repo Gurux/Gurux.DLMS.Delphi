@@ -82,7 +82,8 @@ Gurux.DLMS.Objects.GXDLMSCredit,
 Gurux.DLMS.Objects.GXDLMSCharge,
 Gurux.DLMS.Objects.GXDLMSTokenGateway,
 Gurux.DLMS.Objects.GXDLMSParameterMonitor,
-Gurux.DLMS.Objects.GXDLMSCompactData;
+Gurux.DLMS.Objects.GXDLMSCompactData,
+Gurux.DLMS.Objects.GXDLMSUtilityTables;
 
 // Reserved for internal use.
 class function TGXObjectFactory.CreateObject(tp : WORD) : TGXDLMSObject;
@@ -173,7 +174,7 @@ begin
   TObjectType.otTunnel :
     Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otUtilityTables :
-    Result := TGXDLMSObject.Create(TObjectType(tp));
+    Result := TGXDLMSUtilityTables.Create();
    TObjectType.otMBusMasterPortSetup :
      Result := TGXDLMSMBusMasterPortSetup.Create();
   TObjectType.otPushSetup:

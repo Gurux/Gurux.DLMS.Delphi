@@ -30,7 +30,8 @@ package GuruxDLMS;
 
 requires
   rtl,
-  IndySystem;
+  IndySystem,
+  xmlrtl;
 
 contains
   Gurux.DLMS.AccessMode in 'Gurux.DLMS.AccessMode.pas',
@@ -233,6 +234,9 @@ contains
   Gurux.DLMS.Objects.Enums.MBusEncryptionKeyStatus in 'Objects\Enums\Gurux.DLMS.Objects.Enums.MBusEncryptionKeyStatus.pas',
   Gurux.DLMS.SetCommandType in 'Gurux.DLMS.SetCommandType.pas',
   Gurux.DLMS.Objects.GXDLMSIp6Setup in 'Objects\Gurux.DLMS.Objects.GXDLMSIp6Setup.pas',
-  Gurux.DLMS.Enums.DateTimeExtraInfo in 'Enums\Gurux.DLMS.Enums.DateTimeExtraInfo.pas';
+  Gurux.DLMS.Enums.DateTimeExtraInfo in 'Enums\Gurux.DLMS.Enums.DateTimeExtraInfo.pas',
+  GXXmlReader in 'GXXmlReader.pas',
+  GXXmlWriter in 'GXXmlWriter.pas',
+  Gurux.DLMS.Objects.GXDLMSUtilityTables in 'Objects\Gurux.DLMS.Objects.GXDLMSUtilityTables.pas';
 
 end.
