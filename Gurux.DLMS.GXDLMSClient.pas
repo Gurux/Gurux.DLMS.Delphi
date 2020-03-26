@@ -106,8 +106,8 @@ TGXDLMSClient = class (TInterfacedObject)
     // Generates a read message.
     function Read(name : Variant; ot : TObjectType; attributeOrdinal : Integer; data: TGXByteBuffer) : TArray<TBytes>;overload;
 
-    procedure ParseSNObjects(buff : TGXByteBuffer; onlyKnownObjects : Boolean);
-    procedure ParseLNObjects(buff : TGXByteBuffer; onlyKnownObjects : Boolean);
+    procedure ParseSNObjects(buff : TGXByteBuffer; onlyKnownObjects : Boolean; ignoreInactiveObjects: Boolean);
+    procedure ParseLNObjects(buff : TGXByteBuffer; onlyKnownObjects : Boolean; ignoreInactiveObjects: Boolean);
 
     class function CreateDLMSObject(ClassID : Word; Version : Word; BaseName : Word;
                 LN : TValue; AccessRights : TValue) : TGXDLMSObject; static;
@@ -211,7 +211,19 @@ TGXDLMSClient = class (TInterfacedObject)
     function GetObjectsRequest() : TBytes;
     function GetApplicationAssociationRequest(): TArray<TBytes>;
     procedure ParseApplicationAssociationResponse(reply : TGXByteBuffer);
-    procedure ParseObjects(data: TGXByteBuffer; onlyKnownObjects: Boolean);
+
+    // Parses the COSEM objects of the received data.
+    // data: Received data, from the device, as byte array.
+    // onlyKnownObjects: Parse only DLMS standard objects. Manufacture specific objects are ignored.
+    // ignoreInactiveObjects: Inactive objects are ignored.
+    procedure ParseObjects(data: TGXByteBuffer; onlyKnownObjects: Boolean); overload;
+
+    // Parses the COSEM objects of the received data.
+    // data: Received data, from the device, as byte array.
+    // onlyKnownObjects: Parse only DLMS standard objects. Manufacture specific objects are ignored.
+    // ignoreInactiveObjects: Inactive objects are ignored.
+    procedure ParseObjects(data: TGXByteBuffer; onlyKnownObjects: Boolean; ignoreInactiveObjects: Boolean); overload;
+
     // Removes the frame from the packet, and returns DLMS PDU.
     function GetData(
         reply: TBytes;
@@ -1264,7 +1276,17 @@ begin
   Result := Read(name, TObjectType.otAssociationLogicalName, 2)[0];
 end;
 
-procedure TGXDLMSClient.ParseObjects(data: TGXByteBuffer; onlyKnownObjects: Boolean);
+procedure TGXDLMSClient.ParseObjects(
+    data: TGXByteBuffer;
+    onlyKnownObjects: Boolean);
+begin
+   ParseObjects(data, onlyKnownObjects, true);
+end;
+
+procedure TGXDLMSClient.ParseObjects(
+    data: TGXByteBuffer;
+    onlyKnownObjects: Boolean;
+    ignoreInactiveObjects: Boolean);
 var
   c: TGXDLMSConverter;
 begin
@@ -1274,9 +1296,9 @@ begin
   FSettings.Objects.Clear;
 
   if UseLogicalNameReferencing Then
-    ParseLNObjects(data, onlyKnownObjects)
+    ParseLNObjects(data, onlyKnownObjects, ignoreInactiveObjects)
   else
-    ParseSNObjects(data, onlyKnownObjects);
+    ParseSNObjects(data, onlyKnownObjects, ignoreInactiveObjects);
 
   c := TGXDLMSConverter.Create();
   try
@@ -1361,8 +1383,10 @@ begin
       obj.LogicalName := logicalName.ToString();
 end;
 
-// Reserved for internal use.
-procedure TGXDLMSClient.ParseSNObjects(buff : TGXByteBuffer; onlyKnownObjects : Boolean);
+procedure TGXDLMSClient.ParseSNObjects(
+    buff : TGXByteBuffer;
+  onlyKnownObjects : Boolean;
+  ignoreInactiveObjects: Boolean);
 var
   size: Byte;
   ot, baseName, pos, cnt: Integer;
@@ -1380,7 +1404,6 @@ begin
 
   info := TGXDataInfo.Create();
   try
-
     for pos := 0 to cnt do
     begin
       // Some meters give wrong item count.
@@ -1394,32 +1417,30 @@ begin
 
       ot := objects[1].AsType<WORD>;
       baseName := objects[0].AsType<WORD> and $FFFF;
-      if baseName > 0 Then
-      begin
-        comp := CreateDLMSObject(ot, objects[2].AsType<WORD>, baseName, objects[3], Nil);
-        try
-          if comp.ClassType = TGXDLMSObject Then
-            TGXCommon.Trace('Unknown object ' + ot.ToString + ' ' + objects[0].ToString());
-        except
-          comp.Free;
-          raise;
-        end;
-        comp.Parent := FSettings.Objects;
-        if (Not onlyKnownObjects) or (comp.ClassType <> TGXDLMSObject) then
-          FSettings.Objects.Add(comp)
-        else
-          FreeAndNil(comp);
+      comp := CreateDLMSObject(ot, objects[2].AsType<WORD>, baseName, objects[3], Nil);
+      try
+        if comp.ClassType = TGXDLMSObject Then
+          TGXCommon.Trace('Unknown object ' + ot.ToString + ' ' + objects[0].ToString());
+      except
+        comp.Free;
+        raise;
       end;
+      comp.Parent := FSettings.Objects;
+      if ((Not onlyKnownObjects) or (comp.ClassType <> TGXDLMSObject) and (Not ignoreInactiveObjects) or (comp.LogicalName <> '0.0.127.0.0.0')) then
+        FSettings.Objects.Add(comp)
+      else
+        FreeAndNil(comp);
     end;
-
   finally
     info.Free;
   end;
 
 end;
 
-//Reserved for internal use.
-procedure TGXDLMSClient.ParseLNObjects(buff : TGXByteBuffer; onlyKnownObjects : Boolean);
+procedure TGXDLMSClient.ParseLNObjects(
+    buff : TGXByteBuffer;
+    onlyKnownObjects : Boolean;
+    ignoreInactiveObjects: Boolean);
 var
   ot, cnt, objectCnt: Integer;
   objects: TArray<TValue>;
@@ -1457,7 +1478,7 @@ begin
         raise;
       end;
       comp.Parent := FSettings.Objects;
-      if (comp.ClassType <> TGXDLMSObject) or (Not onlyKnownObjects) then
+      if ((Not onlyKnownObjects) or (comp.ClassType <> TGXDLMSObject) and (Not ignoreInactiveObjects) or (comp.LogicalName <> '0.0.127.0.0.0')) then
         FSettings.Objects.Add(comp)
       else
         FreeAndNil(comp);

@@ -1644,6 +1644,18 @@ begin
   values := Nil;
   if cnt <> 1 Then
   begin
+      //Parse data after all data is received when readlist is used.
+      if reply.IsMoreData Then
+      begin
+        GetDataFromBlock(reply.Data, 0);
+        Result := false;
+        Exit;
+      end;
+      if not first Then
+      begin
+        reply.Data.Position := 0;
+        first := true;
+      end;
     values := TList<TValue>.Create();
     if reply.Value.IsArray and (reply.Value.GetArrayLength <> 0) Then
       values.AddRange(reply.Value.AsType<TArray<TValue>>);
@@ -1655,18 +1667,6 @@ begin
     standardXml := (reply.Xml <> Nil) and (reply.Xml.OutputType = TTranslatorOutputType.StandardXml);
     for pos := 0 to cnt - 1 do
     begin
-      if reply.Data.Available = 0 Then
-      begin
-        reply.TotalCount := cnt;
-        if cnt <> 1 Then
-        begin
-          GetDataFromBlock(reply.Data, 0);
-          reply.Value := TValue.From(values.toArray());
-          reply.ReadPosition := reply.Data.Position;
-        end;
-        Result := false;
-        Exit;
-      end;
       // Get status code. Status code is begin of each PDU.
       if first Then
       begin
@@ -1701,20 +1701,6 @@ begin
           begin
             reply.ReadPosition := reply.Data.Position;
             GetValueFromData(settings, reply);
-            if reply.Data.Position = reply.ReadPosition Then
-            begin
-              //If multiple values remove command.
-              if (cnt <> 1) and (reply.TotalCount = 0) Then
-                index := index + 1;
-              reply.TotalCount := 0;
-              reply.Data.Position := index;
-              GetDataFromBlock(reply.Data, 0);
-              reply.Value := Nil;
-              //Ask that data is parsed after last block is received.
-              reply.CommandType := BYTE(TSingleReadResponse.DataBlockResult);
-              Result := false;
-              Exit;
-            end;
             reply.Data.Position := reply.ReadPosition;
             values.Add(reply.Value);
             reply.Value := Nil;
