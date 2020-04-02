@@ -83,7 +83,14 @@ Gurux.DLMS.Objects.GXDLMSCharge,
 Gurux.DLMS.Objects.GXDLMSTokenGateway,
 Gurux.DLMS.Objects.GXDLMSParameterMonitor,
 Gurux.DLMS.Objects.GXDLMSCompactData,
-Gurux.DLMS.Objects.GXDLMSUtilityTables;
+Gurux.DLMS.Objects.GXDLMSUtilityTables,
+Gurux.DLMS.Objects.GXDLMSLlcSscsSetup,
+Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcPhysicalLayerCounters,
+Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacSetup,
+Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacFunctionalParameters,
+Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacCounters,
+Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacNetworkAdministrationData,
+Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcApplicationsIdentification;
 
 // Reserved for internal use.
 class function TGXObjectFactory.CreateObject(tp : WORD) : TGXDLMSObject;
@@ -193,6 +200,20 @@ begin
     Result := TGXDLMSParameterMonitor.Create();
   //TODO: TObjectType.otCompactData :
   //TODO:   Result := TGXDLMSCompactData.Create();
+  TObjectType.otLlcSscsSetup:
+    Result := TGXDLMSLlcSscsSetup.Create();
+  TObjectType.otPrimeNbOfdmPlcPhysicalLayerCounters:
+    Result := TGXDLMSPrimeNbOfdmPlcPhysicalLayerCounters.Create();
+  TObjectType.otPrimeNbOfdmPlcMacSetup:
+    Result := TGXDLMSPrimeNbOfdmPlcMacSetup.Create();
+  TObjectType.otPrimeNbOfdmPlcMacFunctionalParameters:
+    Result := TGXDLMSPrimeNbOfdmPlcMacFunctionalParameters.Create();
+  TObjectType.otPrimeNbOfdmPlcMacCounters:
+    Result := TGXDLMSPrimeNbOfdmPlcMacCounters.Create();
+  TObjectType.otPrimeNbOfdmPlcMacNetworkAdministrationData:
+    Result := TGXDLMSPrimeNbOfdmPlcMacNetworkAdministrationData.Create();
+  TObjectType.otPrimeNbOfdmPlcApplicationsIdentification:
+    Result := TGXDLMSPrimeNbOfdmPlcApplicationsIdentification.Create();
   else
     Result := TGXDLMSObject.Create(TObjectType(tp));
   end;

@@ -30,22 +30,27 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.Objects.GXDLMSMBusMasterPortSetup;
+unit Gurux.DLMS.Objects.GXDLMSLlcSscsSetup;
 
 interface
 
 uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
 Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject;
 
+// Online help:
+// https://www.gurux.fi/Gurux.DLMS.Objects.GXDLMSLlcSscsSetup
 type
-TGXDLMSMBusMasterPortSetup = class(TGXDLMSObject)
-  FValue: TValue;
+TGXDLMSLlcSscsSetup = class(TGXDLMSObject)
+  FServiceNodeAddress: WORD;
+  FBaseNodeAddress: WORD;
 
   constructor Create; overload;
   constructor Create(ln: string); overload;
   constructor Create(ln: string; sn: System.UInt16); overload;
-
-  property Value: TValue read FValue write FValue;
+  //Address assigned to the service node during its registration by the base node.
+  property ServiceNodeAddress: WORD read FServiceNodeAddress write FServiceNodeAddress;
+  //Base node address to which the service node is registered.
+  property BaseNodeAddress: WORD read FBaseNodeAddress write FBaseNodeAddress;
 
   function GetValues() : TArray<TValue>;override;
 
@@ -60,27 +65,27 @@ end;
 
 implementation
 
-constructor TGXDLMSMBusMasterPortSetup.Create;
+constructor TGXDLMSLlcSscsSetup.Create;
 begin
-  Create('', 0);
+  Create('0.0.28.0.0.255', 0);
 end;
 
-constructor TGXDLMSMBusMasterPortSetup.Create(ln: string);
+constructor TGXDLMSLlcSscsSetup.Create(ln: string);
 begin
   Create(ln, 0);
 end;
 
-constructor TGXDLMSMBusMasterPortSetup.Create(ln: string; sn: System.UInt16);
+constructor TGXDLMSLlcSscsSetup.Create(ln: string; sn: System.UInt16);
 begin
-  inherited Create(TObjectType.otMBusMasterPortSetup, ln, 0);
+  inherited Create(TObjectType.otLlcSscsSetup, ln, sn);
 end;
 
-function TGXDLMSMBusMasterPortSetup.GetValues() : TArray<TValue>;
+function TGXDLMSLlcSscsSetup.GetValues() : TArray<TValue>;
 begin
-  Result := TArray<TValue>.Create(FLogicalName, FValue);
+  Result := TArray<TValue>.Create(FLogicalName, FServiceNodeAddress, FBaseNodeAddress);
 end;
 
-function TGXDLMSMBusMasterPortSetup.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
+function TGXDLMSLlcSscsSetup.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
 var
   items : TList<Integer>;
 begin
@@ -89,72 +94,72 @@ begin
     //LN is static and read only once.
     if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-    //Value
+    //ServiceNodeAddress
     if All or CanRead(2) then
       items.Add(2);
+    //BaseNodeAddress
+    if All or CanRead(3) then
+      items.Add(3);
     Result := items.ToArray;
   finally
     FreeAndNil(items);
   end;
 end;
 
-function TGXDLMSMBusMasterPortSetup.GetAttributeCount: Integer;
+function TGXDLMSLlcSscsSetup.GetAttributeCount: Integer;
 begin
-  Result := 2;
+  Result := 3;
 end;
 
-function TGXDLMSMBusMasterPortSetup.GetMethodCount: Integer;
+function TGXDLMSLlcSscsSetup.GetMethodCount: Integer;
 begin
-  Result := 0;
+  Result := 1;
 end;
 
-function TGXDLMSMBusMasterPortSetup.GetDataType(index: Integer): TDataType;
+function TGXDLMSLlcSscsSetup.GetDataType(index: Integer): TDataType;
 begin
-  if (index = 1) then
-  begin
-    Result := TDataType.dtOctetString;
-  end
-  else if (index = 2) then
-  begin
-    Result := TDataType.dtNone;
-  end
+  case index of
+  1: Result := TDataType.dtOctetString;
+  2: Result := TDataType.dtUInt16;
+  3: Result := TDataType.dtUInt16;
+  else
+    raise Exception.Create('GetDataType failed. Invalid attribute index.');
+  end;
+end;
+
+function TGXDLMSLlcSscsSetup.GetValue(e: TValueEventArgs): TValue;
+begin
+  case e.Index of
+  1: Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
+  2: Result := FServiceNodeAddress;
+  3: Result := FBaseNodeAddress;
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');
+  end;
 end;
 
-function TGXDLMSMBusMasterPortSetup.GetValue(e: TValueEventArgs): TValue;
+procedure TGXDLMSLlcSscsSetup.SetValue(e: TValueEventArgs);
 begin
-  if (e.Index = 1) then
+  case e.Index of
+  1: FLogicalName := TGXCommon.ToLogicalName(e.Value);
+  2: FServiceNodeAddress := e.Value.AsInteger;
+  3: FBaseNodeAddress := e.Value.AsInteger;
+  else
+    raise Exception.Create('SetValue failed. Invalid attribute index.');
+  end;
+end;
+
+function TGXDLMSLlcSscsSetup.Invoke(e: TValueEventArgs): TBytes;
+begin
+  // Resets the value to the default value.
+  // The default value is an instance specific constant.
+  if e.Index = 1 then
   begin
-    Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
-  end
-  else if (e.Index = 2) then
-  begin
-    Result := FValue;
+    FServiceNodeAddress := 0;
+    FBaseNodeAddress := 0;
   end
   else
-    raise Exception.Create('GetValue failed. Invalid attribute index.');
-end;
-
-procedure TGXDLMSMBusMasterPortSetup.SetValue(e: TValueEventArgs);
-begin
-  if (e.Index = 1) then
-  begin
-    FLogicalName := TGXCommon.ToLogicalName(e.Value);
-  end
-  else if (e.Index = 2) then
-  begin
-    FValue := value;
-  end
-  else
-  begin
-  raise Exception.Create('SetValue failed. Invalid attribute index.');
-  end
-end;
-
-function TGXDLMSMBusMasterPortSetup.Invoke(e: TValueEventArgs): TBytes;
-begin
-  raise Exception.Create('Invoke failed. Invalid attribute index.');
+    raise Exception.Create('Invoke failed. Invalid attribute index.');
 end;
 
 end.

@@ -30,30 +30,29 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.GXDLMSSpecialDay;
+unit Gurux.DLMS.Objects.GXMacDirectTable;
 
 interface
-
-uses SysUtils, Gurux.DLMS.GXDate;
-
+uses SysUtils;
 type
-
-TGXDLMSSpecialDay = class
-  FDayId, FIndex : Integer;
-  FDate : TGXDate;
-
-  property Index: Integer read FIndex write FIndex;
-  property DayId: Integer read FDayId write FDayId;
-  property Date: TGXDate read FDate write FDate;
-  destructor Destroy; override;
+// MAC direct table element.
+TGXMacDirectTable = class
+  // SID of switch through which the source service node is connected.
+  SourceSId: Int16;
+  //NID allocated to the source service node.
+  SourceLnId: Int16;
+  // LCID allocated to this connection at the source.
+  SourceLcId: Int16;
+  // SID of the switch through which the destination service node is connected.
+  DestinationSId: Int16;
+  // NID allocated to the destination service node.
+  DestinationLnId: Int16 ;
+  // LCID allocated to this connection at the destination.
+  DestinationLcId: Int16;
+  // Entry DID is the EUI-48 of the direct switch
+  Did: TBytes;
 end;
 
 implementation
-destructor TGXDLMSSpecialDay.Destroy;
-begin
-  inherited;
-  FreeAndNil(FDate);
-end;
-
 
 end.

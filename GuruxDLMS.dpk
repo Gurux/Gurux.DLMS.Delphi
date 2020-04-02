@@ -237,6 +237,19 @@ contains
   Gurux.DLMS.Enums.DateTimeExtraInfo in 'Enums\Gurux.DLMS.Enums.DateTimeExtraInfo.pas',
   GXXmlReader in 'GXXmlReader.pas',
   GXXmlWriter in 'GXXmlWriter.pas',
-  Gurux.DLMS.Objects.GXDLMSUtilityTables in 'Objects\Gurux.DLMS.Objects.GXDLMSUtilityTables.pas';
+  Gurux.DLMS.Objects.GXDLMSUtilityTables in 'Objects\Gurux.DLMS.Objects.GXDLMSUtilityTables.pas',
+  Gurux.DLMS.Objects.GXDLMSLlcSscsSetup in 'Objects\Gurux.DLMS.Objects.GXDLMSLlcSscsSetup.pas',
+  Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcApplicationsIdentification in 'Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcApplicationsIdentification.pas',
+  Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacCounters in 'Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacCounters.pas',
+  Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacFunctionalParameters in 'Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacFunctionalParameters.pas',
+  Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacNetworkAdministrationData in 'Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacNetworkAdministrationData.pas',
+  Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacSetup in 'Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacSetup.pas',
+  Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcPhysicalLayerCounters in 'Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcPhysicalLayerCounters.pas',
+  Gurux.DLMS.Objects.Enums.MacCapabilities in 'Objects\Enums\Gurux.DLMS.Objects.Enums.MacCapabilities.pas',
+  Gurux.DLMS.Objects.Enums.MacState in 'Objects\Enums\Gurux.DLMS.Objects.Enums.MacState.pas',
+  Gurux.DLMS.Objects.GXMacAvailableSwitch in 'Objects\Gurux.DLMS.Objects.GXMacAvailableSwitch.pas',
+  Gurux.DLMS.Objects.GXMacDirectTable in 'Objects\Gurux.DLMS.Objects.GXMacDirectTable.pas',
+  Gurux.DLMS.Objects.GXMacMulticastEntry in 'Objects\Gurux.DLMS.Objects.GXMacMulticastEntry.pas',
+  Gurux.DLMS.Objects.GXMacPhyCommunication in 'Objects\Gurux.DLMS.Objects.GXMacPhyCommunication.pas';
 
 end.

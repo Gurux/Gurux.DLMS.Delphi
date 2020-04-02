@@ -286,6 +286,19 @@
         <DCCReference Include="GXXmlReader.pas"/>
         <DCCReference Include="GXXmlWriter.pas"/>
         <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSUtilityTables.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSLlcSscsSetup.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcApplicationsIdentification.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacCounters.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacFunctionalParameters.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacNetworkAdministrationData.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacSetup.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcPhysicalLayerCounters.pas"/>
+        <DCCReference Include="Objects\Enums\Gurux.DLMS.Objects.Enums.MacCapabilities.pas"/>
+        <DCCReference Include="Objects\Enums\Gurux.DLMS.Objects.Enums.MacState.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXMacAvailableSwitch.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXMacDirectTable.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXMacMulticastEntry.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXMacPhyCommunication.pas"/>
         <RcItem Include="OBISCodes.txt">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>Text</ResourceType>

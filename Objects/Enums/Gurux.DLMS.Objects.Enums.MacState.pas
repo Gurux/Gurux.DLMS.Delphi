@@ -30,30 +30,24 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.GXDLMSSpecialDay;
+unit Gurux.DLMS.Objects.Enums.MacState;
 
 interface
 
-uses SysUtils, Gurux.DLMS.GXDate;
-
 type
-
-TGXDLMSSpecialDay = class
-  FDayId, FIndex : Integer;
-  FDate : TGXDate;
-
-  property Index: Integer read FIndex write FIndex;
-  property DayId: Integer read FDayId write FDayId;
-  property Date: TGXDate read FDate write FDate;
-  destructor Destroy; override;
-end;
+//Present functional state of the node.
+TMacState =
+(
+  // Disconnected.
+  Disconnected = 0,
+  // Terminal.
+  Terminal = 1,
+  // Switch.
+  Switch = 2,
+  // Base.
+  Base = 3
+);
 
 implementation
-destructor TGXDLMSSpecialDay.Destroy;
-begin
-  inherited;
-  FreeAndNil(FDate);
-end;
-
 
 end.

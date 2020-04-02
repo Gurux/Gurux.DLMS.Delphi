@@ -30,30 +30,40 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.GXDLMSSpecialDay;
+unit Gurux.DLMS.Objects.Enums.MacCapabilities;
 
 interface
 
-uses SysUtils, Gurux.DLMS.GXDate;
-
 type
-
-TGXDLMSSpecialDay = class
-  FDayId, FIndex : Integer;
-  FDate : TGXDate;
-
-  property Index: Integer read FIndex write FIndex;
-  property DayId: Integer read FDayId write FDayId;
-  property Date: TGXDate read FDate write FDate;
-  destructor Destroy; override;
-end;
+//Present functional state of the node.
+TMacCapabilities =
+(
+  // Switch capable.
+  SwitchCapable = 1,
+  // Packet aggregation.
+  PacketAggregation = 2,
+  // Contention free period.
+  ContentionFreePeriod = 4,
+  // Direct connection.
+  DirectConnection = 8,
+  // Multicast.
+  Multicast = $10,
+  //  PHY Robustness Management.
+  PhyRobustnessManagement = $20,
+  // ARQ.
+  Arq = $40,
+  // Reserved for future use.
+  ReservedForFutureUse = $80,
+  //  Direct Connection Switching.
+  DirectConnectionSwitching = $100,
+  // Multicast Switching Capability.
+  MulticastSwitchingCapability = $200,
+  // PHY Robustness Management Switching Capability.
+  PhyRobustnessManagementSwitchingCapability = $400,
+  // ARQ Buffering Switching Capability.
+  ArqBufferingSwitchingCapability = $800
+);
 
 implementation
-destructor TGXDLMSSpecialDay.Destroy;
-begin
-  inherited;
-  FreeAndNil(FDate);
-end;
-
 
 end.

@@ -30,30 +30,19 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.GXDLMSSpecialDay;
+unit Gurux.DLMS.Objects.GXMacMulticastEntry;
 
 interface
 
-uses SysUtils, Gurux.DLMS.GXDate;
-
 type
 
-TGXDLMSSpecialDay = class
-  FDayId, FIndex : Integer;
-  FDate : TGXDate;
-
-  property Index: Integer read FIndex write FIndex;
-  property DayId: Integer read FDayId write FDayId;
-  property Date: TGXDate read FDate write FDate;
-  destructor Destroy; override;
+TGXMacMulticastEntry = class
+  // LCID of multicast group
+  Id: ShortInt;
+  // Number of child nodes.
+  Members: Int16;
 end;
 
 implementation
-destructor TGXDLMSSpecialDay.Destroy;
-begin
-  inherited;
-  FreeAndNil(FDate);
-end;
-
 
 end.

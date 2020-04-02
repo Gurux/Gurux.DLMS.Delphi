@@ -30,30 +30,33 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.GXDLMSSpecialDay;
+unit Gurux.DLMS.Objects.GXMacPhyCommunication;
 
 interface
 
-uses SysUtils, Gurux.DLMS.GXDate;
-
+uses SysUtils;
 type
-
-TGXDLMSSpecialDay = class
-  FDayId, FIndex : Integer;
-  FDate : TGXDate;
-
-  property Index: Integer read FIndex write FIndex;
-  property DayId: Integer read FDayId write FDayId;
-  property Date: TGXDate read FDate write FDate;
-  destructor Destroy; override;
+TGXMacPhyCommunication = class
+  // EUI is the EUI-48 of the other device.
+  Eui: TBytes;
+  // The tx power of GPDU packets sent to the device
+  TxPower: Int16;
+  // The Tx coding of GPDU packets sent to the device;
+  TxCoding: Int16;
+  // The Rx coding of GPDU packets received from the device
+  RxCoding: Int16;
+  // The Rx power level of GPDU packets received from the device.
+  RxLvl: Int16;
+  // SNR of GPDU packets received from the device.
+  Snr: Int16;
+  // The number of times the Tx power was modified.
+  TxPowerModified: Int16;
+  // The number of times the Tx coding was modified.
+  TxCodingModified: Int16;
+  // The number of times the Rx coding was modified.
+  RxCodingModified: Int16;
 end;
 
 implementation
-destructor TGXDLMSSpecialDay.Destroy;
-begin
-  inherited;
-  FreeAndNil(FDate);
-end;
-
 
 end.

@@ -30,30 +30,26 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.GXDLMSSpecialDay;
+unit Gurux.DLMS.Objects.GXMacAvailableSwitch;
 
 interface
 
-uses SysUtils, Gurux.DLMS.GXDate;
-
+uses SysUtils;
 type
-
-TGXDLMSSpecialDay = class
-  FDayId, FIndex : Integer;
-  FDate : TGXDate;
-
-  property Index: Integer read FIndex write FIndex;
-  property DayId: Integer read FDayId write FDayId;
-  property Date: TGXDate read FDate write FDate;
-  destructor Destroy; override;
+//MAC available switch.
+TGXMacAvailableSwitch = class
+  // EUI-48 of the subnetwork.
+  Sna: TBytes;
+  // SID of this switch.
+  LsId: Int32;
+  // Level of this switch in subnetwork hierarchy.
+  Level: Int16;
+  // The received signal level for this switch;
+  RxLevel: Int16;
+  // The signal to noise ratio for this switch.
+  RxSnr: Int16;
 end;
 
 implementation
-destructor TGXDLMSSpecialDay.Destroy;
-begin
-  inherited;
-  FreeAndNil(FDate);
-end;
-
 
 end.

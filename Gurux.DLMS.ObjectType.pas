@@ -207,6 +207,32 @@ TObjectType =
   // EN 13757-2 interfaces if the device acts as an M-bus master.
   otMBusMasterPortSetup = 74,
 
+
+  // Addresses that are provided by the base node during the opening of the
+  // convergence layer.
+  otLlcSscsSetup = 80,
+
+
+  // Counters related to the physical layers exchanges.
+  otPrimeNbOfdmPlcPhysicalLayerCounters = 81,
+
+
+  // A necessary parameters to set up and manage the PRIME NB OFDM PLC MAC layer.
+  otPrimeNbOfdmPlcMacSetup = 82,
+
+
+  //Functional behaviour of MAC.
+  otPrimeNbOfdmPlcMacFunctionalParameters = 83,
+
+  // Statistical information on the operation of the MAC layer for management purposes.
+  otPrimeNbOfdmPlcMacCounters = 84,
+
+  //  Parameters related to the management of the devices connected to the network.
+  otPrimeNbOfdmPlcMacNetworkAdministrationData = 85,
+
+  // Identification information related to administration and maintenance of PRIME NB OFDM PLC devices.
+  otPrimeNbOfdmPlcApplicationsIdentification = 86,
+
   //RegisterTable stores identical attributes of objects, in a selected
   //collection of objects. All the objects in the collection need to be of
   //the same type. Also, the value in value groups A to D and F in their
