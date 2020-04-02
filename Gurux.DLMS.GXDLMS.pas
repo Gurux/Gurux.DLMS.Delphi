@@ -2400,7 +2400,8 @@ class procedure TGXDLMS.HandleGbt(
     settings : TGXDLMSSettings;
     data: TGXReplyData);
 var
-  windowSize, ch: Byte;
+  ch: Byte;
+  bn, bna: WORD;
   len, index: Integer;
 begin
     index := data.Data.Position - 1;
@@ -2410,11 +2411,30 @@ begin
     // Is streaming active.
     data.Streaming := (ch and $40) <> 0;
     //GBT Window size.
-    windowSize := (ch and $3F);
+    data.WindowSize := (ch and $3F);
     //Block number.
-    data.BlockNumber := data.Data.GetUInt16();
+    bn := data.Data.GetUInt16();
     //Block number acknowledged.
-    data.BlockNumberAck := data.Data.GetUInt16();
+    bna := data.Data.GetUInt16();
+
+    //Block number.
+    data.BlockNumber := bn;
+    //Block number acknowledged.
+    data.BlockNumberAck := bna;
+    if data.Xml <> Nil Then
+    begin
+      // Remove existing data when first block is received.
+      if bn = 1 Then
+        index := 0
+      else if bna <> settings.BlockIndex - 1 Then
+      begin
+        // If this block is already received.
+        data.Data.Size := index;
+        data.Command := TCommand.None;
+        Exit;
+      end;
+    end;
+
     settings.BlockNumberAck := data.BlockNumber;
     data.Command := TCommand.None;
     len := TGXCommon.GetObjectCount(data.Data);
