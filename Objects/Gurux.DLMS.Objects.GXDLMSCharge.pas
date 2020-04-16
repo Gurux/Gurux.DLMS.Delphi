@@ -34,65 +34,57 @@ unit Gurux.DLMS.Objects.GXDLMSCharge;
 
 interface
 
-uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-Gurux.DLMS.ChargeType, Gurux.DLMS.GXUnitCharge,
-Gurux.DLMS.GXDateTime, GXByteBuffer, Gurux.DLMS.GXChargeTable;
+uses
+GXCommon,
+SysUtils,
+Rtti,
+System.Generics.Collections,
+Gurux.DLMS.ObjectType,
+Gurux.DLMS.DataType,
+Gurux.DLMS.GXDLMSObject,
+Gurux.DLMS.ChargeType,
+Gurux.DLMS.GXUnitCharge,
+Gurux.DLMS.GXDateTime,
+GXByteBuffer,
+Gurux.DLMS.GXBitString,
+Gurux.DLMS.GXChargeTable;
 
 type
+
+TChargeConfiguration = (
+// Percentage based collection
+PercentageBasedCollection = 1,
+//Continuous collection
+ContinuousCollection = 2
+);
+
 //Online help:
 //  http://www.gurux.fi/Gurux.DLMS.Objects.GXDLMSCharge
 TGXDLMSCharge = class(TGXDLMSObject)
 private
-  {
-     Total amount paid.
-     }
+    // Total amount paid.
     FTotalAmountPaid: Integer;
-
-    {
-     Charge type.
-     }
+    // Charge type.
     FChargeType: TChargeType;
-    {
-     Priority.
-     }
+    // Priority.
     FPriority: Byte;
-    {
-     Unit charge active.
-     }
+    // Unit charge active.
     FUnitChargeActive: TGXUnitCharge;
-    {
-     Unit charge passive.
-     }
+    // Unit charge passive.
     FUnitChargePassive: TGXUnitCharge;
-    {
-     Unit charge activation time.
-     }
+    // Unit charge activation time.
     FUnitChargeActivationTime: TGXDateTime;
-    {
-     Period.
-     }
+    // Period.
     FPeriod: Integer;
-    {
-     Charge configuration.
-     }
-    FChargeConfiguration: string;
-    {
-     Last collection time.
-     }
+    // Charge configuration.
+    FChargeConfiguration: TChargeConfiguration;
+    // Last collection time.
     FLastCollectionTime: TGXDateTime;
-
-    {
-     Last collection amount.
-     }
+    // Last collection amount.
     FLastCollectionAmount: Integer;
-    {
-     Total amount remaining.
-     }
+    // Total amount remaining.
     FTotalAmountRemaining: Integer;
-    {
-     Proportion.
-     }
+    // Proportion.
     FProportion: Integer;
 
     class procedure SetUnitCharge(charge: TGXUnitCharge; e: TValueEventArgs);
@@ -153,7 +145,7 @@ private
    Online help:
    http://www.gurux.fi/Gurux.DLMS.Objects.GXDLMSCharge
    }
-  property ChargeConfiguration: string read FChargeConfiguration write FChargeConfiguration;
+  property ChargeConfiguration: TChargeConfiguration read FChargeConfiguration write FChargeConfiguration;
   {
    Last collection time.
    Online help:
@@ -223,7 +215,7 @@ function TGXDLMSCharge.GetValues() : TArray<TValue>;
 begin
   Result := TArray<TValue>.Create(FLogicalName, FTotalAmountPaid, Integer(FChargeType),
   FPriority, FUnitChargeActive, FUnitChargePassive, FUnitChargeActivationTime,
-  FPeriod, FChargeConfiguration, FLastCollectionTime, FLastCollectionAmount,
+  FPeriod, Integer(FChargeConfiguration), FLastCollectionTime, FLastCollectionAmount,
   FTotalAmountRemaining, FProportion);
 end;
 
@@ -323,6 +315,8 @@ begin
 end;
 
 function TGXDLMSCharge.GetValue(e: TValueEventArgs): TValue;
+var
+  bs: TGXBitString;
 begin
  case e.Index of
   1: Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
@@ -333,7 +327,15 @@ begin
   6: Result := GetUnitCharge(unitChargePassive);
   7: Result := FUnitChargeActivationTime;
   8: Result := FPeriod;
-  9: Result := FChargeConfiguration;
+  9:
+  begin
+    try
+      bs := TGXBitString.Create(BYTE(FChargeConfiguration), 2);
+      Result := bs.ToString();
+    finally
+      bs.Free();
+    end;
+  end;
   10: Result := FLastCollectionTime;
   11: Result := FLastCollectionAmount;
   12: Result := FTotalAmountRemaining;
@@ -366,7 +368,7 @@ begin
       end;
     end;
     8: FPeriod := e.Value.AsInteger;
-    9: FChargeConfiguration := e.Value.ToString;
+    9: FChargeConfiguration := TChargeConfiguration(e.Value.AsType<TGXBitString>.AsInteger);
     10:
     begin
       FreeAndNil(FLastCollectionTime);

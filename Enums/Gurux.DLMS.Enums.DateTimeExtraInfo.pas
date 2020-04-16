@@ -35,18 +35,19 @@ unit Gurux.DLMS.Enums.DateTimeExtraInfo;
 interface
 
 type
-  // Date time extra info.
-  TDateTimeExtraInfo = (
-    // No extra info.
-    None = $0,
-    // Daylight savings begin.
-    DstBegin = $1,
-    // Daylight savings end.
-    DstEnd = $2,
-    // Last day of month.
-    LastDay = $4,
-    // 2nd last day of month
-    LastDay2 = $8);
+// Date time extra info.
+[FlagsAttribute]
+TDateTimeExtraInfo = (
+  // No extra info.
+  None = $0,
+  // Daylight savings begin.
+  DstBegin = $1,
+  // Daylight savings end.
+  DstEnd = $2,
+  // Last day of month.
+  LastDay = $4,
+  // 2nd last day of month
+  LastDay2 = $8);
 
 implementation
 end.

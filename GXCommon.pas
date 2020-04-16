@@ -52,6 +52,7 @@ Gurux.DLMS.TUnit,
 Windows,
 Gurux.DLMS.ClockStatus,
 GXByteBuffer,
+Gurux.DLMS.GXBitString,
 GXDataInfo,
 Gurux.DLMS.ErrorCode,
 GXCmdParameter,
@@ -69,9 +70,11 @@ type
   TGXStructure = TArray<TValue>;
   TGXArray = TArray<TValue>;
   TGXEnum = UInt8;
-  TGXBitString = string;
 
 TGXCommon = class
+// Reserved for internal use.
+class function SwapBits(AValue: BYTE): BYTE;
+
 // Reserved for internal use.
 class procedure ToBitString(sb: TStringBuilder; value : Byte; count : Integer);
 // Convert Bit string to DLMS bytes.
@@ -1273,7 +1276,7 @@ begin
       toBitString(sb, buff.getInt8(), cnt);
       cnt := cnt - 8;
     end;
-    Result := TValue.From<TGXBitString>(sb.ToString());
+    Result := TGXBitString.Create(sb.ToString());
     if info.Xml <> Nil Then
       info.Xml.AppendLine(info.Xml.GetDataType(info.&Type), '', sb.ToString());
   finally
@@ -2164,4 +2167,18 @@ begin
             (value.TypeInfo = TypeInfo(Int32)) or
             (value.TypeInfo = TypeInfo(Int64));
 end;
+
+// Reserved for internal use.
+class function TGXCommon.SwapBits(AValue: BYTE): BYTE;
+var
+  pos, tmp: BYTE;
+begin
+  Result := 0;
+  for pos := 0 to 7 do
+  begin
+    Result := (Result shl 1) or (AValue and $01);
+    AValue := AValue shr 1;
+  end;
+end;
+
 end.

@@ -34,14 +34,24 @@ unit Gurux.DLMS.Objects.GXDLMSAccount;
 
 interface
 
-uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-GXByteBuffer, Gurux.DLMS.PaymentMode, Gurux.DLMS.AccountStatus,
-Gurux.DLMS.AccountCreditStatus, Gurux.DLMS.GXDateTime,
+uses GXCommon,
+SysUtils,
+Rtti,
+System.Generics.Collections,
+Gurux.DLMS.ObjectType,
+Gurux.DLMS.DataType,
+Gurux.DLMS.GXDLMSObject,
+GXByteBuffer,
+Gurux.DLMS.PaymentMode,
+Gurux.DLMS.AccountStatus,
+Gurux.DLMS.AccountCreditStatus,
+Gurux.DLMS.GXDateTime,
 Gurux.DLMS.GXCreditChargeConfiguration,
 Gurux.DLMS.GXTokenGatewayConfiguration,
 Gurux.DLMS.CreditCollectionConfiguration,
-Gurux.DLMS.GXCurrency, Gurux.DLMS.Currency;
+Gurux.DLMS.GXBitString,
+Gurux.DLMS.GXCurrency,
+Gurux.DLMS.Currency;
 
 type
 TGXDLMSAccount = class(TGXDLMSObject)
@@ -453,7 +463,7 @@ begin
       end;
     end;
   3: Result := FCurrentCreditInUse;
-  4: Result := Byte(FCurrentCreditStatus);
+  4: Result := TGXCommon.SwapBits(Byte(FCurrentCreditStatus));
   5: Result := FAvailableCredit;
   6: Result := FAmountToClear;
   7: Result := FClearanceThreshold;
@@ -508,7 +518,7 @@ begin
         bb.SetUInt8(Integer(TDataType.dtOctetString));
         bb.SetUInt8(6);
         bb.SetArray(TGXDLMSObject.GetLogicalName(it.ChargeReference));
-        TGXCommon.SetData(bb, TDataType.dtBITSTRING, Integer(it.CollectionConfiguration));
+        TGXCommon.SetData(bb, TDataType.dtBITSTRING, TGXCommon.SwapBits(BYTE(it.CollectionConfiguration)));
       end;
       Result:= TValue.From(bb.ToArray());
     finally
@@ -566,7 +576,6 @@ var
   it: TValue;
   item: TGXCreditChargeConfiguration;
   item2: TGXTokenGatewayConfiguration;
-  bb: TGXByteBuffer;
 begin
   case e.Index of
   1: FLogicalName := TGXCommon.ToLogicalName(e.Value);
@@ -577,15 +586,7 @@ begin
   end;
   3: FCurrentCreditInUse := Integer(e.Value.AsInteger);
   4:
-  begin
-    bb := TGXByteBuffer.Create();
-    try
-      TGXCommon.SetBitString(bb, e.Value, true);
-      FCurrentCreditStatus := TAccountCreditStatus(bb.GetUInt8(1));
-    finally
-      FreeAndNil(bb);
-    end;
-  end;
+    FCurrentCreditStatus := TAccountCreditStatus(e.Value.AsType<TGXBitString>().AsInteger());
   5: FAvailableCredit := e.Value.AsInteger;
   6: FAmountToClear := e.Value.AsInteger;
   7: FClearanceThreshold := e.Value.AsInteger;
@@ -602,7 +603,7 @@ begin
   10:
   begin
     FChargeReferences.Clear();
-     if Not e.Value.IsEmpty Then
+    if Not e.Value.IsEmpty Then
     begin
       for it in e.Value.AsType<TArray<TValue>> do
         FChargeReferences.Add(TGXDLMSObject.ToLogicalName(it.AsType<TBytes>));
@@ -613,25 +614,18 @@ begin
     FCreditChargeConfigurations.Clear();
     if Not e.Value.IsEmpty Then
     begin
-      bb := TGXByteBuffer.Create();
-      try
-        for it in e.Value.AsType<TArray<TValue>> do
-        begin
-          bb.Clear();
-          item := TGXCreditChargeConfiguration.Create();
-          try
-            item.CreditReference :=  TGXDLMSObject.ToLogicalName(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>);
-            item.ChargeReference :=  TGXDLMSObject.ToLogicalName(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>);
-            TGXCommon.SetBitString(bb, it.GetArrayElement(2).AsType<TValue>, True);
-            item.CollectionConfiguration := TCreditCollectionConfiguration(bb.GetUInt8(1));
-          except
-            item.Free;
-            raise;
-          end;
-            FCreditChargeConfigurations.Add(item);
+      for it in e.Value.AsType<TArray<TValue>> do
+      begin
+        item := TGXCreditChargeConfiguration.Create();
+        try
+          item.CreditReference :=  TGXDLMSObject.ToLogicalName(it.GetArrayElement(0).AsType<TValue>.AsType<TBytes>);
+          item.ChargeReference :=  TGXDLMSObject.ToLogicalName(it.GetArrayElement(1).AsType<TValue>.AsType<TBytes>);
+          item.CollectionConfiguration := TCreditCollectionConfiguration(it.GetArrayElement(2).AsType<TValue>.AsType<TGXBitString>().AsInteger());
+        except
+          item.Free;
+          raise;
         end;
-      finally
-        FreeAndNil(bb);
+          FCreditChargeConfigurations.Add(item);
       end;
     end;
   end;

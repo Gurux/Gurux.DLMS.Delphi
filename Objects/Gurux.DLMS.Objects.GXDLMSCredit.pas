@@ -34,10 +34,19 @@ unit Gurux.DLMS.Objects.GXDLMSCredit;
 
 interface
 
-uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-Gurux.DLMS.CreditType, Gurux.DLMS.CreditConfiguration,
-Gurux.DLMS.CreditStatus, Gurux.DLMS.GXDateTime, GXByteBuffer;
+uses GXCommon,
+SysUtils,
+Rtti,
+System.Generics.Collections,
+Gurux.DLMS.ObjectType,
+Gurux.DLMS.DataType,
+Gurux.DLMS.GXDLMSObject,
+Gurux.DLMS.CreditType,
+Gurux.DLMS.CreditConfiguration,
+Gurux.DLMS.CreditStatus,
+Gurux.DLMS.GXDateTime,
+Gurux.DLMS.GXBitString,
+GXByteBuffer;
 
 type
 TGXDLMSCredit = class(TGXDLMSObject)
@@ -268,8 +277,6 @@ begin
 end;
 
 procedure TGXDLMSCredit.SetValue(e: TValueEventArgs);
-var
-  bb: TGXByteBuffer;
 begin
   case e.Index Of
   1: FLogicalName := TGXCommon.ToLogicalName(e.Value);
@@ -278,16 +285,7 @@ begin
   4: FPriority := e.Value.AsInteger;
   5: FWarningThreshold := e.Value.AsInteger;
   6: FLimit := e.Value.AsInteger;
-  7:
-    begin
-      bb := TGXByteBuffer.Create();
-      try
-        TGXCommon.SetBitString(bb, e.Value, True);
-        FCreditConfiguration := TCreditConfiguration(bb.GetUInt8(1));
-      finally
-        FreeAndNil(bb);
-      end;
-    end;
+  7: FCreditConfiguration := TCreditConfiguration(e.Value.AsType<TGXBitString>().AsInteger());
   8: FStatus := TCreditStatus(e.Value.AsInteger);
   9: FPresetCreditAmount := e.Value.AsInteger;
   10: FCreditAvailableThreshold := e.Value.AsInteger;

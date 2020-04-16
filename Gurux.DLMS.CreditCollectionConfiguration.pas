@@ -40,11 +40,11 @@ type
     // None.
     ccNone = 0,
     // Collect when supply disconnected.
-    ccDisconnected = $80,
+    ccDisconnected = $1,
     // Collect in load limiting periods.
-    ccLoadLimiting = $40,
+    ccLoadLimiting = $2,
     // Collect in friendly credit periods.
-    ccFriendlyCredit = $20
+    ccFriendlyCredit = $4
   );
 
 implementation

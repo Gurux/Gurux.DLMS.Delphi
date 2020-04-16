@@ -250,6 +250,11 @@ contains
   Gurux.DLMS.Objects.GXMacAvailableSwitch in 'Objects\Gurux.DLMS.Objects.GXMacAvailableSwitch.pas',
   Gurux.DLMS.Objects.GXMacDirectTable in 'Objects\Gurux.DLMS.Objects.GXMacDirectTable.pas',
   Gurux.DLMS.Objects.GXMacMulticastEntry in 'Objects\Gurux.DLMS.Objects.GXMacMulticastEntry.pas',
-  Gurux.DLMS.Objects.GXMacPhyCommunication in 'Objects\Gurux.DLMS.Objects.GXMacPhyCommunication.pas';
+  Gurux.DLMS.Objects.GXMacPhyCommunication in 'Objects\Gurux.DLMS.Objects.GXMacPhyCommunication.pas',
+  Gurux.DLMS.Objects.GXDLMSSchedule in 'Objects\Gurux.DLMS.Objects.GXDLMSSchedule.pas',
+  Gurux.DLMS.Objects.GXScheduleEntry in 'Objects\Gurux.DLMS.Objects.GXScheduleEntry.pas',
+  Gurux.DLMS.Objects.Enums.Weekdays in 'Objects\Enums\Gurux.DLMS.Objects.Enums.Weekdays.pas',
+  Gurux.DLMS.GXBitString in 'Gurux.DLMS.GXBitString.pas';
 
 end.
+

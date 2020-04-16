@@ -38,21 +38,21 @@ type
   //Credit status.
   TAccountCreditStatus = (
     // In credit.
-    InCredit = $80,
+    InCredit = $1,
     // Low credit.
-    LowCredit = $40,
+    LowCredit = $2,
     // Next credit enabled.
-    NextCreditEnabled = $20,
+    NextCreditEnabled = $4,
     // Next credit selectable.
-    NextCreditSelectable = $10,
+    NextCreditSelectable = $8,
     // Credit reference list.
-    CreditReferenceList = $8,
+    CreditReferenceList = $10,
     // Selectable credit in use.
-    SelectableCreditInUse = $4,
+    SelectableCreditInUse = $20,
     // Out of credit.
-    OutOfCredit = $2,
+    OutOfCredit = $40,
     // Reserved.
-    Reserved = $1
+    Reserved = $80
   );
 
 implementation

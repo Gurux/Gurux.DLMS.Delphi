@@ -52,6 +52,7 @@ uses GXCommon,
   GXByteBuffer,
   Gurux.DLMS.IGXDLMSClient,
   Gurux.DLMS.Authentication,
+  Gurux.DLMS.GXBitString,
   Gurux.DLMS.Conformance;
 
 type
@@ -536,7 +537,6 @@ var
   tp : TObjectType;
   ln : string;
   obj : TGXDLMSObject;
-  bb: TGXByteBuffer;
   arr: TArray<TValue>;
 begin
   if (e.Index = 1) then
@@ -581,14 +581,7 @@ begin
   end
   else if e.Index = 5 Then
   begin
-    bb := TGXByteBuffer.Create(4);
-    try
-      TGXCommon.SetBitString(bb, e.Value.GetArrayElement(0).AsType<TValue>.ToString, True);
-      bb.SetUInt8(0, 0);
-      FXDLMSContextInfo.Conformance := TConformance(bb.GetUInt32());
-    finally
-      FreeAndNil(bb);
-    end;
+    FXDLMSContextInfo.Conformance := TConformance(e.Value.GetArrayElement(0).AsType<TValue>.AsType<TGXBitString>.AsInteger());
     FXDLMSContextInfo.MaxReceivePduSize := e.Value.GetArrayElement(1).AsType<TValue>.AsInteger;
     FXDLMSContextInfo.MaxSendPduSize := e.Value.GetArrayElement(2).AsType<TValue>.AsInteger;
     FXDLMSContextInfo.DlmsVersionNumber := e.Value.GetArrayElement(3).AsType<TValue>.AsInteger;

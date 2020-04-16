@@ -34,10 +34,18 @@ unit Gurux.DLMS.Objects.GXDLMSTokenGateway;
 
 interface
 
-uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-Gurux.DLMS.GXDateTime, Gurux.DLMS.TokenDelivery, Gurux.DLMS.TokenStatusCode,
-GXByteBuffer;
+uses GXCommon,
+  SysUtils,
+  Rtti,
+  System.Generics.Collections,
+  Gurux.DLMS.ObjectType,
+  Gurux.DLMS.DataType,
+  Gurux.DLMS.GXDLMSObject,
+  Gurux.DLMS.GXDateTime,
+  Gurux.DLMS.GXBitString,
+  Gurux.DLMS.TokenDelivery,
+  Gurux.DLMS.TokenStatusCode,
+  GXByteBuffer;
 
 type
 TGXDLMSTokenGateway = class(TGXDLMSObject)
@@ -313,7 +321,7 @@ begin
     6:
     begin
       FStatusCode := TTokenStatusCode(e.Value.GetArrayElement(0).AsType<TValue>.AsInteger);
-      FDataValue := e.Value.GetArrayElement(1).AsType<TValue>.AsType<string>;
+      FDataValue := e.Value.GetArrayElement(1).AsType<TValue>.AsType<TGXBitString>.ToString();
     end;
     else
       raise Exception.Create('SetValue failed. Invalid attribute index.');

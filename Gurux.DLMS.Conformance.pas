@@ -37,56 +37,56 @@ interface
 type
 // Enumerates all comformance bits.
 TConformance = (
-  /// Reserved zero conformance bit.
-  cfReservedZero = 8388608,
-  /// General protection conformance bit.
-  cfGeneralProtection = 4194304,
-  /// General block transfer conformance bit.
-  cfGeneralBlockTransfer = 2097152,
-  //Read conformance bit.
-  cfRead = 1048576,
-  //Write conformance bit.
-  cfWrite = 524288,
-  //Un confirmed write conformance bit.
-  cfUnconfirmedWrite = 262144,
-  //Reserved six conformance bit.
-  cfReservedSix = 131072,
-  //Reserved seven conformance bit.
-  cfReservedSeven = 65536,
-  //Attribute 0 supported with set conformance bit.
-  cfAttribute0SupportedWithSet = 32768,
-  //Priority mgmt supported conformance bit.
-  cfPriorityMgmtSupported = 16384,
-  //Attribute 0 supported with get conformance bit.
-  cfAttribute0SupportedWithGet = 8192,
-  //Block transfer with get or read conformance bit.
-  cfBlockTransferWithGetOrRead = 4096,
-  //Block transfer with set or write conformance bit.
-  cfBlockTransferWithSetOrWrite = 2048,
-  //Block transfer with action conformance bit.
-  cfBlockTransferWithAction = 1024,
-  //multiple references conformance bit.
-  cfMultipleReferences = 512,
-  //Information report conformance bit.
-  cfInformationReport = 256,
-  //Data notification conformance bit.
-  cfDataNotification = 128,
-  //Access conformance bit.
-  cfAccess = 64,
-  //Parameterized access conformance bit.
-  cfParameterizedAccess = 32,
-  //Get conformance bit.
-  cfGet = 16,
-  //Set conformance bit.
-  cfSet = 8,
-  //Selective access conformance bit.
-  cfSelectiveAccess = 4,
-  //Event notification conformance bit.
-  cfEventNotification = 2,
-  //Action conformance bit.
-  cfAction = 1,
   //Conformance is not used.
-  cfNone = 0
+  cfNone = 0,
+  // Reserved zero conformance bit.
+  cfReservedZero = $1,
+  // General protection conformance bit.
+  cfGeneralProtection = $2,
+  // General block transfer conformance bit.
+  cfGeneralBlockTransfer = $4,
+  // Read conformance bit.
+  cfRead = $8,
+  // Write conformance bit.
+  cfWrite = $10,
+  // Un confirmed write conformance bit.
+  cfUnconfirmedWrite = $20,
+  // Reserved six conformance bit.
+  cfReservedSix = $40,
+  // Reserved seven conformance bit.
+  cfReservedSeven = $80,
+  // Attribute 0 supported with set conformance bit.
+  cfAttribute0SupportedWithSet = $100,
+  // Priority mgmt supported conformance bit.
+  cfPriorityMgmtSupported = $200,
+  // Attribute 0 supported with get conformance bit.
+  cfAttribute0SupportedWithGet = $400,
+  // Block transfer with get or read conformance bit.
+  cfBlockTransferWithGetOrRead = $800,
+  // Block transfer with set or write conformance bit.
+  cfBlockTransferWithSetOrWrite = $1000,
+  // Block transfer with action conformance bit.
+  cfBlockTransferWithAction = $2000,
+  // Multiple references conformance bit.
+  cfMultipleReferences = $4000,
+  // Information report conformance bit.
+  cfInformationReport = $8000,
+  // Data notification conformance bit.
+  cfDataNotification = $10000,
+  // Access conformance bit.
+  cfAccess = $20000,
+  // Parameterized access conformance bit.
+  cfParameterizedAccess = $40000,
+  // Get conformance bit.
+  cfGet = $80000,
+  // Set conformance bit.
+  cfSet = $100000,
+  // Selective access conformance bit.
+  cfSelectiveAccess = $200000,
+  // Event notification conformance bit.
+  cfEventNotification = $400000,
+  // Action conformance bit.
+  cfAction = $800000
 );
 
 implementation

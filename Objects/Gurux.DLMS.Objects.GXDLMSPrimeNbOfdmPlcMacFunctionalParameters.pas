@@ -255,19 +255,19 @@ function TGXDLMSPrimeNbOfdmPlcMacFunctionalParameters.GetValue(e: TValueEventArg
 begin
  case e.Index of
   1: Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
-  2: Result := LnId;
-  3: Result := LsId;
-  4: Result := SId;
-  5: Result := TValue.From(Sna);
-  6: Result := TValue.From(State);
-  7: Result := ScpLength;
-  8: Result := NodeHierarchyLevel;
-  9: Result := BeaconSlotCount;
-  10: Result := BeaconRxSlot;
-  11: Result := BeaconTxSlot;
-  12: Result := BeaconRxFrequency;
-  13: Result := BeaconTxFrequency;
-  14: Result := TValue.From(Capabilities);
+  2: Result := FLnId;
+  3: Result := FLsId;
+  4: Result := FSId;
+  5: Result := TValue.From(FSna);
+  6: Result := Integer(FState);
+  7: Result := FScpLength;
+  8: Result := FNodeHierarchyLevel;
+  9: Result := FBeaconSlotCount;
+  10: Result := FBeaconRxSlot;
+  11: Result := FBeaconTxSlot;
+  12: Result := FBeaconRxFrequency;
+  13: Result := FBeaconTxFrequency;
+  14: Result := Integer(FCapabilities);
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');
   end;
@@ -277,19 +277,19 @@ procedure TGXDLMSPrimeNbOfdmPlcMacFunctionalParameters.SetValue(e: TValueEventAr
 begin
   case e.Index of
   1: FLogicalName := TGXCommon.ToLogicalName(e.Value);
-  2: LnId := e.Value.AsInteger;
-  3: LsId := e.Value.AsInteger;
-  4: SId := e.Value.AsInteger;
-  5: Sna := e.Value.AsType<TBytes>;
-  6: State := TMacState(e.Value.AsInteger);
-  7: ScpLength := e.Value.AsInteger;
-  8: NodeHierarchyLevel := e.Value.AsInteger;
-  9: BeaconSlotCount := e.Value.AsInteger;
-  10: BeaconRxSlot := e.Value.AsInteger;
-  11: BeaconTxSlot := e.Value.AsInteger;
-  12: BeaconRxFrequency := e.Value.AsInteger;
-  13: BeaconTxFrequency := e.Value.AsInteger;
-  14: Capabilities := TMacCapabilities(e.Value.AsInteger);
+  2: FLnId := e.Value.AsInteger;
+  3: FLsId := e.Value.AsInteger;
+  4: FSId := e.Value.AsInteger;
+  5: FSna := e.Value.AsType<TBytes>;
+  6: FState := TMacState(e.Value.AsInteger);
+  7: FScpLength := e.Value.AsInteger;
+  8: FNodeHierarchyLevel := e.Value.AsInteger;
+  9: FBeaconSlotCount := e.Value.AsInteger;
+  10: FBeaconRxSlot := e.Value.AsInteger;
+  11: FBeaconTxSlot := e.Value.AsInteger;
+  12: FBeaconRxFrequency := e.Value.AsInteger;
+  13: FBeaconTxFrequency := e.Value.AsInteger;
+  14: FCapabilities := TMacCapabilities(e.Value.AsInteger);
   else
     raise Exception.Create('SetValue failed. Invalid attribute index.');
   end;

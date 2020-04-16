@@ -33,18 +33,34 @@
 unit GXAPDU;
 
 interface
-uses SysUtils, GXByteBuffer, Gurux.DLMS.Authentication,
-Gurux.DLMS.AssociationResult, GXCommon, Gurux.DLMS.SourceDiagnostic,
-Gurux.DLMS.InterfaceType, Gurux.DLMS.GXDLMSException,
-Gurux.DLMS.GXDLMSObject, Gurux.DLMS.GXCiphering, Gurux.DLMS.PduType,
-Gurux.DLMS.BerType, Gurux.DLMS.Command, Gurux.DLMS.GXDLMSConfirmedServiceError,
-Gurux.DLMS.ConfirmedServiceError, Gurux.DLMS.ServiceError, Gurux.DLMS.Initiate,
-Gurux.DLMS.Conformance, Gurux.DLMS.Service, Gurux.DLMS.AesGcmParameter,
-Gurux.DLMS.GXDLMSChippering, Gurux.DLMS.Security,
+uses SysUtils,
+GXByteBuffer,
+Gurux.DLMS.Authentication,
+Gurux.DLMS.AssociationResult,
+GXCommon,
+Gurux.DLMS.SourceDiagnostic,
+Gurux.DLMS.InterfaceType,
+Gurux.DLMS.GXDLMSException,
+Gurux.DLMS.GXDLMSObject,
+Gurux.DLMS.GXCiphering,
+Gurux.DLMS.PduType,
+Gurux.DLMS.BerType,
+Gurux.DLMS.Command,
+Gurux.DLMS.GXDLMSConfirmedServiceError,
+Gurux.DLMS.ConfirmedServiceError,
+Gurux.DLMS.ServiceError,
+Gurux.DLMS.Initiate,
+Gurux.DLMS.Conformance,
+Gurux.DLMS.Service,
+Gurux.DLMS.AesGcmParameter,
+Gurux.DLMS.GXDLMSChippering,
+Gurux.DLMS.Security,
 Gurux.DLMS.GXDLMSTranslatorStructure,
 TranslatorOutputType,
 TranslatorGeneralTags,
-Gurux.DLMS.TranslatorTags, Gurux.DLMS.GXDLMSConverter;
+Gurux.DLMS.GXBitString,
+Gurux.DLMS.TranslatorTags,
+Gurux.DLMS.GXDLMSConverter;
 
 type
 
@@ -54,6 +70,10 @@ type
 // <p />In DLMS/COSEM the meter is primarily a server, and the controlling system
 // is a client. Also unsolicited (received without a request) messages are available.
 TGXAPDU = class
+  // Reserved for internal use.
+  class function GetConformanceFromArray(data: TGXByteBuffer): Integer;
+  class procedure SetConformanceToArray(AValue: Integer; data: TGXByteBuffer);
+
   class procedure Parse(
       initiateRequest: Boolean;
       settings: TGXDLMSSettings;
@@ -284,8 +304,6 @@ begin
 end;
 
 class procedure TGXAPDU.GetInitiateRequest(settings: TGXDLMSSettings; cipher: TGXCiphering; data: TGXByteBuffer);
-var
-  bb: TGXByteBuffer;
 begin
   // Tag for xDLMS-Initiate request
   data.SetUInt8(Integer(TCommand.InitiateRequest));
@@ -294,7 +312,6 @@ begin
   //encoding of the response-allowed component (BOOLEAN DEFAULT TRUE)
   // usage flag (FALSE, default value TRUE conveyed)
   data.SetUInt8(0);
-
   // Usage field of the proposed-quality-of-service component. Not used
   data.SetUInt8($00);
   data.SetUInt8(settings.DLMSVersion);
@@ -305,15 +322,8 @@ begin
   data.SetUInt8($04);
   // encoding the number of unused bits in the bit string
   data.SetUInt8($00);
-
-  bb := TGXByteBuffer.Create(4);
-  try
-    bb.SetUInt32(Integer(settings.ProposedConformance));
-    data.SetArray(bb.SubArray(1, 3));
-    data.SetUInt16(settings.MaxPduSize);
-  finally
-    FreeAndNil(bb);
-  end;
+  SetConformanceToArray(Integer(settings.ProposedConformance), data);
+  data.SetUInt16(settings.MaxPduSize);
 end;
 
 // Generate user information.
@@ -422,6 +432,28 @@ begin
   end;
 end;
 
+// Reserved for internal use.
+class function TGXAPDU.GetConformanceFromArray(data: TGXByteBuffer): Integer;
+var
+  pos: Integer;
+  tmp: BYTE;
+begin
+  Result := TGXCommon.SwapBits(data.GetUInt8());
+  Result := Result or (TGXCommon.SwapBits(data.GetUInt8()) shl 8);
+  Result := Result or (TGXCommon.SwapBits(data.GetUInt8()) shl 16);
+end;
+
+// Reserved for internal use.
+class procedure TGXAPDU.SetConformanceToArray(AValue: Integer; data: TGXByteBuffer);
+var
+  pos: Integer;
+  tmp: BYTE;
+begin
+  data.SetUInt8(TGXCommon.SwapBits(AValue and $FF));
+  data.SetUInt8(TGXCommon.SwapBits((AValue shr 8) and $FF));
+  data.SetUInt8(TGXCommon.SwapBits((AValue shr 16) and $FF));
+end;
+
 class procedure TGXAPDU.Parse(
     initiateRequest: Boolean;
     settings: TGXDLMSSettings;
@@ -433,7 +465,7 @@ var
   len: Integer;
   response: Boolean;
   tmp: TBytes;
-  bb: TGXByteBuffer;
+  bs: TGXBitString;
   v: LongWord;
   vaa, pdu: WORD;
   se: TServiceError;
@@ -566,16 +598,7 @@ begin
   //The number of unused bits in the bit string.
   //tag :=
   data.GetUInt8();
-  bb := TGXByteBuffer.Create(4);
-  try
-    SetLength(tmp, 3);
-    data.Get(tmp);
-    bb.SetUInt8(0);
-    bb.SetArray(tmp);
-    v := bb.GetUInt32();
-  finally
-    FreeAndNil(bb);
-  end;
+  v := GetConformanceFromArray(data);
   if settings.IsServer Then
     if xml <> Nil Then
     begin

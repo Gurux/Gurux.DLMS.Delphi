@@ -299,6 +299,10 @@
         <DCCReference Include="Objects\Gurux.DLMS.Objects.GXMacDirectTable.pas"/>
         <DCCReference Include="Objects\Gurux.DLMS.Objects.GXMacMulticastEntry.pas"/>
         <DCCReference Include="Objects\Gurux.DLMS.Objects.GXMacPhyCommunication.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSSchedule.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXScheduleEntry.pas"/>
+        <DCCReference Include="Objects\Enums\Gurux.DLMS.Objects.Enums.Weekdays.pas"/>
+        <DCCReference Include="Gurux.DLMS.GXBitString.pas"/>
         <RcItem Include="OBISCodes.txt">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>Text</ResourceType>

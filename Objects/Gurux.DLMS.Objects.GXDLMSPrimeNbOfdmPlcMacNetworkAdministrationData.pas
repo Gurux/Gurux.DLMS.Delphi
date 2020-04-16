@@ -222,7 +222,7 @@ begin
     TGXCommon.SetObjectCount(SwitchTable.Count, bb);
     for it in SwitchTable do
     begin
-      TGXCommon.SetData(bb, TDataType.dtInt8, it);
+      TGXCommon.SetData(bb, TDataType.dtInt16, it);
     end;
     Result := bb.ToArray;
   finally

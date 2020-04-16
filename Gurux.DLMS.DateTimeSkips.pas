@@ -35,13 +35,29 @@ unit Gurux.DLMS.DateTimeSkips;
 interface
 
 type
-  TDateTimeSkips = (dkNone = 0, dkYear = 1, dkMonth = 2, dkDay = 4, dkDayOfWeek = 8, dkHour = 16,
-      dkMinute = 32, dkSecond = 64, dkMs = 128,
-      // Deviation is skipped on write.
-      dkDeviation = $100,
-      // Status is skipped on write.
-      dkStatus = $200
-      );
+TDateTimeSkips = (
+  dkNone = 0,
+  //Year is not used.
+  dkYear = 1,
+  //Month is not used.
+  dkMonth = 2,
+  //Day is not used.
+  dkDay = 4,
+  //Day of week is not used.
+  dkDayOfWeek = 8,
+  //Seconds are not used.
+  dkHour = 16,
+  //Minutes are not used.
+  dkMinute = 32,
+  //Seconds are not used.
+  dkSecond = 64,
+  //MS are not used.
+  dkMs = 128,
+  // Deviation is not used.
+  dkDeviation = $100,
+  // Status is not used.
+  dkStatus = $200
+);
 
   TDateTimeSkipsSet = record
     strict private

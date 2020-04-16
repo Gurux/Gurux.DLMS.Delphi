@@ -34,18 +34,24 @@ unit Gurux.DLMS.Objects.GXDLMSMBusMasterPortSetup;
 
 interface
 
-uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject;
+uses GXCommon,
+  SysUtils,
+  Rtti,
+  System.Generics.Collections,
+  Gurux.DLMS.ObjectType,
+  Gurux.DLMS.DataType,
+  Gurux.DLMS.BaudRate,
+  Gurux.DLMS.GXDLMSObject;
 
 type
 TGXDLMSMBusMasterPortSetup = class(TGXDLMSObject)
-  FValue: TValue;
+  FCommSpeed: TBaudRate;
 
   constructor Create; overload;
   constructor Create(ln: string); overload;
   constructor Create(ln: string; sn: System.UInt16); overload;
 
-  property Value: TValue read FValue write FValue;
+  property CommSpeed: TBaudRate read FCommSpeed write FCommSpeed;
 
   function GetValues() : TArray<TValue>;override;
 
@@ -77,7 +83,7 @@ end;
 
 function TGXDLMSMBusMasterPortSetup.GetValues() : TArray<TValue>;
 begin
-  Result := TArray<TValue>.Create(FLogicalName, FValue);
+  Result := TArray<TValue>.Create(FLogicalName, TValue.From(FCommSpeed));
 end;
 
 function TGXDLMSMBusMasterPortSetup.GetAttributeIndexToRead(All: Boolean): TArray<Integer>;
@@ -89,7 +95,7 @@ begin
     //LN is static and read only once.
     if All or string.IsNullOrEmpty(LogicalName) then
       items.Add(1);
-    //Value
+    //CommSpeed
     if All or CanRead(2) then
       items.Add(2);
     Result := items.ToArray;
@@ -116,7 +122,7 @@ begin
   end
   else if (index = 2) then
   begin
-    Result := TDataType.dtNone;
+    Result := TDataType.dtEnum;
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');
@@ -130,7 +136,7 @@ begin
   end
   else if (e.Index = 2) then
   begin
-    Result := FValue;
+    Result := Integer(FCommSpeed);
   end
   else
     raise Exception.Create('GetValue failed. Invalid attribute index.');
@@ -144,7 +150,7 @@ begin
   end
   else if (e.Index = 2) then
   begin
-    FValue := value;
+    FCommSpeed := TBaudRate(e.Value.AsInteger);
   end
   else
   begin

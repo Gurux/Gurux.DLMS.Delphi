@@ -37,6 +37,7 @@ interface
 type
 // RequestTypes enumerates the replies of the server to a client's request,
 // indicating the request type.
+[FlagsAttribute]
 TRequestTypes = (
     // No more data is available for the request.
     rtNone = 0,

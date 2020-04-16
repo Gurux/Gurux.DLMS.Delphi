@@ -90,7 +90,8 @@ Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacSetup,
 Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacFunctionalParameters,
 Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacCounters,
 Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacNetworkAdministrationData,
-Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcApplicationsIdentification;
+Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcApplicationsIdentification,
+Gurux.DLMS.Objects.GXDLMSSchedule;
 
 // Reserved for internal use.
 class function TGXObjectFactory.CreateObject(tp : WORD) : TGXDLMSObject;
@@ -167,7 +168,7 @@ begin
   TObjectType.otSapAssignment :
       Result := TGXDLMSSapAssignment.Create();
   TObjectType.otSchedule :
-      Result := TGXDLMSObject.Create(TObjectType(tp));
+      Result := TGXDLMSSchedule.Create();
   TObjectType.otScriptTable :
       Result := TGXDLMSScriptTable.Create();
   TObjectType.otSmtpSetup :
