@@ -800,6 +800,8 @@ begin
             obj.LogicalName := reader.ReadElementContentAsString('LN')
         else if 'Description' = target Then
             obj.Description :=reader.ReadElementContentAsString('Description')
+        else if 'Version' = target Then
+            obj.Version := reader.ReadElementContentAsInt('Version')
         else
           reader.read();
       end
@@ -832,6 +834,9 @@ begin
 
         // Add LN
         writer.WriteElementString('LN', it.LogicalName);
+        // Add Version
+        if it.Version <> 0 Then
+          writer.WriteElementString('Version', it.Version);
         // Add description if given.
         if it.description <> '' Then
           writer.WriteElementString('Description', it.Description);

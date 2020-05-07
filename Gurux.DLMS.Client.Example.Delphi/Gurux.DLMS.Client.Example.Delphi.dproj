@@ -85,7 +85,7 @@
         <Manifest_File>None</Manifest_File>
         <DCC_UsePackage>GuruxDLMS;$(DCC_UsePackage)</DCC_UsePackage>
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
-        <Debugger_RunParams>-h 192.168.8.128 -p 4060 -t Verbose -r sn -a High -P Gurux</Debugger_RunParams>
+        <Debugger_RunParams>-h 192.168.39.110 -p 1000 -t Error</Debugger_RunParams>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
