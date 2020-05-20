@@ -34,10 +34,18 @@ unit Gurux.DLMS.Objects.GXDLMSRegister;
 
 interface
 
-uses GXCommon, SysUtils, Rtti, System.Math, GXByteBuffer,
-System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-Gurux.DLMS.TUnit, System.TypInfo;
+uses GXCommon,
+  SysUtils,
+  Rtti,
+  System.Math,
+  GXByteBuffer,
+  System.Generics.Collections,
+  Gurux.DLMS.ObjectType,
+  Gurux.DLMS.DataType,
+  Gurux.DLMS.GXDLMSObject,
+  Gurux.DLMS.TUnit,
+  System.TypInfo,
+  Gurux.DLMS.IGXDLMSClient;
 
 type
 TGXDLMSRegister = class(TGXDLMSObject)
@@ -74,6 +82,7 @@ TGXDLMSRegister = class(TGXDLMSObject)
   function GetValue(e: TValueEventArgs): TValue;override;
   procedure SetValue(e: TValueEventArgs);override;
   function Invoke(e: TValueEventArgs): TBytes;override;
+  function Reset(client: IGXDLMSClient) : TArray<TBytes>;
 end;
 
 implementation
@@ -258,6 +267,11 @@ begin
   end
   else
     raise Exception.Create('SetValue failed. Invalid attribute index.');
+end;
+
+function TGXDLMSRegister.Reset(client: IGXDLMSClient) : TArray<TBytes>;
+begin
+  Result := client.Method(Self, 1, 0, TDataType.dtInt8);
 end;
 
 function TGXDLMSRegister.Invoke(e: TValueEventArgs): TBytes;

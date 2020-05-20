@@ -447,7 +447,6 @@ end;
 class procedure TGXAPDU.SetConformanceToArray(AValue: Integer; data: TGXByteBuffer);
 var
   pos: Integer;
-  tmp: BYTE;
 begin
   data.SetUInt8(TGXCommon.SwapBits(AValue and $FF));
   data.SetUInt8(TGXCommon.SwapBits((AValue shr 8) and $FF));
@@ -465,7 +464,6 @@ var
   len: Integer;
   response: Boolean;
   tmp: TBytes;
-  bs: TGXBitString;
   v: LongWord;
   vaa, pdu: WORD;
   se: TServiceError;

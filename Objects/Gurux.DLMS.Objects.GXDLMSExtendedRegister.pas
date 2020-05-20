@@ -41,7 +41,7 @@ Gurux.DLMS.GXDateTime, Gurux.DLMS.Objects.GXDLMSRegister;
 type
 TGXDLMSExtendedRegister = class(TGXDLMSRegister)
   FStatus: TValue;
-  FCaptureTime: TGXDateTime;
+  FCaptureTime: TDateTime;
 
   destructor Destroy;override;
   constructor Create; overload;
@@ -52,7 +52,7 @@ TGXDLMSExtendedRegister = class(TGXDLMSRegister)
   property Status: TValue read FStatus write FStatus;
 
   // Capture time.
-  property CaptureTime: TGXDateTime read FCaptureTime write FCaptureTime;
+  property CaptureTime: TDateTime read FCaptureTime write FCaptureTime;
 
   function GetValues() : TArray<TValue>;override;
 
@@ -169,6 +169,8 @@ begin
 end;
 
 procedure TGXDLMSExtendedRegister.SetValue(e: TValueEventArgs);
+var
+  tm : TGXDateTime;
 begin
  if e.Index < 4 then
    inherited SetValue(e)
@@ -178,12 +180,21 @@ begin
   end
   else if e.Index = 5 then
   begin
-    FreeAndNil(FCaptureTime);
-
-    if e.Value.IsType<TBytes> Then
-      e.Value := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtDateTime);
-
-    FCaptureTime := e.Value.AsType<TGXDateTime>;
+    if e.Value.IsEmpty Then
+    begin
+      FCaptureTime := TGXDateTime.MinDateTime;
+    end
+    else
+    begin
+      if e.Value.IsType<TBytes> Then
+      begin
+        tm := TGXCommon.ChangeType(e.Value.AsType<TBytes>, TDataType.dtDateTime).AsType<TGXDateTime>;
+        FCaptureTime := tm.LocalTime;
+        FreeAndNil(tm);
+      end
+      else
+        FCaptureTime := e.Value.AsType<TGXDateTime>.LocalTime;
+    end;
   end
   else
   begin
@@ -193,7 +204,15 @@ end;
 
 function TGXDLMSExtendedRegister.Invoke(e: TValueEventArgs): TBytes;
 begin
-  raise Exception.Create('Invoke failed. Invalid attribute index.');
+  // Resets the value to the default value.
+  // The default value is an instance specific constant.
+  if e.Index = 1 then
+  begin
+    FValue := Nil;
+    FCaptureTime := Now;
+  end
+  else
+    raise Exception.Create('Invoke failed. Invalid attribute index.');
 end;
 
 end.

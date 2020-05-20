@@ -65,6 +65,7 @@ type
 
 TGXDLMSClient = class (TInterfacedObject)
   protected
+    FUseProtectedRelease: BOOLEAN;
     FSettings: TGXDLMSSettings;
   private
     function GetSourceSystemTitle: TBytes;
@@ -165,6 +166,9 @@ TGXDLMSClient = class (TInterfacedObject)
     property Limits: TGXDLMSLimits read get_Limits;
     property ClientAddress : Integer read get_ClientAddress write set_ClientAddress;
     property ServerAddress : Integer read get_ServerAddress write set_ServerAddress;
+
+    // If protected release is used release is including a ciphered xDLMS Initiate request.
+    property UseProtectedRelease: BOOLEAN read FUseProtectedRelease write FUseProtectedRelease;
 
     //Auto increase Invoke ID.
     property AutoIncreaseInvokeID : Boolean read GetAutoIncreaseInvokeID write SetAutoIncreaseInvokeID;
@@ -656,13 +660,22 @@ begin
 
   bb := TGXByteBuffer.Create(4);
   try
-    bb.setUInt8($00);
-    bb.setUInt8($80);
-    bb.setUInt8($01);
-    bb.setUInt8($00);
-
-    TGXAPDU.generateUserInformation(FSettings, FSettings.Cipher, Nil, bb);
-    bb.SetUInt8(0, (bb.Size - 1));
+    if Not UseProtectedRelease Then
+    begin
+      bb.SetUInt8(3);
+      bb.SetUInt8($80);
+      bb.SetUInt8(1);
+      bb.SetUInt8(0);
+    end
+    else
+    begin
+      bb.setUInt8($00);
+      bb.setUInt8($80);
+      bb.setUInt8($01);
+      bb.setUInt8($00);
+      TGXAPDU.generateUserInformation(FSettings, FSettings.Cipher, Nil, bb);
+      bb.SetUInt8(0, (bb.Size - 1));
+    end;
     if UseLogicalNameReferencing Then
     begin
       ln := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.ReleaseRequest,

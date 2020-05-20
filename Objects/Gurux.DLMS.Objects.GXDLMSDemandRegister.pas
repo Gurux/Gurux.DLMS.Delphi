@@ -34,14 +34,23 @@ unit Gurux.DLMS.Objects.GXDLMSDemandRegister;
 
 interface
 
-uses GXCommon, SysUtils, Rtti, System.Generics.Collections,
-Gurux.DLMS.ObjectType, Gurux.DLMS.DataType, Gurux.DLMS.GXDLMSObject,
-Gurux.DLMS.GXDateTime, Gurux.DLMS.TUnit, System.Math, GXByteBuffer;
+uses GXCommon,
+  SysUtils,
+  Rtti,
+  System.Generics.Collections,
+  Gurux.DLMS.ObjectType,
+  Gurux.DLMS.DataType,
+  Gurux.DLMS.GXDLMSObject,
+  Gurux.DLMS.GXDateTime,
+  Gurux.DLMS.TUnit,
+  System.Math,
+  GXByteBuffer,
+  Gurux.DLMS.IGXDLMSClient;
 
 type
 TGXDLMSDemandRegister = class(TGXDLMSObject)
   FScaler : Integer;
-  FLastAvarageValue, FCurrentAvarageValue: TValue;
+  FLastAverageValue, FCurrentAverageValue: TValue;
   FUnit : TUnit;
   FPeriod, FNumberOfPeriods : Integer;
   FStatus : TValue;
@@ -61,11 +70,11 @@ TGXDLMSDemandRegister = class(TGXDLMSObject)
   constructor Create(ln: string); overload;
   constructor Create(ln: string; sn: System.UInt16); overload;
 
-  //Current avarage value of COSEM Data object.
-  property CurrentAvarageValue: TValue read FCurrentAvarageValue write FCurrentAvarageValue;
+  //Current Average value of COSEM Data object.
+  property CurrentAverageValue: TValue read FCurrentAverageValue write FCurrentAverageValue;
 
-  //Last avarage value of COSEM Data object.
-  property LastAvarageValue:  TValue read FLastAvarageValue write FLastAvarageValue;
+  //Last Average value of COSEM Data object.
+  property LastAverageValue:  TValue read FLastAverageValue write FLastAverageValue;
 
   // Scaler of COSEM Register object.
   property Scaler : double read GetScaler write SetScaler;
@@ -87,9 +96,9 @@ TGXDLMSDemandRegister = class(TGXDLMSObject)
   // (NumberOfPeriods * Period is the denominator for the calculation of the demand).
   property Period: Integer read FPeriod write FPeriod;
 
-  //The number of periods used to calculate the LastAvarageValue.
-  // NumberOfPeriods >= 1 NumberOfPeriods > 1 indicates that the LastAvarageValue represents “sliding demand”.
-  // NumberOfPeriods = 1 indicates that the LastAvarageValue represents "block demand".
+  //The number of periods used to calculate the LastAverageValue.
+  // NumberOfPeriods >= 1 NumberOfPeriods > 1 indicates that the LastAverageValue represents “sliding demand”.
+  // NumberOfPeriods = 1 indicates that the LastAverageValue represents "block demand".
   // The behaviour of the meter after writing a new value to this attribute shall be
   // specified by the manufacturer.
   property NumberOfPeriods: Integer read FNumberOfPeriods write FNumberOfPeriods;
@@ -99,6 +108,12 @@ TGXDLMSDemandRegister = class(TGXDLMSObject)
   function GetAttributeIndexToRead(All: Boolean): TArray<Integer>;override;
   function GetAttributeCount: Integer;override;
   function GetMethodCount: Integer;override;
+
+
+  // Reset value.
+  function Reset(client: IGXDLMSClient) : TArray<TBytes>;
+  //Closes the current period and starts a new one.
+  function NextPeriod(client: IGXDLMSClient) : TArray<TBytes>;
 end;
 
 implementation
@@ -135,8 +150,8 @@ end;
 
 function TGXDLMSDemandRegister.GetValues() : TArray<TValue>;
 begin
-  Result := TArray<TValue>.Create(FLogicalName, FCurrentAvarageValue,
-    FLastAvarageValue,
+  Result := TArray<TValue>.Create(FLogicalName, FCurrentAverageValue,
+    FLastAverageValue,
     'Scaler: ' + FloatToStr(GetScaler()) + ' Unit: ' + TGXCommon.UnitToString(FUnit),
     FStatus, FCaptureTime, FStartTimeCurrent, FPeriod, FNumberOfPeriods);
 end;
@@ -161,10 +176,10 @@ begin
     //ScalerUnit
     if All or Not IsRead(4) Then
       items.Add(4);
-    //CurrentAvarageValue
+    //CurrentAverageValue
     if All or CanRead(2) Then
       items.Add(2);
-    //LastAvarageValue
+    //LastAverageValue
     if All or CanRead(3) Then
       items.Add(3);
     //Status
@@ -250,11 +265,11 @@ begin
   end
   else if e.Index = 2 Then
   begin
-    Result := FCurrentAvarageValue;
+    Result := FCurrentAverageValue;
   end
   else if e.Index = 3 Then
   begin
-    Result := FLastAvarageValue;
+    Result := FLastAverageValue;
   end
   else if e.Index = 4 Then
   begin
@@ -306,17 +321,17 @@ begin
     if Scaler <> 1 Then
     begin
       try
-        FCurrentAvarageValue := e.Value.AsCurrency * Scaler;
+        FCurrentAverageValue := e.Value.AsCurrency * Scaler;
       except
       on Exception do
         begin
-          FCurrentAvarageValue := e.Value;
+          FCurrentAverageValue := e.Value;
         end;
       end;
     end
     else
     begin
-      FCurrentAvarageValue := e.Value;
+      FCurrentAverageValue := e.Value;
     end;
   end
   else if e.Index = 3 Then
@@ -324,15 +339,15 @@ begin
     if Scaler <> 1 Then
     begin
       try
-        FLastAvarageValue := e.Value.AsCurrency * Scaler;
+        FLastAverageValue := e.Value.AsCurrency * Scaler;
       except
       on Exception do
-        FLastAvarageValue := e.Value;
+        FLastAverageValue := e.Value;
       end;
     end
     else
     begin
-      FLastAvarageValue := e.Value;
+      FLastAverageValue := e.Value;
     end;
   end
   else if e.Index = 4 Then
@@ -401,9 +416,36 @@ begin
     raise Exception.Create('SetValue failed. Invalid attribute index.');
 end;
 
+function TGXDLMSDemandRegister.Reset(client: IGXDLMSClient) : TArray<TBytes>;
+begin
+  Result := client.Method(Self, 1, 0, TDataType.dtInt8);
+end;
+
+function TGXDLMSDemandRegister.NextPeriod(client: IGXDLMSClient) : TArray<TBytes>;
+begin
+  Result := client.Method(Self, 2, 0, TDataType.dtInt8);
+end;
+
 function TGXDLMSDemandRegister.Invoke(e: TValueEventArgs): TBytes;
 begin
-  raise Exception.Create('Invoke failed. Invalid attribute index.');
+  // Resets the value to the default value.
+  // The default value is an instance specific constant.
+  if e.Index = 1 then
+  begin
+    FCurrentAverageValue := Nil;
+    FLastAverageValue := Nil;
+    FCaptureTime := Now;
+    FStartTimeCurrent := Now;
+  end
+  else if e.Index = 2 then
+  begin
+    FLastAverageValue := FCurrentAverageValue;
+    FCurrentAverageValue := Nil;
+    FCaptureTime := Now;
+    FStartTimeCurrent := Now;
+  end
+  else
+    raise Exception.Create('Invoke failed. Invalid attribute index.');
 end;
 
 end.
