@@ -463,7 +463,7 @@ begin
       end;
     end;
   3: Result := FCurrentCreditInUse;
-  4: Result := TGXCommon.SwapBits(Byte(FCurrentCreditStatus));
+  4: Result := TGXBitString.ToBitString(Byte(FCurrentCreditStatus), 8);
   5: Result := FAvailableCredit;
   6: Result := FAmountToClear;
   7: Result := FClearanceThreshold;
@@ -518,7 +518,7 @@ begin
         bb.SetUInt8(Integer(TDataType.dtOctetString));
         bb.SetUInt8(6);
         bb.SetArray(TGXDLMSObject.GetLogicalName(it.ChargeReference));
-        TGXCommon.SetData(bb, TDataType.dtBITSTRING, TGXCommon.SwapBits(BYTE(it.CollectionConfiguration)));
+        TGXCommon.SetData(bb, TDataType.dtBITSTRING, TGXBitString.ToBitString(BYTE(it.CollectionConfiguration), 3));
       end;
       Result:= TValue.From(bb.ToArray());
     finally

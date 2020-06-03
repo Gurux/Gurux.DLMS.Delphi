@@ -133,8 +133,6 @@ begin
 end;
 
 procedure TGXDLMSSchedule.AddEntry(it: TGXScheduleEntry; data: TGXByteBuffer);
-var
-  bs: TGXBitString;
 begin
   data.SetUInt8(Integer(TDataType.dtStructure));
   data.SetUInt8(10);
@@ -157,12 +155,7 @@ begin
   data.SetUInt8(Integer(TDataType.dtUInt16));
   data.SetUInt16(it.ValidityWindow);
   //Add exec week days.
-  bs := TGXBitString.Create(Integer(it.ExecWeekdays), 7);
-  try
-    TGXCommon.SetData(data, TDataType.dtBitString, bs.ToString());
-  finally
-    bs.Free();
-  end;
+  TGXCommon.SetData(data, TDataType.dtBitString, TGXBitString.ToBitString(Integer(it.ExecWeekdays), 7));
   //Add exec spec days.
   TGXCommon.SetData(data, TDataType.dtBitString, it.ExecSpecDays);
   //Add begin date.

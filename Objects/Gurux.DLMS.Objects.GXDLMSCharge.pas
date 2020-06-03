@@ -51,7 +51,10 @@ Gurux.DLMS.GXChargeTable;
 
 type
 
+//Charge configuration enumeration types.
 TChargeConfiguration = (
+//None
+None = 0,
 // Percentage based collection
 PercentageBasedCollection = 1,
 //Continuous collection
@@ -315,8 +318,6 @@ begin
 end;
 
 function TGXDLMSCharge.GetValue(e: TValueEventArgs): TValue;
-var
-  bs: TGXBitString;
 begin
  case e.Index of
   1: Result := TValue.From(TGXDLMSObject.GetLogicalName(FLogicalName));
@@ -327,15 +328,7 @@ begin
   6: Result := GetUnitCharge(unitChargePassive);
   7: Result := FUnitChargeActivationTime;
   8: Result := FPeriod;
-  9:
-  begin
-    try
-      bs := TGXBitString.Create(BYTE(FChargeConfiguration), 2);
-      Result := bs.ToString();
-    finally
-      bs.Free();
-    end;
-  end;
+  9: Result := TGXBitString.ToBitString(BYTE(FChargeConfiguration), 2);
   10: Result := FLastCollectionTime;
   11: Result := FLastCollectionAmount;
   12: Result := FTotalAmountRemaining;

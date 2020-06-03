@@ -37,6 +37,8 @@ interface
 type
   //Enumerated Credit configuration values.
   TCreditConfiguration = (
+    //None
+    ccNone = 0,
     // Requires visual indication,
     ccVisual = $1,
     // Requires confirmation before it can be selected/invoked

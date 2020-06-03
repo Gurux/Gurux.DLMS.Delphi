@@ -361,7 +361,7 @@ end;
 
 function TGXDLMSAssociationLogicalName.GetValue(e: TValueEventArgs): TValue;
 var
-  data, bb : TGXByteBuffer;
+  data: TGXByteBuffer;
   list: TStrings;
 begin
   if e.Index = 1 then
@@ -413,19 +413,13 @@ begin
     try
       data.Add(Integer(TDataType.dtStructure));
       data.SetUInt8(6);
-      bb := TGXByteBuffer.Create();
-      try
-        bb.SetUInt32(Integer(XDLMSContextInfo.Conformance));
-        TGXCommon.SetData(data, TDataType.dtBitString, TValue.From(bb.SubArray(1, 3)));
-        TGXCommon.SetData(data, TDataType.dtUInt16, XDLMSContextInfo.MaxReceivePduSize);
-        TGXCommon.SetData(data, TDataType.dtUInt16, XDLMSContextInfo.MaxSendPduSize);
-        TGXCommon.SetData(data, TDataType.dtUInt8, XDLMSContextInfo.DlmsVersionNumber);
-        TGXCommon.SetData(data, TDataType.dtInt8, XDLMSContextInfo.QualityOfService);
-        TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(XDLMSContextInfo.CypheringInfo));
-        Result := TValue.From(data.ToArray());
-      finally
-        FreeAndNil(bb);
-      end;
+      TGXCommon.SetData(data, TDataType.dtBitString, TGXBitString.ToBitString(Integer(XDLMSContextInfo.Conformance), 24));
+      TGXCommon.SetData(data, TDataType.dtUInt16, XDLMSContextInfo.MaxReceivePduSize);
+      TGXCommon.SetData(data, TDataType.dtUInt16, XDLMSContextInfo.MaxSendPduSize);
+      TGXCommon.SetData(data, TDataType.dtUInt8, XDLMSContextInfo.DlmsVersionNumber);
+      TGXCommon.SetData(data, TDataType.dtInt8, XDLMSContextInfo.QualityOfService);
+      TGXCommon.SetData(data, TDataType.dtOctetString, TValue.From(XDLMSContextInfo.CypheringInfo));
+      Result := TValue.From(data.ToArray());
     finally
       FreeAndNil(data);
     end;

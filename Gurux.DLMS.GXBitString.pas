@@ -54,10 +54,10 @@ type
     // Avalue : Bit string value.
     constructor Create(Avalue : String); overload;
 
-    // Constructor.
-    // Avalue : Integer value.
+    // Convert integer value to BitString.
+    // Avalue : Value to convert.
     // ACount : Bit count.
-    constructor Create(Avalue : Integer; ACount: Integer); overload;
+    class function ToBitString(Avalue : Integer; ACount: Integer): string;
 
  end;
 implementation
@@ -72,15 +72,16 @@ begin
   FValue := AValue;
 end;
 
-constructor TGXBitString.Create(Avalue : Integer; ACount: Integer);
+class function TGXBitString.ToBitString(Avalue : Integer; ACount: Integer): string;
 var
   pos: Integer;
 begin
+  Result := '';
   for pos := 0 to ACount - 1 do
     if AValue and (1 shl pos) <> 0 Then
-      FValue := FValue + '1'
+      Result := Result + '1'
     else
-      FValue := FValue + '0';
+      Result := Result + '0';
 end;
 
 function TGXBitString.ToString: string;

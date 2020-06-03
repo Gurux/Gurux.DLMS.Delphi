@@ -266,7 +266,7 @@ begin
     4: Result := FPriority;
     5: Result := FWarningThreshold;
     6:  Result := FLimit;
-    7:  Result := Integer(FCreditConfiguration);
+    7:  Result := TGXBitString.ToBitString(Integer(FCreditConfiguration), 5);
     8:  Result := Integer(FStatus);
     9:  Result := FPresetCreditAmount;
     10: Result := FCreditAvailableThreshold;

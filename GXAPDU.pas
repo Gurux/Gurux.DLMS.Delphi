@@ -434,9 +434,6 @@ end;
 
 // Reserved for internal use.
 class function TGXAPDU.GetConformanceFromArray(data: TGXByteBuffer): Integer;
-var
-  pos: Integer;
-  tmp: BYTE;
 begin
   Result := TGXCommon.SwapBits(data.GetUInt8());
   Result := Result or (TGXCommon.SwapBits(data.GetUInt8()) shl 8);
@@ -445,8 +442,6 @@ end;
 
 // Reserved for internal use.
 class procedure TGXAPDU.SetConformanceToArray(AValue: Integer; data: TGXByteBuffer);
-var
-  pos: Integer;
 begin
   data.SetUInt8(TGXCommon.SwapBits(AValue and $FF));
   data.SetUInt8(TGXCommon.SwapBits((AValue shr 8) and $FF));
@@ -1328,7 +1323,7 @@ end;
 
 class function TGXAPDU.GetUserInformation(settings: TGXDLMSSettings; cipher: TGXCiphering): TBytes;
 var
-  data, bb: TGXByteBuffer;
+  data: TGXByteBuffer;
 begin
   data := TGXByteBuffer.Create();
   try
@@ -1342,13 +1337,7 @@ begin
     data.SetUInt8($1F);
     data.SetUInt8($04);// length of the conformance block
     data.SetUInt8($00);// encoding the number of unused bits in the bit string
-    bb := TGXByteBuffer.Create();
-    try
-      bb.SetUInt32(LongWord(settings.NegotiatedConformance));
-      data.SetArray(bb.GetData(), 1, 3);
-    finally
-      FreeAndNil(bb);
-    end;
+    SetConformanceToArray(LongWord(settings.NegotiatedConformance), data);
     data.SetUInt16(settings.MaxPduSize);
     //VAA Name VAA name ($0007 for LN referencing and $FA00 for SN)
     if settings.UseLogicalNameReferencing Then
