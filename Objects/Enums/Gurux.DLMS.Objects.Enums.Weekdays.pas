@@ -37,7 +37,6 @@ interface
 type
 
 //Defines the weekdays.
-[FlagsAttribute]
 TWeekdays =
 (
   // No day of week is selected.

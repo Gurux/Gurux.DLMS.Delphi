@@ -34,7 +34,6 @@ unit Gurux.DLMS.ClockStatus;
 
 interface
 type
-[FlagsAttribute]
 TClockStatus =
 (
     /// OK.

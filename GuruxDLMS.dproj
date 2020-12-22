@@ -169,7 +169,6 @@
         <DCCReference Include="Gurux.DLMS.HdlcControlFrame.pas"/>
         <DCCReference Include="Gurux.DLMS.SetResponseType.pas"/>
         <DCCReference Include="Gurux.DLMS.GetCommandType.pas"/>
-        <DCCReference Include="Gurux.DLMS.ExceptionServiceError.pas"/>
         <DCCReference Include="Gurux.DLMS.ConfirmedServiceError.pas"/>
         <DCCReference Include="Gurux.DLMS.GXDLMSConfirmedServiceError.pas"/>
         <DCCReference Include="Gurux.DLMS.ApplicationReference.pas"/>
@@ -303,6 +302,9 @@
         <DCCReference Include="Objects\Gurux.DLMS.Objects.GXScheduleEntry.pas"/>
         <DCCReference Include="Objects\Enums\Gurux.DLMS.Objects.Enums.Weekdays.pas"/>
         <DCCReference Include="Gurux.DLMS.GXBitString.pas"/>
+        <DCCReference Include="Enums\Gurux.DLMS.Enums.ExceptionStateError.pas"/>
+        <DCCReference Include="Enums\Gurux.DLMS.Enums.ExceptionServiceError.pas"/>
+        <DCCReference Include="Gurux.DLMS.GXDLMSExceptionResponse.pas"/>
         <RcItem Include="OBISCodes.txt">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>Text</ResourceType>

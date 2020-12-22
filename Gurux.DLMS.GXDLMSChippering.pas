@@ -267,7 +267,11 @@ begin
     SetLength(tmp, len);
     data.Get(tmp);
     t := TGXByteBuffer.Create(tmp);
-    transactionId := t.GetUInt64();
+    try
+      transactionId := t.GetUInt64();
+    finally
+      FreeAndNil(t);
+    end;
     len := TGXCommon.GetObjectCount(data);
     SetLength(tmp, len);
     data.Get(tmp);
@@ -283,8 +287,11 @@ begin
       SetLength(tmp, len);
       data.Get(tmp);
       tm := TGXCommon.ChangeType(tmp, TDataType.dtDateTime).AsType<TGXDateTime>;
-      p.DateTime := tm.LocalTime;
-      FreeAndNil(tm);
+      try
+        p.DateTime := tm.LocalTime;
+      finally
+        FreeAndNil(tm);
+      end;
     end;
     // other-information
     len := data.GetUInt8();

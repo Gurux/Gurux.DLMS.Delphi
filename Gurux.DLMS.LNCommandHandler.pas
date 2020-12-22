@@ -333,6 +333,7 @@ var
   tmp: string;
 begin
   invokeID := 0;
+  ct := TGetCommandType.ctNormal;
   //If GBT is used data is empty.
   if data.Size <> 0 Then
   begin

@@ -46,7 +46,7 @@ type
 TGXXmlReader = class
   FNode: IXmlNode;
   FIndex: Integer;
-  FDOC: TXMLDocument;
+  FDOC: IXMLDocument;
   class function GetNextNode(ANode: IXmlNode): IXmlNode;
   public
     constructor Create(APath: string);
@@ -62,7 +62,7 @@ implementation
 
 constructor TGXXmlReader.Create(APath: string);
 begin
-  FDOC := TXMLDocument.Create(TComponent.Create(Nil));
+  FDOC := NewXmlDocument;
   FDOC.Options := FDOC.Options + [doNodeAutoIndent];
   FDOC.LoadFromFile(APath);
   FDOC.Active := true;
@@ -126,7 +126,6 @@ end;
 destructor TGXXmlReader.Destroy;
 begin
   inherited;
-  FDOC.Free;
 end;
 
 end.

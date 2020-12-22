@@ -109,7 +109,7 @@ destructor TGXDLMSRegister.Destroy;
 begin
   inherited;
   if FValue.IsObject then
-    FreeAndNil(FValue)
+    FValue.AsObject.Free
   else
     FValue := Nil;
 end;
@@ -181,7 +181,7 @@ begin
   end
   else if index = 3 then
   begin
-    Result := TDataType.dtArray;
+    Result := TDataType.dtStructure;
   end
   else if (index = 4) and (ObjectType = TObjectType.otExtendedRegister) then
   begin

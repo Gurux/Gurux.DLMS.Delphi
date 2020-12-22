@@ -30,22 +30,28 @@
 // Full text may be retrieved at http://www.gnu.org/licenses/gpl-2.0.txt
 //---------------------------------------------------------------------------
 
-unit Gurux.DLMS.RequestTypes;
+unit Gurux.DLMS.Enums.ExceptionServiceError;
 
 interface
 
 type
-// RequestTypes enumerates the replies of the server to a client's request,
-// indicating the request type.
-TRequestTypes = (
-    // No more data is available for the request.
-    rtNone = 0,
-    // More data blocks are available for the request.
-    rtDataBlock = 1,
-    //More data frames are available for the request.
-    rtFrame = 2,
-    //More data is available for the General Block Transfer.
-    rtGBT = 4);
-implementation
+// ServiceError enumerates exception service errors.
+TExceptionServiceError = (
+    // No exception has occurred.
+    None = 0,
+    // Operation not possible.
+    OperationNotPossible = 1,
+    // Service not supported.
+    ServiceNotSupported = 2,
+    // Other reason.
+    OtherReason = 3,
+    // PDU is too long.
+    PduTooLong = 4,
+    // Ciphering failed.
+    DecipheringError = 5,
+    // Invocation counter is invalid.
+    InvocationCounterError = 6
+);
 
+implementation
 end.

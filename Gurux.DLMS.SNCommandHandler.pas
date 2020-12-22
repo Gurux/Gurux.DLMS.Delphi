@@ -345,6 +345,7 @@ var
   value: TGXDateTime;
   di: TGXDataInfo;
 begin
+  value := Nil;
   reply.Time := 0;
   ch := reply.Data.GetUInt8();
   // If date time is given.
@@ -359,7 +360,7 @@ begin
   if reply.Xml <> Nil Then
   begin
     reply.Xml.AppendStartTag(LONGWORD(TCommand.InformationReport));
-    if reply.Time <> 0 Then
+    if (reply.Time <> 0) and (value <> Nil) Then
     begin
       reply.Xml.AppendComment(value.ToString());
       if reply.Xml.OutputType = TTranslatorOutputType.SimpleXml Then

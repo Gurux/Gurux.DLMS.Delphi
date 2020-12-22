@@ -46,7 +46,8 @@ Gurux.DLMS.CreditConfiguration,
 Gurux.DLMS.CreditStatus,
 Gurux.DLMS.GXDateTime,
 Gurux.DLMS.GXBitString,
-GXByteBuffer;
+GXByteBuffer,
+Gurux.DLMS.IGXDLMSClient;
 
 type
 TGXDLMSCredit = class(TGXDLMSObject)
@@ -151,6 +152,15 @@ TGXDLMSCredit = class(TGXDLMSObject)
   function GetValue(e: TValueEventArgs): TValue;override;
   procedure SetValue(e: TValueEventArgs);override;
   function Invoke(e: TValueEventArgs): TBytes;override;
+
+  //Adjusts the value of the current credit amount attribute.
+  function UpdateAmount(client: IGXDLMSClient; AValue: Int32) : TArray<TBytes>;
+
+  //Sets the value of the current credit amount attribute.
+  function SetAmountToValue(client: IGXDLMSClient; AValue: Int32) : TArray<TBytes>;
+
+  //Sets the value of the current credit amount attribute.
+  function InvokeCredit(client: IGXDLMSClient; AValue: TCreditStatus) : TArray<TBytes>;
 end;
 
 implementation
@@ -312,4 +322,18 @@ begin
   raise Exception.Create('Invoke failed. Invalid attribute index.');
 end;
 
+function TGXDLMSCredit.UpdateAmount(client: IGXDLMSClient; AValue: Int32) : TArray<TBytes>;
+begin
+  Result := client.Method(Self, 1, 0, TDataType.dtInt8);
+end;
+
+function TGXDLMSCredit.SetAmountToValue(client: IGXDLMSClient; AValue: Int32) : TArray<TBytes>;
+begin
+  Result := client.Method(Self, 2, 0, TDataType.dtInt8);
+end;
+
+function TGXDLMSCredit.InvokeCredit(client: IGXDLMSClient; AValue: TCreditStatus) : TArray<TBytes>;
+begin
+  Result := client.Method(Self, 3, 0, TDataType.dtInt8);
+end;
 end.

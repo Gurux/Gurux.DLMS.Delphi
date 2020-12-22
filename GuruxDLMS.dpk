@@ -121,7 +121,6 @@ contains
   Gurux.DLMS.HdlcControlFrame in 'Gurux.DLMS.HdlcControlFrame.pas',
   Gurux.DLMS.SetResponseType in 'Gurux.DLMS.SetResponseType.pas',
   Gurux.DLMS.GetCommandType in 'Gurux.DLMS.GetCommandType.pas',
-  Gurux.DLMS.ExceptionServiceError in 'Gurux.DLMS.ExceptionServiceError.pas',
   Gurux.DLMS.ConfirmedServiceError in 'Gurux.DLMS.ConfirmedServiceError.pas',
   Gurux.DLMS.GXDLMSConfirmedServiceError in 'Gurux.DLMS.GXDLMSConfirmedServiceError.pas',
   Gurux.DLMS.ApplicationReference in 'Gurux.DLMS.ApplicationReference.pas',
@@ -254,7 +253,10 @@ contains
   Gurux.DLMS.Objects.GXDLMSSchedule in 'Objects\Gurux.DLMS.Objects.GXDLMSSchedule.pas',
   Gurux.DLMS.Objects.GXScheduleEntry in 'Objects\Gurux.DLMS.Objects.GXScheduleEntry.pas',
   Gurux.DLMS.Objects.Enums.Weekdays in 'Objects\Enums\Gurux.DLMS.Objects.Enums.Weekdays.pas',
-  Gurux.DLMS.GXBitString in 'Gurux.DLMS.GXBitString.pas';
+  Gurux.DLMS.GXBitString in 'Gurux.DLMS.GXBitString.pas',
+  Gurux.DLMS.Enums.ExceptionStateError in 'Enums\Gurux.DLMS.Enums.ExceptionStateError.pas',
+  Gurux.DLMS.Enums.ExceptionServiceError in 'Enums\Gurux.DLMS.Enums.ExceptionServiceError.pas',
+  Gurux.DLMS.GXDLMSExceptionResponse in 'Gurux.DLMS.GXDLMSExceptionResponse.pas';
 
 end.
 

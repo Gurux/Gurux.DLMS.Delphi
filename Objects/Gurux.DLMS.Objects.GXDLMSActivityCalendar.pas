@@ -40,7 +40,9 @@ Gurux.DLMS.GXDateTime,
 Gurux.DLMS.GXDLMSSeasonProfile,
 Gurux.DLMS.GXDLMSWeekProfile,
 Gurux.DLMS.GXDLMSDayProfile,
-Gurux.DLMS.GXDLMSDayProfileAction, GXByteBuffer;
+Gurux.DLMS.GXDLMSDayProfileAction,
+GXByteBuffer,
+Gurux.DLMS.IGXDLMSClient;
 
 type
 TGXDLMSActivityCalendar = class(TGXDLMSObject)
@@ -93,6 +95,8 @@ public
   function GetValue(e: TValueEventArgs): TValue;override;
   procedure SetValue(e: TValueEventArgs);override;
   function Invoke(e: TValueEventArgs): TBytes;override;
+  //This method copies all passive parameters to the active parameter.
+  function ActivatePassiveCalendar(client: IGXDLMSClient) : TArray<TBytes>;
 end;
 
 implementation
@@ -587,6 +591,12 @@ begin
   end
   else
     raise Exception.Create('SetValue failed. Invalid attribute index.');
+end;
+
+
+function TGXDLMSActivityCalendar.ActivatePassiveCalendar(client: IGXDLMSClient) : TArray<TBytes>;
+begin
+  Result := client.Method(Self, 1, 0, TDataType.dtInt8);
 end;
 
 function TGXDLMSActivityCalendar.Invoke(e: TValueEventArgs): TBytes;

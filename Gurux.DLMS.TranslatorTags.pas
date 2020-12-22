@@ -124,7 +124,9 @@ type
       CalledAEInvocationId,
       CallingApInvocationId,
       CalledAEQualifier,
-      ResponseAllowed
+      ResponseAllowed,
+      ExceptionResponse,
+      StateError
   );
 
 implementation

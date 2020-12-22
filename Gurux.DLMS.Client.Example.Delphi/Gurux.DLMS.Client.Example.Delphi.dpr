@@ -74,7 +74,7 @@ var
   outputFile: string;
 begin
   Security := TSecurity.None;
-  Host := String.Empty;
+  Host := '';
   Port := 0;
   p := Nil;
   ClientAddress := 16;
@@ -92,11 +92,10 @@ begin
 {$ENDIF}
 {$ENDIF}
   try
-    parameters := TGXCommon.GetParameters('h:p:c:s:r:It:a:p:wP:g:C:n:v:o:');
+    parameters := TGXCommon.GetParameters('h:p:c:s:r:i:It:a:p:wP:g:C:n:v:o:');
     for it in parameters do
     begin
       case it.Tag of
-      'w': InterfaceType := TInterfaceType.WRAPPER;
       'r':
       begin
         if it.Value = 'sn' Then
@@ -127,6 +126,30 @@ begin
       'p': Port := StrToInt(it.Value);
       'P'://Password
          Password := it.Value;
+      'i':
+      begin
+      //Interface
+        if it.Value = 'HDLC' Then
+         InterfaceType := TInterfaceType.HDLC
+        else if it.Value = 'WRAPPER' Then
+          InterfaceType := TInterfaceType.WRAPPER
+        else if it.Value = 'PDU' Then
+          InterfaceType := TInterfaceType.PDU
+        else if it.Value = 'WirelessMBus' Then
+          InterfaceType := TInterfaceType.WirelessMBus
+        else if it.Value = 'Plc' Then
+          InterfaceType := TInterfaceType.Plc
+        else if it.Value = 'PlcHdlc' Then
+          InterfaceType := TInterfaceType.PlcHdlc
+        else if it.Value = 'LPWAN' Then
+          InterfaceType := TInterfaceType.LPWAN
+        else if it.Value = 'WiSUN' Then
+          InterfaceType := TInterfaceType.WiSUN
+        else if it.Value = 'PlcPrime' Then
+          InterfaceType := TInterfaceType.PlcPrime
+        else
+          raise Exception.Create('Invalid trace option. (Error, Warning, Info, Verbose, Off).');
+      end;
       'I':
         // AutoIncreaseInvokeID.
         AutoIncreaseInvokeID := True;

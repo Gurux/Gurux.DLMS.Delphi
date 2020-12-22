@@ -34,7 +34,26 @@ unit Gurux.DLMS.MethodAccessMode;
 
 interface
 type
-    TMethodAccessMode = (NoAccess = 0, Access = 1, AuthenticatedAccess = 2);
+    TMethodAccessMode = (
+    // Client can't use method.
+    NoAccess = $0,
+    //Method is allowed to use.
+    Access = $1,
+    //Authenticated access is allowed.
+    AuthenticatedAccess = $2,
+    // Authenticated request is allowed.
+    AuthenticatedRequest = $4,
+    // Encrypted request is allowed.
+    EncryptedRequest = $8,
+    // Digitally signed request is allowed.
+    DigitallySignedRequest = $10,
+    // Authenticated response is allowed.
+    AuthenticatedResponse = $20,
+    // Encrypted response is allowed.
+    EncryptedResponse = $40,
+    // Digitally signed response is allowed.
+    DigitallySignedResponse = $80
+    );
 
 implementation
 

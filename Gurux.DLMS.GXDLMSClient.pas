@@ -45,6 +45,7 @@ Gurux.DLMS.Security, HDLCInfo, Gurux.DLMS.AssociationResult,
 Gurux.DLMS.SourceDiagnostic, Gurux.DLMS.GXDateTime, Gurux.DLMS.DateTimeSkips,
 Gurux.DLMS.GXStandardObisCodeCollection, Gurux.DLMS.GXStandardObisCode,
 Gurux.DLMS.Objects.GXDLMSProfileGeneric,
+Gurux.DLMS.Objects.GXDLMSData,
 GXObjectFactory, GXByteBuffer,
 Gurux.DLMS.Objects.GXDLMSAssociationShortName,
 Gurux.DLMS.Objects.GXDLMSAssociationLogicalName,
@@ -58,7 +59,8 @@ Gurux.DLMS.GXReplyData,
 Gurux.DLMS.SerialnumberCounter,
 Gurux.DLMS.GXDLMSGateway,
 Gurux.DLMS.ConnectionState,
-Gurux.DLMS.SetCommandType;
+Gurux.DLMS.SetCommandType,
+System.DateUtils;
 
 type
   CaptureObject = TGXDLMSCaptureObject;
@@ -275,6 +277,16 @@ TGXDLMSClient = class (TInterfacedObject)
 end;
 
 implementation
+
+type
+TClockType =(
+  // Normal clock object.
+  Clock,
+  // Unix time.
+  Unix,
+  // Time in ms.
+  HighResolution
+  );
 
 constructor TGXDLMSClient.Create;
 begin
@@ -1565,11 +1577,39 @@ var
   ln: LogicalName;
   buff : TGXByteBuffer;
   it: TGXDLMSCaptureObject;
+  sort: TGXDLMSObject;
+  clockType: TClockType;
+  ot: TObjectType;
 begin
   pg.Reset();
   FSettings.ResetBlockIndex();
   buff := TGXByteBuffer.Create(51);
+  sort := pg.SortObject;
   try
+    if sort = Nil Then
+    begin
+      sort := pg.CaptureObjects.Items[0].Target;
+    end;
+    //If Unix time is used.
+    if sort is TGXDLMSData and (sort.LogicalName = '0.0.1.1.0.255') Then
+    begin
+        clockType := TClockType.Unix;
+        ln := TGXCommon.LogicalNameToBytes('0.0.1.1.0.255');
+        ot := TObjectType.otData;
+    end
+    //If high resolution time is used.
+    else if sort is TGXDLMSData and (sort.LogicalName = '0.0.1.2.0.255') Then
+    begin
+        clockType := TClockType.HighResolution;
+        ln := TGXCommon.LogicalNameToBytes('0.0.1.2.0.255');
+        ot := TObjectType.otData;
+    end
+    else
+    begin
+        clockType := TClockType.Clock;
+        ln := TGXCommon.LogicalNameToBytes('0.0.1.0.0.255');
+        ot := TObjectType.otClock
+    end;
     // Add AccessSelector value.
     buff.SetUInt8($01);
     // Add enum tag.
@@ -1581,19 +1621,34 @@ begin
     // Add item count
     buff.SetUInt8($04);
     // CI
-    TGXCommon.SetData(buff, TDataType.dtUInt16, WORD(TObjectType.otClock));
-    // LN
-    ln := TGXCommon.LogicalNameToBytes('0.0.1.0.0.255');
+    TGXCommon.SetData(buff, TDataType.dtUInt16, WORD(ot));
     TGXCommon.SetData(buff, TDataType.dtOctetString, TValue.From(ln));
     // Add attribute index.                            1
     TGXCommon.SetData(buff, TDataType.dtInt8, 2);
-    // Add version.
+    // Add data index.
     TGXCommon.SetData(buff, TDataType.dtUInt16, 0);
-    // Add start time.
-    TGXCommon.SetData(buff, TDataType.dtOctetString, startTime);
-    // Add end time.
-    TGXCommon.SetData(buff, TDataType.dtOctetString, endTime);
+    if clockType = TClockType.Clock Then
+    begin
+      // Add start time.
+      TGXCommon.SetData(buff, TDataType.dtOctetString, startTime);
+      // Add end time.
+      TGXCommon.SetData(buff, TDataType.dtOctetString, endTime);
+    end
+    else
+    begin
+      TGXDateTime.ToUnixTime(startTime.AsType<TGXDateTime>());
+      // Add start time.
+      if startTime.IsType<TGXDateTime> then
+        TGXCommon.SetData(buff, TDataType.dtUInt32, TValue.From(TGXDateTime.ToUnixTime(startTime.AsType<TGXDateTime>())))
+      else
+        TGXCommon.SetData(buff, TDataType.dtUInt32, TValue.From(DateTimeToUnix(startTime.AsType<TDateTime>())));
 
+      // Add end time.
+      if endTime.IsType<TGXDateTime> then
+        TGXCommon.SetData(buff, TDataType.dtUInt32, TValue.From(TGXDateTime.ToUnixTime(endTime.AsType<TGXDateTime>())))
+      else
+        TGXCommon.SetData(buff, TDataType.dtUInt32, TValue.From(DateTimeToUnix(endTime.AsType<TDateTime>())));
+    end;
     // Add array of read columns.
     buff.SetUInt8(Byte(TDataType.dtArray));
     if columns = Nil Then
@@ -1615,7 +1670,7 @@ begin
         // Add attribute index.
         TGXCommon.SetData(buff, TDataType.dtInt8, it.AttributeIndex);
         // Add data index.
-        TGXCommon.SetData(buff, TDataType.dtInt16, it.DataIndex);
+        TGXCommon.SetData(buff, TDataType.dtUInt16, it.DataIndex);
       end;
     end;
     Result := Read(pg.Name, TObjectType.otProfileGeneric, 2, buff);

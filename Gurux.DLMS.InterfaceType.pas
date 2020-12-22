@@ -35,7 +35,32 @@ unit Gurux.DLMS.InterfaceType;
 interface
 
 type
-  TInterfaceType = (HDLC, WRAPPER, PDU);
+  TInterfaceType = (
+  //General interface type is used for meters that support
+  // IEC 62056-46 Data link layer using HDLC protocol.
+  HDLC,
+  // Network interface type is used for meters that support
+  // IEC 62056-47 COSEM transport layers for IPv4 networks.
+  WRAPPER,
+  //Plain PDU is returned.
+  PDU,
+  // IEC 62056-7-3 Wireless M-Bus profile is used.
+  WirelessMBus,
+  // IEC 62056-21 E-Mode is used to initialize communication before moving to HDLC protocol.
+  HdlcWithModeE,
+  // PLC Logical link control (LLC) profile is used with IEC 61334-4-32 connectionless LLC sublayer.
+  // Blue Book: 10.4.4.3.3 The connectionless LLC sublayer.
+  Plc,
+  // PLC Logical link control (LLC) profile is used with HDLC.
+  // Blue Book: 10.4.4.3.4 The HDLC based LLC sublayer.
+  PlcHdlc,
+  // LowPower Wide Area Networks (LPWAN) profile is used.
+  LPWAN,
+  // Wi-SUN FAN mesh network is used.
+  WiSUN,
+  // OFDM PLC PRIME is defined in IEC 62056-8-4.
+  PlcPrime
+  );
 
 implementation
 

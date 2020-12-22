@@ -35,8 +35,12 @@ unit Gurux.DLMS.ConnectionState;
 interface
 // Enumerates connection state types.
 type
-[FlagsAttribute]
-TConnectionState = (csNone = 0, csHdlc = 1, csDlms = 2);
+
+TConnectionState = (
+  csNone = 0,
+  csHdlc = 1,
+  csDlms = 2
+);
 
 implementation
 

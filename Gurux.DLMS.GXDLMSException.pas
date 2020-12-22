@@ -33,20 +33,17 @@
 unit Gurux.DLMS.GXDLMSException;
 
 interface
-uses SysUtils, Gurux.DLMS.AssociationResult, Gurux.DLMS.SourceDiagnostic,
-Gurux.DLMS.ServiceError, Gurux.DLMS.StateError, Gurux.DLMS.ExceptionServiceError,
+uses SysUtils, Gurux.DLMS.AssociationResult,
+Gurux.DLMS.SourceDiagnostic,
+Gurux.DLMS.StateError,
+Gurux.DLMS.Enums.ExceptionServiceError,
 GXCommon;
 
 type
 TGXDLMSException = class(Exception)
   FErrorCode : Integer;
   constructor Create(ErrorCode: Integer);overload;
-//  constructor Create(error : String); overload;
-  constructor Create(StateError : TStateError; ServiceError: TExceptionServiceError);overload;
   constructor Create(result : TAssociationResult; diagnostic : TSourceDiagnostic);overload;
-
-  class function GetServiceError(ErrorCode : TExceptionServiceError) : String;static;
-  class function GetStateError(ErrorCode : TStateError) : String;static;
   class function GetDescription(ErrorCode : Integer) : String; static;
   class function GetResult(AResult : TAssociationResult) : String; static;
   class function GetDiagnostic(diagnostic : TSourceDiagnostic) : String; static;
@@ -62,37 +59,10 @@ begin
   FErrorCode := ErrorCode;
 end;
 
-constructor TGXDLMSException.Create(StateError : TStateError; ServiceError: TExceptionServiceError);
-begin
-  inherited Create(GetStateError(StateError) + ' ' + GetServiceError(ServiceError));
-end;
-
 // Constructor for AARE error.
 constructor TGXDLMSException.Create(result : TAssociationResult; diagnostic : TSourceDiagnostic);
 begin
   inherited Create('Connection is ' + GetResult(result) + sLineBreak + GetDiagnostic(diagnostic));
-end;
-  {
-constructor TGXDLMSException.Create(error : String);
-begin
-  inherited Create(error);
-end;
-   }
-class function TGXDLMSException.GetServiceError(ErrorCode : TExceptionServiceError) : String;
-begin
- case ErrorCode of
-  OperationNotPossible : Result:= 'Operation not possible';
-  ServiceNotSupported : Result:= 'Service not supported';
-  OtherReason : Result:= 'Other reason';
-  end;
-end;
-
-class function TGXDLMSException.GetStateError(ErrorCode : TStateError) : String;
-begin
-  case ErrorCode of
-  ServiceNotAllowed : Result:= 'Service not allowed';
-  ServiceUnknown : Result:= 'Service unknown';
-  end;
 end;
 
 class function TGXDLMSException.GetDescription(ErrorCode : Integer) : String;

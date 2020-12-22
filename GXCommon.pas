@@ -652,6 +652,10 @@ begin
   minute := buff.GetUInt8();
   second := buff.GetUInt8();
   ms := buff.GetUInt8();
+  if ms <> $FF then
+  begin
+    ms := ms * 10;
+  end;
   Result := TGXTime.Create(hour, minute, second, ms);
   if info.Xml <> Nil Then
   begin

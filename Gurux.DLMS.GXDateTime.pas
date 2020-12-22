@@ -39,7 +39,8 @@ SysUtils,
 System.Generics.Collections,
 Gurux.DLMS.DateTimeSkips,
 Gurux.DLMS.Enums.DateTimeExtraInfo,
-Gurux.DLMS.ClockStatus;
+Gurux.DLMS.ClockStatus,
+System.Math;
 
 type
   TGXDateTime = class
@@ -56,6 +57,16 @@ type
     procedure ReverseTZ;
     //Minimum date time value.
     class function MinDateTime : TDateTime; static;
+
+    // Convert date time to Epoch time.
+    class function ToUnixTime(date: TGXDateTime): Int64; static;
+    // Get date time from Epoch time.
+    class function FromUnixTime(value: Int64): TDateTime; static;
+
+    // Convert date time to high resolution time.
+    class function ToHighResolutionTime(date: TGXDateTime): Int64; static;
+    // Get date time from high resolution clock time.
+    class function FromHighResolutionTime(value: Int64): TDateTime; static;
 
     constructor Create(AValue: TDateTime = -1); overload;
     constructor Create(year: Integer; month: Integer; day: Integer; hour: Integer; minute: Integer; second: Integer; millisecond: Integer; dow: Integer); overload;
@@ -302,6 +313,27 @@ begin
 {$ELSE}
   Result := DateTimeToStr(LocalTime);
 {$ENDIF}
+end;
+
+class function TGXDateTime.ToUnixTime(date: TGXDateTime): Int64;
+begin
+  Result := DateTimeToUnix(date.FValue);
+end;
+
+class function TGXDateTime.FromUnixTime(value: Int64): TDateTime;
+begin
+  Result := UnixToDateTime(value);
+end;
+
+class function TGXDateTime.ToHighResolutionTime(date: TGXDateTime): Int64;
+begin
+  Result := DateTimeToUnix(date.FValue) * 1000 + MilliSecondOf(date.FValue);
+end;
+
+class function TGXDateTime.FromHighResolutionTime(value: Int64): TDateTime;
+begin
+  Result := UnixToDateTime(Floor(value / 1000));
+  IncMilliSecond(Result, value Mod 1000);
 end;
 
 end.

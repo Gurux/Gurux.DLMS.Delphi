@@ -43,7 +43,9 @@ Gurux.DLMS.VariableAccessSpecification, Gurux.DLMS.SetRequestType,
 Gurux.DLMS.GetCommandType, Gurux.DLMS.ActionRequestType, Gurux.DLMS.ActionResponseType,
 Gurux.DLMS.TranslatorTags, Gurux.DLMS.SetResponseType,
 Gurux.DLMS.AccessServiceCommandType, Gurux.DLMS.DataType,
-Gurux.DLMS.GXDLMS;
+Gurux.DLMS.GXDLMS,
+Gurux.DLMS.Enums.ExceptionStateError,
+Gurux.DLMS.Enums.ExceptionServiceError;
 
 type
 TTranslatorSimpleTags = class
@@ -100,6 +102,8 @@ public
   class function ValueOfReleaseResponseReason(value: string): TReleaseResponseReason; static;
   class function ReleaseRequestReasonToString(value: TReleaseRequestReason): string; static;
   class function ValueOfReleaseRequestReason(value: string): TReleaseRequestReason; static;
+  class function StateErrorToString(value: TExceptionStateError): string; static;
+  class function ExceptionServiceErrorToString(value: TExceptionServiceError): string; static;
 end;
 implementation
 
@@ -880,4 +884,28 @@ begin
   else
     raise EArgumentException.Create('ReleaseRequestReason is invalid. ' + value);
 end;
+
+
+class function TTranslatorSimpleTags.StateErrorToString(value: TExceptionStateError): string;
+begin
+  case value of
+  TExceptionStateError.ServiceNotAllowed: Result := 'service-not-allowed';
+  TExceptionStateError.ServiceUnknown: Result := 'service-unknown';
+  else raise EArgumentException.Create('TExceptionStateError is invalid.');
+  end;
+end;
+
+class function TTranslatorSimpleTags.ExceptionServiceErrorToString(value: TExceptionServiceError): string;
+begin
+  case value of
+  TExceptionServiceError.OperationNotPossible: Result := 'operation-not-possible';
+  TExceptionServiceError.ServiceNotSupported: Result := 'service-not-supported';
+  TExceptionServiceError.OtherReason: Result := 'other-reason';
+  TExceptionServiceError.PduTooLong: Result := 'pdu-too-long';
+  TExceptionServiceError.DecipheringError: Result := 'deciphering-error';
+  TExceptionServiceError.InvocationCounterError: Result := 'invocation-counter-error';
+  else raise EArgumentException.Create('TExceptionStateError is invalid.');
+  end;
+end;
+
 end.

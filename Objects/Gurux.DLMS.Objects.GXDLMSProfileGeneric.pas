@@ -271,19 +271,19 @@ begin
   end
   else if index = 5 then
   begin
-    Result := TDataType.dtInt8;
+    Result := TDataType.dtEnum;
   end
   else if index = 6 then
   begin
-    Result := TDataType.dtArray;
+    Result := TDataType.dtStructure;
   end
   else if index = 7 then
   begin
-    Result := TDataType.dtInt8;
+    Result := TDataType.dtUInt32;
   end
   else if index = 8 then
   begin
-    Result := TDataType.dtInt8;
+    Result := TDataType.dtUInt32;
   end
   else
   	raise Exception.Create('GetDataType failed. Invalid attribute index.');

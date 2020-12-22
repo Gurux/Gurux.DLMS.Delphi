@@ -39,19 +39,38 @@ Gurux.DLMS.Priority, Gurux.DLMS.ServiceClass, Gurux.DLMS.InterfaceType,
 Gurux.DLMS.GXDLMSLimits, Gurux.DLMS.RequestTypes, Gurux.DLMS.Command,
 Gurux.DLMS.GXDLMSException, GXCommon, GXFCS16,
 Gurux.DLMS.ServiceError, Gurux.DLMS.StateError,
-Gurux.DLMS.ActionType, System.Variants,
-Gurux.DLMS.Security, Gurux.DLMS.GXCiphering, Gurux.DLMS.GXDLMSChippering,
-Gurux.DLMS.GXDLMSObject, GXByteBuffer,
-Gurux.DLMS.ErrorCode, Gurux.DLMS.GXDLMSLNParameters,
-Gurux.DLMS.GXDLMSConverter, Gurux.DLMS.Conformance,
-System.Types, System.Generics.Collections, Gurux.DLMS.GXDLMSSNParameters,
-Gurux.DLMS.VariableAccessSpecification, Gurux.DLMS.Objects.SingleReadResponse,
-Gurux.DLMS.GXReplyData, Gurux.DLMS.HdlcFrameType, Gurux.DLMS.HdlcControlFrame,
-Gurux.DLMS.GXDateTime, GXDataInfo, Gurux.DLMS.SetResponseType,
-Gurux.DLMS.GetCommandType, Gurux.DLMS.ExceptionServiceError,
-Gurux.DLMS.ConfirmedServiceError, Gurux.DLMS.AesGcmParameter,
-Gurux.DLMS.GXDLMSConfirmedServiceError, Gurux.DLMS.TranslatorTags,
-TranslatorOutputType, AccessServiceCommandType;
+Gurux.DLMS.ActionType,
+System.Variants,
+Gurux.DLMS.Security,
+Gurux.DLMS.GXCiphering,
+Gurux.DLMS.GXDLMSChippering,
+Gurux.DLMS.GXDLMSObject,
+GXByteBuffer,
+Gurux.DLMS.ErrorCode,
+Gurux.DLMS.GXDLMSLNParameters,
+Gurux.DLMS.GXDLMSConverter,
+Gurux.DLMS.Conformance,
+System.Types,
+System.Generics.Collections,
+Gurux.DLMS.GXDLMSSNParameters,
+Gurux.DLMS.VariableAccessSpecification,
+Gurux.DLMS.Objects.SingleReadResponse,
+Gurux.DLMS.GXReplyData,
+Gurux.DLMS.HdlcFrameType,
+Gurux.DLMS.HdlcControlFrame,
+Gurux.DLMS.GXDateTime,
+GXDataInfo,
+Gurux.DLMS.SetResponseType,
+Gurux.DLMS.GetCommandType,
+Gurux.DLMS.ConfirmedServiceError,
+Gurux.DLMS.AesGcmParameter,
+Gurux.DLMS.GXDLMSConfirmedServiceError,
+Gurux.DLMS.TranslatorTags,
+TranslatorOutputType,
+AccessServiceCommandType,
+Gurux.DLMS.Enums.ExceptionStateError,
+Gurux.DLMS.Enums.ExceptionServiceError,
+Gurux.DLMS.GXDLMSExceptionResponse;
 
 const
   CIPHERING_HEADER_SIZE = 7 + 12 + 3;
@@ -341,6 +360,9 @@ begin
     TCommand.WriteResponse: Result := TCommand.GloWriteResponse;
     TCommand.SetResponse: Result := TCommand.GloSetResponse;
     TCommand.MethodResponse: Result := TCommand.GloMethodResponse;
+    TCommand.DataNotification: Result := TCommand.GeneralGloCiphering;
+    TCommand.ReleaseRequest: Result := TCommand.ReleaseRequest;
+    TCommand.ReleaseResponse: Result := TCommand.ReleaseResponse;
     else
       raise EArgumentException.Create('Invalid GLO command.');
     end;
@@ -785,7 +807,7 @@ begin
       begin
         GetSNPdu(p, bb);
         if (p.Command <> TCommand.AARQ) and (p.Command <> TCommand.AARE) Then
-          Assert(Not p.Settings.MaxPduSize > bb.Size);
+          Assert(Not (p.Settings.MaxPduSize > bb.Size));
 
         // Command is not add to next PDUs.
         while (bb.Position <> bb.Size) do
@@ -1684,8 +1706,8 @@ begin
             if standardXml Then
               reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.Choice));
             reply.Xml.AppendStartTag(TCommand.ReadResponse, LONGWORD(TSingleReadResponse.Data));
-            di := TGXDataInfo.Create();
             try
+              di := TGXDataInfo.Create();
               di.xml := reply.Xml;
               TGXCommon.GetData(reply.Data, di);
             finally
@@ -2633,10 +2655,41 @@ begin
 end;
 
 class procedure TGXDLMS.HandleExceptionResponse(data: TGXReplyData);
+var
+  state: TExceptionStateError;
+  error: TExceptionServiceError;
+  value: TValue;
 begin
-  raise TGXDLMSException.Create(
-          TStateError(data.Data.GetUInt8()),
-          TExceptionServiceError(data.Data.GetUInt8()));
+  state := TExceptionStateError(data.Data.GetUInt8());
+  error := TExceptionServiceError(data.Data.GetUInt8());
+  value := Nil;
+  if (error = TExceptionServiceError.InvocationCounterError) and (data.Data.Available > 3) Then
+  begin
+    value := TValue.From(data.Data.GetUInt32());
+  end;
+  if data.Xml <> Nil Then
+  begin
+    data.Xml.AppendStartTag(LONGWORD(TCommand.ExceptionResponse));
+    if data.Xml.OutputType = TTranslatorOutputType.StandardXml Then
+    begin
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.StateError), '',
+          TTranslatorStandardTags.StateErrorToString(state));
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.ServiceError), '',
+         TTranslatorStandardTags.ExceptionServiceErrorToString(error));
+    end
+    else
+    begin
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.StateError), '',
+          TTranslatorSimpleTags.StateErrorToString(state));
+      data.Xml.AppendLine(LONGWORD(TTranslatorTags.ServiceError), '',
+          TTranslatorSimpleTags.ExceptionServiceErrorToString(error));
+    end;
+    data.Xml.AppendEndTag(LONGWORD(TCommand.ExceptionResponse));
+  end
+  else
+  begin
+    raise TGXDLMSExceptionResponse.Create(state, error, value);
+  end;
 end;
 
 class procedure TGXDLMS.HandleConfirmedServiceError(data : TGXReplyData);

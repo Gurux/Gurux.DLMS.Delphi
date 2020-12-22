@@ -36,7 +36,6 @@ interface
 
 type
 // Date time extra info.
-[FlagsAttribute]
 TDateTimeExtraInfo = (
   // No extra info.
   None = $0,

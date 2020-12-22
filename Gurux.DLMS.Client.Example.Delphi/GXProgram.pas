@@ -142,14 +142,13 @@ begin
   WriteLn(' -h \t host name or IP address.');
   WriteLn(' -p \t port number or name (Example: 1000).');
   WriteLn(' -S \t serial port.');
-  WriteLn(' -i IEC is a start protocol.');
+  WriteLn(' -i Used communication interface. Ex. -i WRAPPER.');
   WriteLn(' -a \t Authentication (None, Low, High).');
   WriteLn(' -P \t Password for authentication.');
   WriteLn(' -c \t Client address. (Default: 16)');
   WriteLn(' -s \t Server address. (Default: 1)');
   WriteLn(' -n \t Server address as serial number.');
   WriteLn(' -r [sn, ln]\t Short name or Logical Name (default) referencing is used.');
-  WriteLn(' -w WRAPPER profile is used. HDLC is default.');
   WriteLn(' -t [Error, Warning, Info, Verbose] Trace messages.');
   WriteLn(' -g "0.0.1.0.0.255:1; 0.0.1.0.0.255:2" Get selected object(s) with given attribute index.');
   WriteLn(' -C \t Security Level. (None, Authentication, Encrypted, AuthenticationEncryption)');
@@ -504,7 +503,6 @@ begin
   except on Ex : Exception do
     WriteValue('Error! ' + Ex.Message);
   end;
-
   //Read association view if objects are not saved yet.
   if Client.Objects.Count = 0 then
     GetAssociationView;

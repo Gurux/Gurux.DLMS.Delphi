@@ -167,6 +167,7 @@ begin
   inherited;
   FCellInfo.Free;
   FAdjacentCells.Free;
+  FCaptureTime.Free;
 end;
 
 
