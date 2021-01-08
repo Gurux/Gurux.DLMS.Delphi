@@ -188,8 +188,8 @@ begin
     xml.AppendStartTag(LONGWORD(TTranslatorTags.ListOfData), 'Qty', xml.IntegerToHex(cnt, 2), False);
 
   di := TGXDataInfo.Create();
-  di.Xml := xml;
   try
+  di.Xml := xml;
   for pos := 1 to cnt do
   begin
     di.Clear();
@@ -241,8 +241,8 @@ begin
         xml.AppendLine(LONGWORD(TTranslatorTags.Selector), '', xml.IntegerToHex(ch, 2));
         xml.AppendStartTag(LONGWORD(TTranslatorTags.Parameter));
         di := TGXDataInfo.Create();
-        di.Xml := xml;
         try
+          di.Xml := xml;
           TGXCommon.GetData(data, di);
         finally
           FreeAndNil(di);

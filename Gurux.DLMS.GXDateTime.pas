@@ -193,7 +193,7 @@ begin
   case day of
     1..31: ;
     $FD: day := DaysInMonth(EncodeDate(year, month, 1)) - 1;
-+   $FE: day := DaysInMonth(EncodeDate(year, month, 1));
+    $FE: day := DaysInMonth(EncodeDate(year, month, 1));
     $FF:
     begin
       day := 1;

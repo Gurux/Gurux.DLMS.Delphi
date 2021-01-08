@@ -411,8 +411,6 @@ var
   dt: TDataType;
   list: TObjectList<TGXStandardObisCode>;
 begin
-  if Not it.Description.IsEmpty Then
-    Exit;
   list := codes.Find(it.LogicalName, it.ObjectType);
   try
     code := list[0];
