@@ -256,7 +256,9 @@ contains
   Gurux.DLMS.GXBitString in 'Gurux.DLMS.GXBitString.pas',
   Gurux.DLMS.Enums.ExceptionStateError in 'Enums\Gurux.DLMS.Enums.ExceptionStateError.pas',
   Gurux.DLMS.Enums.ExceptionServiceError in 'Enums\Gurux.DLMS.Enums.ExceptionServiceError.pas',
-  Gurux.DLMS.GXDLMSExceptionResponse in 'Gurux.DLMS.GXDLMSExceptionResponse.pas';
+  Gurux.DLMS.GXDLMSExceptionResponse in 'Gurux.DLMS.GXDLMSExceptionResponse.pas',
+  Gurux.DLMS.Objects.GXDLMSIecTwistedPairSetup in 'Objects\Gurux.DLMS.Objects.GXDLMSIecTwistedPairSetup.pas',
+  Gurux.DLMS.Objects.Enums.IecTwistedPairSetupMode in 'Objects\Enums\Gurux.DLMS.Objects.Enums.IecTwistedPairSetupMode.pas';
 
 end.
 

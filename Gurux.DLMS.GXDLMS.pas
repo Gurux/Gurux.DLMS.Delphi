@@ -1706,8 +1706,8 @@ begin
             if standardXml Then
               reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.Choice));
             reply.Xml.AppendStartTag(TCommand.ReadResponse, LONGWORD(TSingleReadResponse.Data));
+            di := TGXDataInfo.Create();
             try
-              di := TGXDataInfo.Create();
               di.xml := reply.Xml;
               TGXCommon.GetData(reply.Data, di);
             finally
@@ -1864,8 +1864,8 @@ begin
         else
         begin
           data.Xml.AppendStartTag(TCommand.ReadResponse, LONGWORD(TSingleReadResponse.Data));
+          di := TGXDataInfo.Create();
           try
-            di := TGXDataInfo.Create();
             di.Xml := data.Xml;
             TGXCommon.GetData(data.Data, di);
           finally
@@ -1967,12 +1967,14 @@ begin
     begin
       if reply.Xml.OutputType = TTranslatorOutputType.StandardXml Then
           reply.Xml.AppendStartTag(TCommand.WriteRequest, LONGWORD(TSingleReadResponse.Data));
-      try
+      begin
         di := TGXDataInfo.Create();
-        di.Xml := reply.Xml;
-        TGXCommon.GetData(reply.Data, di);
-      finally
-        FreeAndNil(di);
+        try
+          di.Xml := reply.Xml;
+          TGXCommon.GetData(reply.Data, di);
+        finally
+          FreeAndNil(di);
+        end;
       end;
       if reply.Xml.OutputType = TTranslatorOutputType.StandardXml Then
       begin
@@ -2066,8 +2068,8 @@ start := reply.Data.Position - 1;
         TGXCommon.ToHexString(tmp, False, 0, Length(tmp)));
     reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.NotificationBody));
     reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.DataValue));
+    di := TGXDataInfo.Create();
     try
-      di := TGXDataInfo.Create();
       di.Xml := reply.Xml;
       TGXCommon.GetData(reply.Data, di);
     finally
@@ -2288,8 +2290,8 @@ begin
         else
         begin
           reply.Xml.AppendStartTag(LONGWORD(TTranslatorTags.Data));
+          di := TGXDataInfo.Create();
           try
-            di := TGXDataInfo.Create();
             di.xml := reply.Xml;
             TGXCommon.GetData(reply.Data, di);
           finally

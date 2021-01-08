@@ -442,7 +442,7 @@ end;
 // count : Item count.
 procedure TGXByteBuffer.Move(srcPos : Word; destPos : Word; count : Word);
 begin
-  if destPos + count <> 0 then
+  if count <> 0 then
   begin
     if destPos + count > Capacity Then
       Capacity(destPos + count);
@@ -622,7 +622,7 @@ end;
 function TGXByteBuffer.GetInt32(index : Integer): Int32;
 begin
   if index + 4 > size then
-       raise EArgumentException.Create('getUInt32');
+       raise EArgumentException.Create('getInt32');
 
   Result := (FData[index] and $FF) Shl 24 or (FData[index + 1] and $FF) Shl 16
           or (FData[index + 2] and $FF) Shl 8 or (FData[index + 3] and $FF);

@@ -2175,7 +2175,7 @@ end;
 // Reserved for internal use.
 class function TGXCommon.SwapBits(AValue: BYTE): BYTE;
 var
-  pos, tmp: BYTE;
+  pos: BYTE;
 begin
   Result := 0;
   for pos := 0 to 7 do

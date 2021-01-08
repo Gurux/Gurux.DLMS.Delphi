@@ -305,6 +305,8 @@
         <DCCReference Include="Enums\Gurux.DLMS.Enums.ExceptionStateError.pas"/>
         <DCCReference Include="Enums\Gurux.DLMS.Enums.ExceptionServiceError.pas"/>
         <DCCReference Include="Gurux.DLMS.GXDLMSExceptionResponse.pas"/>
+        <DCCReference Include="Objects\Gurux.DLMS.Objects.GXDLMSIecTwistedPairSetup.pas"/>
+        <DCCReference Include="Objects\Enums\Gurux.DLMS.Objects.Enums.IecTwistedPairSetupMode.pas"/>
         <RcItem Include="OBISCodes.txt">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>Text</ResourceType>

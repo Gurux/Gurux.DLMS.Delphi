@@ -86,7 +86,6 @@ end;
 destructor TGXDLMSExtendedRegister.Destroy;
 begin
   inherited;
-  FreeAndNil(FCaptureTime);
 end;
 
 function TGXDLMSExtendedRegister.GetUIDataType(index : Integer) : TDataType;

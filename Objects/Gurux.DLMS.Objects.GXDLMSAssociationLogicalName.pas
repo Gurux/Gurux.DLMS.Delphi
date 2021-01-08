@@ -341,8 +341,9 @@ var
   data: TGXByteBuffer;
   tmp: TStrings;
 begin
+  data:= TGXByteBuffer.Create();
+  tmp := TStringList.Create;
   try
-    data:= TGXByteBuffer.Create();
     for it in AUserList do
     begin
       ExtractStrings(['='], [], PChar(it), tmp);

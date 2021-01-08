@@ -547,9 +547,8 @@ begin
   begin
     if (xml <> Nil) and (xml.OutputType = TTranslatorOutputType.StandardXml) Then
         xml.AppendStartTag(TCommand.WriteRequest, LONGWORD(TSingleReadResponse.Data));
+    di.Xml := xml;
     try
-      di := TGXDataInfo.Create;
-      di.Xml := xml;
       TGXCommon.GetData(data, di);
     finally
       FreeAndNil(di);
@@ -646,8 +645,8 @@ begin
           begin
               //MethodInvocationParameters
               xml.AppendStartTag(LONGWORD(TTranslatorTags.MethodInvocationParameters));
+              di := TGXDataInfo.Create;
               try
-                di := TGXDataInfo.Create;
                 di.Xml := xml;
                 TGXCommon.GetData(data, di);
               finally

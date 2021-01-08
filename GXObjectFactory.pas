@@ -91,7 +91,8 @@ Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacFunctionalParameters,
 Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacCounters,
 Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacNetworkAdministrationData,
 Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcApplicationsIdentification,
-Gurux.DLMS.Objects.GXDLMSSchedule;
+Gurux.DLMS.Objects.GXDLMSSchedule,
+Gurux.DLMS.Objects.GXDLMSIecTwistedPairSetup;
 
 // Reserved for internal use.
 class function TGXObjectFactory.CreateObject(tp : WORD) : TGXDLMSObject;
@@ -132,7 +133,7 @@ begin
   TObjectType.otIecLocalPortSetup :
       Result := TGXDLMSIECLocalPortSetup.Create();
   TObjectType.otIecTwistedPairSetup :
-      Result := TGXDLMSObject.Create(TObjectType(tp));
+    Result := TGXDLMSIecTwistedPairSetup.Create();
   TObjectType.otIp4Setup :
       Result := TGXDLMSIp4Setup.Create();
   TObjectType.otIp6Setup :

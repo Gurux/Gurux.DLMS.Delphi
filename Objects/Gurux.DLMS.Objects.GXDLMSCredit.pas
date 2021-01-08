@@ -324,16 +324,16 @@ end;
 
 function TGXDLMSCredit.UpdateAmount(client: IGXDLMSClient; AValue: Int32) : TArray<TBytes>;
 begin
-  Result := client.Method(Self, 1, 0, TDataType.dtInt8);
+  Result := client.Method(Self, 1, AValue, TDataType.dtInt8);
 end;
 
 function TGXDLMSCredit.SetAmountToValue(client: IGXDLMSClient; AValue: Int32) : TArray<TBytes>;
 begin
-  Result := client.Method(Self, 2, 0, TDataType.dtInt8);
+  Result := client.Method(Self, 2, AValue, TDataType.dtInt8);
 end;
 
 function TGXDLMSCredit.InvokeCredit(client: IGXDLMSClient; AValue: TCreditStatus) : TArray<TBytes>;
 begin
-  Result := client.Method(Self, 3, 0, TDataType.dtInt8);
+  Result := client.Method(Self, 3, Integer(AValue), TDataType.dtInt8);
 end;
 end.

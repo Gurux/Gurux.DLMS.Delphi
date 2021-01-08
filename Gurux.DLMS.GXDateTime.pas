@@ -185,15 +185,15 @@ begin
   if day = $FE Then
   begin
     FExtra := TDateTimeExtraInfo(Integer(FExtra) or Integer(TDateTimeExtraInfo.LastDay));
-    day := 1;
   end;
   if day = $FD Then
   begin
     FExtra := TDateTimeExtraInfo(Integer(FExtra) or Integer(TDateTimeExtraInfo.LastDay2));
-    day := 1;
   end;
   case day of
     1..31: ;
+    $FD: day := DaysInMonth(EncodeDate(year, month, 1)) - 1;
++   $FE: day := DaysInMonth(EncodeDate(year, month, 1));
     $FF:
     begin
       day := 1;
