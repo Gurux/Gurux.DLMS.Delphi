@@ -2801,48 +2801,52 @@ begin
   begin
     origPos := data.Xml.GetXmlLength();
     data.Data.Position := (data.Data.Position - 1);
+    p := Nil;
     try
-      p := settings.Cipher.Decrypt(settings.SourceSystemTitle,
-          settings.Cipher.BlockCipherKey, data.Data);
-      data.Command := TCommand.None;
-      data.CipheredCommand := TCommand.GeneralCiphering;
-      if p.Security <> TSecurity.None Then
-        GetPdu(settings, data);
-    except
-    on E: Exception do
-    begin
-      if data.Xml = Nil Then
-        raise;
-      data.Xml.SetXmlLength(origPos);
-    end;
-    end;
-    if (data.Xml <> Nil) and (p <> Nil) Then
-    begin
-      data.Xml.AppendStartTag(LONGWORD(TCommand.GeneralCiphering));
-      data.Xml.AppendLine(LONGWORD(TTranslatorTags.TransactionId), '',
-              data.Xml.IntegerToHex(p.InvocationCounter, 16, true));
-      data.Xml.AppendLine(LONGWORD(TTranslatorTags.OriginatorSystemTitle),
-              '', TGXCommon.ToHexString(p.SystemTitle, false, 0, Length(p.SystemTitle)));
-      data.Xml.AppendLine(LONGWORD(TTranslatorTags.RecipientSystemTitle), '',
-              TGXCommon.ToHexString(p.RecipientSystemTitle, false, 0, Length(p.RecipientSystemTitle)));
-  //    data.Xml.AppendLine(LONGWORD(TTranslatorTags.DateTime), '',
-  //            GXCommon.ToHex(p.DateTime, false));
-      data.Xml.AppendLine(LONGWORD(TTranslatorTags.OtherInformation), '',
-              TGXCommon.ToHexString(p.OtherInformation, false, 0, Length(p.OtherInformation)));
+      try
+        p := settings.Cipher.Decrypt(settings.SourceSystemTitle,
+            settings.Cipher.BlockCipherKey, data.Data);
+        data.Command := TCommand.None;
+        data.CipheredCommand := TCommand.GeneralCiphering;
+        if p.Security <> TSecurity.None Then
+          GetPdu(settings, data);
+      except
+      on E: Exception do
+      begin
+        if data.Xml = Nil Then
+          raise;
+        data.Xml.SetXmlLength(origPos);
+      end;
+      end;
+      if (data.Xml <> Nil) and (p <> Nil) Then
+      begin
+        data.Xml.AppendStartTag(LONGWORD(TCommand.GeneralCiphering));
+        data.Xml.AppendLine(LONGWORD(TTranslatorTags.TransactionId), '',
+                data.Xml.IntegerToHex(p.InvocationCounter, 16, true));
+        data.Xml.AppendLine(LONGWORD(TTranslatorTags.OriginatorSystemTitle),
+                '', TGXCommon.ToHexString(p.SystemTitle, false, 0, Length(p.SystemTitle)));
+        data.Xml.AppendLine(LONGWORD(TTranslatorTags.RecipientSystemTitle), '',
+                TGXCommon.ToHexString(p.RecipientSystemTitle, false, 0, Length(p.RecipientSystemTitle)));
+    //    data.Xml.AppendLine(LONGWORD(TTranslatorTags.DateTime), '',
+    //            GXCommon.ToHex(p.DateTime, false));
+        data.Xml.AppendLine(LONGWORD(TTranslatorTags.OtherInformation), '',
+                TGXCommon.ToHexString(p.OtherInformation, false, 0, Length(p.OtherInformation)));
 
-      data.Xml.AppendStartTag(LONGWORD(TTranslatorTags.KeyInfo));
-      data.Xml.AppendStartTag(LONGWORD(TTranslatorTags.AgreedKey));
-      data.Xml.AppendLine(LONGWORD(TTranslatorTags.KeyParameters), '',
-              data.Xml.IntegerToHex(p.KeyParameters, 2, true));
-      data.Xml.AppendLine(LONGWORD(TTranslatorTags.KeyCipheredData), '',
-              TGXCommon.ToHexString(p.KeyCipheredData, false, 0, Length(p.KeyCipheredData)));
-      data.Xml.AppendEndTag(LONGWORD(TTranslatorTags.AgreedKey));
-      data.Xml.AppendEndTag(LONGWORD(TTranslatorTags.KeyInfo));
-     // data.Xml.AppendLine(LONGWORD(TTranslatorTags.CipheredContent), '',
-     //         TGXCommon.ToHexString(p.CipheredContent, false, 0, Length(p.CipheredContent)));
-      data.Xml.AppendEndTag(LONGWORD(TCommand.GeneralCiphering));
+        data.Xml.AppendStartTag(LONGWORD(TTranslatorTags.KeyInfo));
+        data.Xml.AppendStartTag(LONGWORD(TTranslatorTags.AgreedKey));
+        data.Xml.AppendLine(LONGWORD(TTranslatorTags.KeyParameters), '',
+                data.Xml.IntegerToHex(p.KeyParameters, 2, true));
+        data.Xml.AppendLine(LONGWORD(TTranslatorTags.KeyCipheredData), '',
+                TGXCommon.ToHexString(p.KeyCipheredData, false, 0, Length(p.KeyCipheredData)));
+        data.Xml.AppendEndTag(LONGWORD(TTranslatorTags.AgreedKey));
+        data.Xml.AppendEndTag(LONGWORD(TTranslatorTags.KeyInfo));
+       // data.Xml.AppendLine(LONGWORD(TTranslatorTags.CipheredContent), '',
+       //         TGXCommon.ToHexString(p.CipheredContent, false, 0, Length(p.CipheredContent)));
+        data.Xml.AppendEndTag(LONGWORD(TCommand.GeneralCiphering));
+      end;
+    finally
+      FreeAndNil(p);
     end;
-    FreeAndNil(p);
   end;
 end;
 

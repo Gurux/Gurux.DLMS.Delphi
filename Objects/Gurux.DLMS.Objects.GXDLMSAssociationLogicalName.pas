@@ -342,6 +342,7 @@ var
   tmp: TStrings;
 begin
   data:= TGXByteBuffer.Create();
+  try
   tmp := TStringList.Create;
   try
     for it in AUserList do
@@ -356,6 +357,8 @@ begin
     Result := data.ToArray();
   finally
     FreeAndNil(tmp);
+  end;
+  finally
     FreeAndNil(data);
   end;
 end;

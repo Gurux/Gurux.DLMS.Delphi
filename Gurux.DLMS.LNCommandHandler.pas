@@ -546,9 +546,12 @@ begin
   for pos := 1 to cnt do
   begin
     if (xml <> Nil) and (xml.OutputType = TTranslatorOutputType.StandardXml) Then
-        xml.AppendStartTag(TCommand.WriteRequest, LONGWORD(TSingleReadResponse.Data));
-    di.Xml := xml;
+    begin
+      xml.AppendStartTag(TCommand.WriteRequest, LONGWORD(TSingleReadResponse.Data));
+    end;
+    di := TGXDataInfo.Create;
     try
+      di.Xml := xml;
       TGXCommon.GetData(data, di);
     finally
       FreeAndNil(di);
