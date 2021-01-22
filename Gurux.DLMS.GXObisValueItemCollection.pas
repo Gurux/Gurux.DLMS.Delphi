@@ -33,7 +33,8 @@
 unit Gurux.DLMS.GXObisValueItemCollection;
 
 interface
-uses System.Generics.Collections, Generics.Collections, Gurux.DLMS.GXObisValueItem;
+uses System.Generics.Collections,
+Gurux.DLMS.GXObisValueItem;
 
 type
 

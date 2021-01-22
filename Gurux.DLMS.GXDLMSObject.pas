@@ -443,7 +443,7 @@ end;
 
 implementation
 
-uses System.Generics.Collections, DateUtils,
+uses DateUtils,
   ScktComp, TypInfo, ActiveX,
   Gurux.DLMS.GXDLMSConverter, GXObjectFactory;
 
