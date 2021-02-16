@@ -60,7 +60,10 @@ Gurux.DLMS.SerialnumberCounter,
 Gurux.DLMS.GXDLMSGateway,
 Gurux.DLMS.ConnectionState,
 Gurux.DLMS.SetCommandType,
-System.DateUtils;
+System.DateUtils,
+Gurux.DLMS.ErrorCode,
+Gurux.DLMS.AccessServiceCommandType,
+Gurux.DLMS.GXDLMSAccessItem;
 
 type
   CaptureObject = TGXDLMSCaptureObject;
@@ -200,6 +203,11 @@ TGXDLMSClient = class (TInterfacedObject)
 
     // Generate Method (Action) request.
     function Method(item: TGXDLMSObject; index: Integer; data: TValue; dt : TDataType): TArray<TBytes>;overload;
+
+    // Generates a access service message.
+    function AccessRequest(time: TDateTime; list: TList<TGXDLMSAccessItem>): TArray<TBytes>;
+    // Generates a access service message.
+    procedure ParseAccessResponse(list: TList<TGXDLMSAccessItem>; data : TGXByteBuffer);
 
     // Generate Method (Action) request.
     function Method(name : Variant; ot : TObjectType; index : Integer; value : TValue; dt : TDataType) : TArray<TBytes>;overload;
@@ -1865,6 +1873,114 @@ end;
 procedure TGXDLMSClient.SetAutoIncreaseInvokeID(AValue: Boolean);
 begin
   FSettings.AutoIncreaseInvokeID := AValue;
+end;
+
+function TGXDLMSClient.AccessRequest(time: TDateTime; list: TList<TGXDLMSAccessItem>): TArray<TBytes>;
+var
+  bb: TGXByteBuffer;
+  it: TGXDLMSAccessItem;
+  value: TValue;
+  a: TValueEventArgs;
+  dt: TDataType;
+  p: TGXDLMSLNParameters;
+begin
+  bb := TGXByteBuffer.Create();
+  try
+  TGXCommon.SetObjectCount(list.Count, bb);
+  for it in list do
+  begin
+    bb.SetUInt8(BYTE(it.GetCommand()));
+    //Object type.
+    bb.SetUInt16(WORD(it.GetTarget().ObjectType));
+    //LN
+    bb.SetArray(TGXCommon.LogicalNameToBytes(it.GetTarget().LogicalName));
+    // Attribute ID.
+    bb.SetUInt8(it.GetIndex());
+  end;
+  //Data
+  TGXCommon.SetObjectCount(list.Count, bb);
+  for it in list do
+  begin
+      if it.GetCommand() = TAccessServiceCommandType.ctGet Then
+      begin
+        bb.SetUInt8(0);
+      end
+      else if it.GetCommand() = TAccessServiceCommandType.ctSet Then
+      begin
+        a := TValueEventArgs.Create(FSettings, it.GetTarget(), it.GetIndex(), 0, Nil);
+        try
+          value := it.GetTarget().GetValue(a);
+        finally
+          FreeAndNil(a);
+        end;
+        dt := it.GetTarget().GetDataType(it.GetIndex());
+        if dt = TDataType.dtNone Then
+        begin
+          dt := TGXDLMSConverter.GetDLMSDataType(value);
+        end;
+        TGXCommon.SetData(bb, dt, value);
+      end
+      else if it.GetCommand() = TAccessServiceCommandType.ctAction Then
+      begin
+
+      end
+      else
+        raise Exception.Create('Invalid command');
+  end;
+  p := TGXDLMSLNParameters.Create(FSettings, 0, TCommand.AccessRequest,
+      $FF, Nil, bb, $ff, TCommand.None);
+  if time <> TGXDateTime.MinDateTime then
+  begin
+    p.time := TGXDateTime.Create(time);
+  end;
+  try
+    Result := TGXDLMS.GetLnMessages(p);
+  finally
+    p.Free;
+  end;
+  finally
+    FreeAndNil(bb);
+  end;
+end;
+
+procedure TGXDLMSClient.ParseAccessResponse(list: TList<TGXDLMSAccessItem>; data : TGXByteBuffer);
+var
+  info: TGXDataInfo;
+  cnt: Integer;
+  it: TGXDLMSAccessItem;
+begin
+  //Get count
+  info := TGXDataInfo.Create();
+  try
+    cnt := TGXCommon.GetObjectCount(data);
+    if list.Count <> cnt Then
+      raise Exception.Create('List size and values size do not match.');
+
+    for it in list do
+    begin
+      info.Clear();
+      it.SetValue(TGXCommon.GetData(data, info));
+    end;
+
+    //Get status codes.
+    cnt := TGXCommon.GetObjectCount(data);
+    if list.Count <> cnt Then
+      raise Exception.Create('List size and values size do not match.');
+
+    for it in list do
+    begin
+      //Get access type.
+      data.GetUInt8();
+      //Get status.
+      it.SetError(TErrorCode(data.GetUInt8()));
+      if (it.GetCommand() = TAccessServiceCommandType.ctGet) and (it.GetError() = TErrorCode.ecOk) Then
+      begin
+          UpdateValue(it.GetTarget(), it.GetIndex(), it.GetValue());
+      end;
+    end
+  finally
+    FreeAndNil(info);
+  end;
 end;
 
 end.

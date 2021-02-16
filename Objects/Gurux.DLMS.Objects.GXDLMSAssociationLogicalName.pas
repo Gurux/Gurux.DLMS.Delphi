@@ -510,6 +510,8 @@ begin
     mode := it.GetArrayElement(1).AsType<TValue>.AsInteger;
     obj.SetAccess(id, TAccessMode(mode));
   end;
+  if Length(buff) = 2 then
+  begin
   for it in buff[1].AsType<TArray<TValue>> do
   begin
     id := it.GetArrayElement(0).AsType<TValue>.AsInteger;
@@ -526,6 +528,7 @@ begin
       mode := tmp.AsInteger;
 
     obj.SetMethodAccess(id, TMethodAccessMode(mode));
+  end;
   end;
 end;
 

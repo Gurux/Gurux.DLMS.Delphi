@@ -51,8 +51,8 @@ TConformance = (
   cfWrite = $10,
   // Un confirmed write conformance bit.
   cfUnconfirmedWrite = $20,
-  // Reserved six conformance bit.
-  cfReservedSix = $40,
+  // Delta value encoding conformance bit.
+  cfDeltaValueEncoding = $40,
   // Reserved seven conformance bit.
   cfReservedSeven = $80,
   // Attribute 0 supported with set conformance bit.

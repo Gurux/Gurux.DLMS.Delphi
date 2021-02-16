@@ -2640,7 +2640,16 @@ begin
               TCommand.GloWriteResponse,
               TCommand.GloGetResponse,
               TCommand.GLOSetResponse,
-              TCommand.GLOMethodResponse:
+              TCommand.GLOMethodResponse,
+              TCommand.DedReadResponse,
+              TCommand.DedWriteResponse,
+              TCommand.DedGetResponse,
+              TCommand.DedSetResponse,
+              TCommand.DedMethodResponse,
+              TCommand.GeneralGloCiphering,
+              TCommand.GeneralDedCiphering,
+              TCommand.GeneralCiphering,
+              TCommand.AccessResponse:
               begin
                 data.Data.Position := data.CipherIndex;
                 GetPdu(settings, data);

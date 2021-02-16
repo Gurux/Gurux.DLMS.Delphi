@@ -1032,7 +1032,10 @@ begin
     end;
   end;
   if len > 0 then
-    Result := buff.GetString(buff.Position, len)
+  begin
+    Result := buff.GetString(buff.Position, len);
+    buff.Position := buff.Position + len;
+  end
   else
     Result := '';
 end;

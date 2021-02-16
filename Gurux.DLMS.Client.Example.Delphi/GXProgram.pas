@@ -62,7 +62,9 @@ uses System.Generics.Collections, DateUtils, Classes, System.SysUtils, Rtti,
   Gurux.DLMS.TraceLevel,
   Gurux.DLMS.Conformance,
   Gurux.DLMS.Security,
-  Gurux.DLMS.Objects.GXDLMSData;
+  Gurux.DLMS.Objects.GXDLMSData,
+  Gurux.DLMS.AccessServiceCommandType,
+  Gurux.DLMS.GXDLMSAccessItem;
 
 type
 TGXProgram = class
@@ -73,6 +75,8 @@ TGXProgram = class
   Client : TGXDLMSSecureClient;
   class procedure WriteValue(line : string);
   procedure WriteTrace(line : string);
+  // Read values using Access request.
+  procedure ReadByAccess(AList: TList<TGXDLMSAccessItem>);
   procedure ReadScalerAndUnits;
   procedure GetProfileGenericColumns;
   procedure GetReadOut;
@@ -208,13 +212,47 @@ begin
   InitializeConnection;
 end;
 
+// Read values using Access request.
+procedure TGXProgram.ReadByAccess(AList: TList<TGXDLMSAccessItem>);
+var
+  reply :TGXReplyData;
+  data: TArray<TBytes>;
+begin
+    if AList.Count <> 0 Then
+    begin
+      reply := TGXReplyData.Create();
+      try
+      data := Client.AccessRequest(TGXDateTime.MinDateTime, AList);
+      ReadDataBlock(data, reply);
+      Client.ParseAccessResponse(AList, reply.Data);
+      finally
+        FreeAndNil(reply);
+      end;
+    end;
+end;
+
 procedure TGXProgram.ReadScalerAndUnits;
 var
   list: TList<TPair<TGXDLMSObject, Integer>>;
+  accessList: TList<TGXDLMSAccessItem> ;
   tmp: TArray<TGXDLMSObject>;
   it: TGXDLMSObject;
 begin
   tmp := Client.Objects.GetObjects([TObjectType.otRegister, TObjectType.otDemandRegister, TObjectType.otExtendedRegister]);
+  if Integer(Client.NegotiatedConformance) and Integer(TConformance.cfAccess) <> 0 Then
+  begin
+    accessList:= TList<TGXDLMSAccessItem>.Create;
+    for it in tmp do
+    begin
+    if (it is TGXDLMSRegister) or (it is TGXDLMSExtendedRegister) then
+      accessList.Add(TGXDLMSAccessItem.Create(TAccessServiceCommandType.ctGet, it, 3));
+    if (it is TGXDLMSDemandRegister) Then
+      accessList.Add(TGXDLMSAccessItem.Create(TAccessServiceCommandType.ctGet, it, 4));
+    end;
+    if accessList.Count <> 0 Then
+      ReadByAccess(accessList);
+    Exit;
+  end;
   try
     if Integer(Client.NegotiatedConformance) and Integer(TConformance.cfMultipleReferences) <> 0 Then
     begin

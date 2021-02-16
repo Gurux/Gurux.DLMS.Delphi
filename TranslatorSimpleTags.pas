@@ -766,8 +766,8 @@ if string.Compare('Access', value) = 0 Then
     Result := TConformance.cfRead
   else if string.Compare('ReservedSeven', value) = 0 Then
     Result := TConformance.cfReservedSeven
-  else if string.Compare('ReservedSix', value) = 0 Then
-    Result := TConformance.cfReservedSix
+  else if string.Compare('DeltaValueEncoding', value) = 0 Then
+    Result := TConformance.cfDeltaValueEncoding
   else if string.Compare('ReservedZero', value) = 0 Then
     Result := TConformance.cfReservedZero
   else if string.Compare('SelectiveAccess', value) = 0 Then
@@ -797,8 +797,8 @@ case value of
       Result := 'Write';
   TConformance.cfUnconfirmedWrite:
       Result := 'UnconfirmedWrite';
-  TConformance.cfReservedSix:
-      Result := 'ReservedSix';
+  TConformance.cfDeltaValueEncoding:
+      Result := 'DeltaValueEncoding';
   TConformance.cfReservedSeven:
       Result := 'ReservedSeven';
   TConformance.cfAttribute0SupportedWithSet:

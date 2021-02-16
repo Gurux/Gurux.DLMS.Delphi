@@ -996,7 +996,8 @@ begin
                    Integer(TConformance.cfSelectiveAccess) or
                    Integer(TConformance.cfAction) or
                    Integer(TConformance.cfMultipleReferences) or
-                   Integer(TConformance.cfGet))
+                   Integer(TConformance.cfGet) or
+                   Integer(TConformance.cfAccess))
     else
       Result := TConformance(Integer(TConformance.cfInformationReport) or
                 Integer(TConformance.cfRead) or

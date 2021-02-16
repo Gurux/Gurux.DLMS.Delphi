@@ -759,8 +759,8 @@ begin
     Result := TConformance.cfRead
   else if string.Compare('reserved-seven', value) = 0 Then
     Result := TConformance.cfReservedSeven
-  else if string.Compare('reserved-six', value) = 0 Then
-    Result := TConformance.cfReservedSix
+  else if string.Compare('delta-value-encoding', value) = 0 Then
+    Result := TConformance.cfDeltaValueEncoding
   else if string.Compare('reserved-zero', value) = 0 Then
     Result := TConformance.cfReservedZero
   else if string.Compare('selective-access', value) = 0 Then
@@ -790,8 +790,8 @@ begin
     Result := 'write';
   TConformance.cfUnconfirmedWrite:
     Result := 'unconfirmed-write';
-  TConformance.cfReservedSix:
-    Result := 'reserved-six';
+  TConformance.cfDeltaValueEncoding:
+    Result := 'delta-value-encoding';
   TConformance.cfReservedSeven:
     Result := 'reserved-seven';
   TConformance.cfAttribute0SupportedWithSet:
