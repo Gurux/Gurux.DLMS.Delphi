@@ -277,10 +277,16 @@ TGXDLMSClient = class (TInterfacedObject)
     class function GetInitialConformance(useLogicalNameReferencing: Boolean): TConformance;
     // Converts meter serial number to server address.
     // Default formula is used.
-    class function GetServerAddress(serialNumber: Integer): Integer; overload;
+    class function GetServerAddressFromSerialNumber(serialNumber: Integer; ALogicalAddress: Integer): Integer; overload;
 
     // Converts meter serial number to server address.
-    class function GetServerAddress(serialNumber: Integer; formula: string): Integer; overload;
+    class function GetServerAddressFromSerialNumber(serialNumber: Integer; ALogicalAddress: Integer; formula: string): Integer; overload;
+
+    // Convert physical address and logical address to server address.
+    class function GetServerAddress(logicalAddress: Integer; physicalAddress: Integer): Integer; overload;
+
+    // Convert physical address and logical address to server address.
+    class function GetServerAddress(logicalAddress: Integer; physicalAddress: Integer; addressSize: Integer): Integer; overload;
 
 end;
 
@@ -1851,18 +1857,34 @@ begin
   Result := TGXDLMSSettings.GetInitialConformance(useLogicalNameReferencing);
 end;
 
-class function TGXDLMSClient.GetServerAddress(serialNumber: Integer): Integer;
+class function TGXDLMSClient.GetServerAddress(logicalAddress: Integer; physicalAddress: Integer): Integer;
 begin
-  Result := GetServerAddress(serialNumber, '');
+  Result := GetServerAddress(logicalAddress, physicalAddress, 0);
 end;
 
-class function TGXDLMSClient.GetServerAddress(serialNumber: Integer; formula: string): Integer;
+class function TGXDLMSClient.GetServerAddress(logicalAddress: Integer; physicalAddress: Integer; addressSize: Integer): Integer;
+begin
+  if (addressSize < 4) and (physicalAddress < $80) and (logicalAddress < $80) Then
+    Result := logicalAddress shl 7 or physicalAddress
+  else if (physicalAddress < $4000) and (logicalAddress < $4000) Then
+    Result := logicalAddress shl 14 or physicalAddress
+  else
+    raise EArgumentException.Create('Invalid logical or physical address.');
+end;
+
+class function TGXDLMSClient.GetServerAddressFromSerialNumber(serialNumber: Integer; ALogicalAddress: Integer): Integer;
+begin
+  Result := GetServerAddressFromSerialNumber(serialNumber, ALogicalAddress, '');
+end;
+
+class function TGXDLMSClient.GetServerAddressFromSerialNumber(serialNumber: Integer; ALogicalAddress: Integer; formula: string): Integer;
 begin
   //If formula is not given use default formula.
   //This formula is defined in DLMS specification.
   if formula = '' Then
     formula := 'SN % 10000 + 1000';
-  Result := $4000 or TSerialnumberCounter.Count(serialNumber, formula);
+  Result := TSerialnumberCounter.Count(serialNumber, formula);
+  Result := Result or (ALogicalAddress shl 14);
 end;
 
 function TGXDLMSClient.GetAutoIncreaseInvokeID: Boolean;

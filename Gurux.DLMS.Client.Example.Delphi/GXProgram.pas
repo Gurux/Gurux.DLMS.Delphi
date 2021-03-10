@@ -152,6 +152,7 @@ begin
   WriteLn(' -c \t Client address. (Default: 16)');
   WriteLn(' -s \t Server address. (Default: 1)');
   WriteLn(' -n \t Server address as serial number.');
+  WriteLn(' -l \t Logical Server address.');
   WriteLn(' -r [sn, ln]\t Short name or Logical Name (default) referencing is used.');
   WriteLn(' -t [Error, Warning, Info, Verbose] Trace messages.');
   WriteLn(' -g "0.0.1.0.0.255:1; 0.0.1.0.0.255:2" Get selected object(s) with given attribute index.');

@@ -2938,13 +2938,16 @@ class function TGXDLMS.GetData(
     notify: TGXReplyData) : Boolean;
 var
   frame, cnt : Integer;
+  isLast: Boolean;
 begin
+  isLast := True;
   frame := 0;
   Result := True;
   // If DLMS frame is generated.
   if settings.InterfaceType = TInterfaceType.HDLC then
   begin
     frame := GetHdlcData(settings.isServer, settings, reply, data, notify);
+    isLast := (frame and $10) <> 0;
     if (notify <> Nil) and (frame = $13) Then
     begin
       data := notify;
@@ -3002,6 +3005,10 @@ begin
         data.Data.Trim();
       end
     end;
+  end;
+  if Not isLast then
+  begin
+    Result := GetData(settings, reply, data, notify);
   end;
 end;
 

@@ -1053,6 +1053,8 @@ begin
 end;
 
 function TGXDLMSSettings.CheckFrame(frame : Byte) : Boolean;
+var
+  expected: BYTE;
 begin
   //If notify
   if frame = $13 Then
@@ -1079,9 +1081,16 @@ begin
   //Handle I-frame.
   if (FSenderFrame and $1) = 0 Then
   begin
-    if (frame = IncreaseReceiverSequence(IncreaseSendSequence(FReceiverFrame))) then
+    expected := IncreaseReceiverSequence(IncreaseSendSequence(FReceiverFrame));
+    if (frame = expected) then
     begin
       FReceiverFrame := frame;
+      result := true;
+      Exit;
+    end;
+    if frame = (expected and not $10) Then
+    begin
+      FReceiverFrame := IncreaseSendSequence(FReceiverFrame);
       result := true;
       Exit;
     end;

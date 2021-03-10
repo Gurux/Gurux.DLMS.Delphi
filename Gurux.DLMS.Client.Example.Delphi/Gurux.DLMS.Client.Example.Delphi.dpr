@@ -92,7 +92,7 @@ begin
 {$ENDIF}
 {$ENDIF}
   try
-    parameters := TGXCommon.GetParameters('h:p:c:s:r:i:It:a:p:wP:g:C:n:v:o:');
+    parameters := TGXCommon.GetParameters('h:p:c:s:r:i:It:a:p:wP:g:C:n:v:o:l:');
     for it in parameters do
     begin
       case it.Tag of
@@ -204,8 +204,13 @@ begin
       'c':
           clientAddress := StrToInt(it.Value);
       's':
-          serverAddress := StrToInt(it.Value);
-      'n': serverAddress := TGXDLMSClient.GetServerAddress(StrToInt(it.Value));
+          if serverAddress <> 1 then
+            serverAddress := TGXDLMSClient.GetServerAddress(serverAddress, StrToInt(it.Value))
+          else
+            serverAddress := StrToInt(it.Value);
+      'l':
+            serverAddress := TGXDLMSClient.GetServerAddress(StrToInt(it.Value), serverAddress);
+      'n': serverAddress := TGXDLMSClient.GetServerAddressFromSerialNumber(StrToInt(it.Value), 1);
       '?':
         case it.Tag of
         'c': raise EArgumentException.Create('Missing mandatory client option.');
