@@ -101,7 +101,11 @@ TGXProgram = class
     ATrace: TTraceLevel;
     ASecurity: TSecurity;
     AInvocationCounter: string;
-    AAutoIncreaseInvokeID: Boolean);
+    AAutoIncreaseInvokeID: Boolean;
+    GbtWindowSize: BYTE;
+    WindowSize: Integer;
+    MaxInfo: Integer;
+    ManufacturerId: string);
 
   procedure UpdateFrameCounter();
   procedure InitializeConnection();
@@ -160,6 +164,10 @@ begin
   WriteLn(' -v \t Invocation counter data object Logical Name. Ex. 0.0.43.1.0.255');
   WriteLn(' -I \t Auto increase invoke ID');
   WriteLn(' -o \t Cache association view to make reading faster. Ex. -o C:\device.xml');
+  WriteLn(' -W \t General Block Transfer window size.');
+  WriteLn(' -w \t HDLC Window size. Default is 1');
+  WriteLn(' -f \t HDLC Frame size. Default is 128');
+  WriteLn(' -L \t Manufacturer ID (Flag ID) is used to use manufacturer depending functionality. -L LGZ');
   WriteLn('Example:');
   WriteLn('Read LG device using TCP/IP connection.');
   WriteLn('GuruxDlmsSample -r SN -c 16 -s 1 -h [Meter IP Address] -p [Meter Port No]');
@@ -185,7 +193,11 @@ constructor TGXProgram.Create(AUseLogicalNameReferencing : Boolean;
     ATrace: TTraceLevel;
     ASecurity: TSecurity;
     AInvocationCounter: string;
-    AAutoIncreaseInvokeID: Boolean);
+    AAutoIncreaseInvokeID: Boolean;
+    GbtWindowSize: BYTE;
+    WindowSize: Integer;
+    MaxInfo: Integer;
+    ManufacturerId: string);
 begin
   FInvocationCounter := AInvocationCounter;
   WaitTime := 5000;
@@ -203,6 +215,12 @@ begin
             AAuthentication, APassword, AIntefaceType);
   Client.Ciphering.Security := ASecurity;
   Client.AutoIncreaseInvokeID := AAutoIncreaseInvokeID;
+  Client.GbtWindowSize := GbtWindowSize;
+  Client.HdlcSettings.WindowSizeTX := WindowSize;
+  Client.HdlcSettings.WindowSizeRX := WindowSize;
+  Client.HdlcSettings.MaxInfoTX := MaxInfo;
+  Client.HdlcSettings.MaxInfoRX := MaxInfo;
+  Client.ManufacturerId := ManufacturerId;
   socket.Host := AHost;
   socket.Port := APort;
   ///////////////////////////////////////////////////////
@@ -818,7 +836,7 @@ begin
       if FTrace > TTraceLevel.tlWarning then
         writeln('Send AARQ request: ');
       reply.Clear;
-      ReadDLMSPacket(data, reply);
+      ReadDataBlock(data, reply);
     end;
     if FTrace > TTraceLevel.tlWarning then
       writeln('Parsing AARE reply: ');
@@ -829,7 +847,7 @@ begin
       for data in Client.GetApplicationAssociationRequest do
       begin
         reply.Clear;
-        ReadDLMSPacket(data, reply);
+        ReadDataBlock(data, reply);
       end;
       Client.ParseApplicationAssociationResponse(reply.Data);
       reply.Clear;

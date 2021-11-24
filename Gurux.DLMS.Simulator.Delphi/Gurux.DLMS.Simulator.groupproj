@@ -1,9 +1,9 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <ProjectGuid>{0025DA35-53AC-4EE2-B2D0-712D1C12A830}</ProjectGuid>
+        <ProjectGuid>{12C33A3D-3E60-42D2-B1A7-C9E63AF02DFD}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
-        <Projects Include="Gurux.DLMS.Client.Example.Delphi.dproj">
+        <Projects Include="Gurux.DLMS.Simulator.Delphi.dproj">
             <Dependencies>..\Development\GuruxDLMS.dproj</Dependencies>
         </Projects>
         <Projects Include="..\Development\GuruxDLMS.dproj">
@@ -17,14 +17,14 @@
             <Default.Personality/>
         </BorlandProject>
     </ProjectExtensions>
-    <Target Name="Gurux_DLMS_Client_Example_Delphi" DependsOnTargets="GuruxDLMS">
-        <MSBuild Projects="Gurux.DLMS.Client.Example.Delphi.dproj"/>
+    <Target Name="Gurux_DLMS_Simulator_Delphi" DependsOnTargets="GuruxDLMS">
+        <MSBuild Projects="Gurux.DLMS.Simulator.Delphi.dproj"/>
     </Target>
-    <Target Name="Gurux_DLMS_Client_Example_Delphi:Clean" DependsOnTargets="GuruxDLMS:Clean">
-        <MSBuild Projects="Gurux.DLMS.Client.Example.Delphi.dproj" Targets="Clean"/>
+    <Target Name="Gurux_DLMS_Simulator_Delphi:Clean" DependsOnTargets="GuruxDLMS:Clean">
+        <MSBuild Projects="Gurux.DLMS.Simulator.Delphi.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="Gurux_DLMS_Client_Example_Delphi:Make" DependsOnTargets="GuruxDLMS:Make">
-        <MSBuild Projects="Gurux.DLMS.Client.Example.Delphi.dproj" Targets="Make"/>
+    <Target Name="Gurux_DLMS_Simulator_Delphi:Make" DependsOnTargets="GuruxDLMS:Make">
+        <MSBuild Projects="Gurux.DLMS.Simulator.Delphi.dproj" Targets="Make"/>
     </Target>
     <Target Name="GuruxDLMS">
         <MSBuild Projects="..\Development\GuruxDLMS.dproj"/>
@@ -36,13 +36,13 @@
         <MSBuild Projects="..\Development\GuruxDLMS.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="Gurux_DLMS_Client_Example_Delphi;GuruxDLMS"/>
+        <CallTarget Targets="Gurux_DLMS_Simulator_Delphi;GuruxDLMS"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Gurux_DLMS_Client_Example_Delphi:Clean;GuruxDLMS:Clean"/>
+        <CallTarget Targets="Gurux_DLMS_Simulator_Delphi:Clean;GuruxDLMS:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Gurux_DLMS_Client_Example_Delphi:Make;GuruxDLMS:Make"/>
+        <CallTarget Targets="Gurux_DLMS_Simulator_Delphi:Make;GuruxDLMS:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

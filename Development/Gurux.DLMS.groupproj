@@ -1,0 +1,36 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{494A021F-800C-4568-A723-962D23244348}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="GuruxDLMS.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="GuruxDLMS">
+        <MSBuild Projects="GuruxDLMS.dproj"/>
+    </Target>
+    <Target Name="GuruxDLMS:Clean">
+        <MSBuild Projects="GuruxDLMS.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="GuruxDLMS:Make">
+        <MSBuild Projects="GuruxDLMS.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="GuruxDLMS"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="GuruxDLMS:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="GuruxDLMS:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

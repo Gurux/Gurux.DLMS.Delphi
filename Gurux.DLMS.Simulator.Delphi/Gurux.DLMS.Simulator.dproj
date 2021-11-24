@@ -1,25 +1,20 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <ProjectGuid>{F26D63CF-6B54-4B5E-9904-229F721D935B}</ProjectGuid>
-        <ProjectVersion>19.2</ProjectVersion>
+        <ProjectGuid>{879DDA77-E72B-463E-9516-8CCCBD8AE781}</ProjectGuid>
+        <MainSource>Gurux.DLMS.Simulator.dpk</MainSource>
+        <ProjectVersion>18.6</ProjectVersion>
         <FrameworkType>None</FrameworkType>
-        <MainSource>Gurux.DLMS.Client.Example.Delphi.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
-        <AppType>Console</AppType>
+        <AppType>Package</AppType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
         <Base_Win32>true</Base_Win32>
-        <CfgParent>Base</CfgParent>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
-        <Base_Win64>true</Base_Win64>
         <CfgParent>Base</CfgParent>
         <Base>true</Base>
     </PropertyGroup>
@@ -39,14 +34,11 @@
         <CfgParent>Base</CfgParent>
         <Base>true</Base>
     </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
-        <Cfg_2_Win32>true</Cfg_2_Win32>
-        <CfgParent>Cfg_2</CfgParent>
-        <Cfg_2>true</Cfg_2>
-        <Base>true</Base>
-    </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
+        <GenPackage>true</GenPackage>
+        <GenDll>true</GenDll>
+        <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
         <DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
         <DCC_E>false</DCC_E>
@@ -54,22 +46,14 @@
         <DCC_S>false</DCC_S>
         <DCC_F>false</DCC_F>
         <DCC_K>false</DCC_K>
-        <SanitizedProjectName>Gurux_DLMS_Client_Example_Delphi</SanitizedProjectName>
-        <Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
-        <Icns_MainIcns>$(BDS)\bin\delphi_PROJECTICNS.icns</Icns_MainIcns>
+        <SanitizedProjectName>Gurux_DLMS_Simulator</SanitizedProjectName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
-        <DCC_UsePackage>bindcompvcl;vcltouch;bindcompfmx;VclSmp;dsnap;fmx;rtl;IndySystem;IndyCore;dbrtl;vcl;bindcomp;fmxase;fmxobj;vclx;svnui;xmlrtl;svn;vclimg;IndyProtocols;fmxdae;vclactnband;bindengine;vcldb;vcldsnap;$(DCC_UsePackage)</DCC_UsePackage>
-        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+        <DCC_UsePackage>rtl;xmlrtl;IndySystem;$(DCC_UsePackage)</DCC_UsePackage>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <DCC_ConsoleTarget>true</DCC_ConsoleTarget>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Keys>CompanyName=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductVersion=1.0.0.0;Comments=;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName);ProductName=$(MSBuildProjectName)</VerInfo_Keys>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Base_Win64)'!=''">
-        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
-        <BT_BuildType>Debug</BT_BuildType>
-        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-        <VerInfo_Locale>1033</VerInfo_Locale>
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
@@ -80,12 +64,10 @@
         <DCC_RemoteDebug>true</DCC_RemoteDebug>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-        <VerInfo_Locale>1033</VerInfo_Locale>
-        <UsePackages>true</UsePackages>
-        <Manifest_File>None</Manifest_File>
-        <DCC_UsePackage>GuruxDLMS;$(DCC_UsePackage)</DCC_UsePackage>
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
-        <Debugger_RunParams>-h 192.168.39.110 -p 1000 -t Verbose</Debugger_RunParams>
+        <DCC_MapFile>3</DCC_MapFile>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -93,16 +75,242 @@
         <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
         <DCC_DebugInformation>0</DCC_DebugInformation>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-        <DCC_UsePackage>GuruxDLMS;$(DCC_UsePackage)</DCC_UsePackage>
-        <VerInfo_Locale>1033</VerInfo_Locale>
-        <Manifest_File>None</Manifest_File>
-        <UsePackages>true</UsePackages>
-    </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
+        <DCCReference Include="rtl.dcp"/>
+        <DCCReference Include="IndySystem.dcp"/>
+        <DCCReference Include="xmlrtl.dcp"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.AccessMode.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ActionType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.AssociationResult.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.Authentication.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.Command.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.DataType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.DateTimeSkips.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXApplicationContextName.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDateTime.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMS.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSException.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSLimits.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXStandardObisCode.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXStandardObisCodeCollection.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.InterfaceType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.MethodAccessMode.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ObjectType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.Priority.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.RequestTypes.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.Security.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ServiceClass.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ServiceError.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.SourceDiagnostic.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.StateError.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.TUnit.pas"/>
+        <DCCReference Include="..\Development\GXCommon.pas"/>
+        <DCCReference Include="..\Development\GXFCS16.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSObject.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXAttributeCollection.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXObisValueItemCollection.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXObisValueItem.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSChippering.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSChipperingStream.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXCiphering.pas"/>
+        <DCCReference Include="..\Development\GXAPDU.pas"/>
+        <DCCReference Include="..\Development\HDLCInfo.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ClockStatus.pas"/>
+        <DCCReference Include="..\Development\GXObjectFactory.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.BaudRate.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.OpticalProtocolMode.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.LocalPortResponseTime.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSObjectDefinition.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSActionSet.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSActionItem.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSMonitoredValue.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSWeekProfile.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSDayProfile.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSDayProfileAction.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.SingleActionScheduleType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.AssociationStatus.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSScriptAction.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSScriptActionType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSQosElement.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.AutoConnectMode.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.AutoAnswerStatus.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSModemInitialisation.pas"/>
+        <DCCReference Include="..\Development\Gurux.DMLS.AddressState.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXAuthenticationMechanismName.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.TGXxDLMSContextType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSImageActivateInfo.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ImageTransferStatus.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ControlState.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ControlMode.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSEmergencyProfile.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.SecurityPolicy.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.SecuritySuite.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSSpecialDay.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSSeasonProfile.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ClockBase.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.Conformance.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSClient.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.HdlcFrameType.pas"/>
+        <DCCReference Include="..\Development\GXByteBuffer.pas"/>
+        <DCCReference Include="..\Development\GXDataInfo.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDate.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXTime.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ErrorCode.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSSNParameters.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSLNParameters.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSConverter.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXReplyData.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.AesGcmParameter.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.CountType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.VariableAccessSpecification.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.HdlcControlFrame.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.SetResponseType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GetCommandType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ConfirmedServiceError.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSConfirmedServiceError.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ApplicationReference.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.HardwareResource.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.VdeStateError.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.Service.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.Definition.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.Access.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.Initiate.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.LoadDataSet.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.Task.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.BerType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.PduType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXSecure.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ActionRequestType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.SetRequestType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSCaptureObject.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.TraceLevel.pas"/>
+        <DCCReference Include="..\Development\Gurux.GXMD5.pas"/>
+        <DCCReference Include="..\Development\Gurux.GXSha1.pas"/>
+        <DCCReference Include="..\Development\Gurux.GXSha256.pas"/>
+        <DCCReference Include="..\Development\GXCmdParameter.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.Secure.GXDLMSSecureClient.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.SerialnumberCounter.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.IGXDLMSClient.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ConnectionState.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.PaymentMode.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.AccountStatus.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.AccountCreditStatus.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXCreditChargeConfiguration.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXTokenGatewayConfiguration.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.CreditCollectionConfiguration.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXCurrency.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.Currency.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.CreditType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.CreditConfiguration.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.CreditStatus.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ChargeType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXUnitCharge.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXCommodity.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXChargePerUnitScaling.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXChargeTable.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.CaptureMethod.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSTarget.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.TokenDelivery.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.TokenStatusCode.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSGateway.pas"/>
+        <DCCReference Include="..\Development\TranslatorSimpleTags.pas"/>
+        <DCCReference Include="..\Development\TranslatorStandardTags.pas"/>
+        <DCCReference Include="..\Development\TranslatorOutputType.pas"/>
+        <DCCReference Include="..\Development\TranslatorGeneralTags.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSTranslator.pas"/>
+        <DCCReference Include="..\Development\ReleaseRequestReason.pas"/>
+        <DCCReference Include="..\Development\ReleaseResponseReason.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.ActionResponseType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.TranslatorTags.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.AccessServiceCommandType.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSTranslatorStructure.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.LNCommandHandler.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.SNCommandHandler.pas"/>
+        <DCCReference Include="..\Development\AccessServiceCommandType.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSActivityCalendar.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSAssociationLogicalName.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSAssociationShortName.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSAutoAnswer.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSAutoConnect.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSCharge.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSClock.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSCompactData.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSCredit.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSData.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSDemandRegister.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSDisconnectControl.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSExtendedRegister.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSGprsSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSGSMDiagnostic.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSHdlcSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSIECOpticalPortSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSImageTransfer.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSIp4Setup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSLimiter.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSMacAddressSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSMBusClient.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSMBusMasterPortSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSMBusSlavePortSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSMessageHandler.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSModemConfiguration.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSParameterMonitor.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSPppSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSProfileGeneric.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSPushSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSRegister.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSRegisterActivation.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSRegisterMonitor.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSSapAssignment.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSScript.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSScriptTable.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSSecuritySetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSSpecialDaysTable.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSTcpUdpSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSTokenGateway.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXSendDestinationAndMethod.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.MessageType.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.ServiceType.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.SingleReadResponse.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSAccount.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSActionSchedule.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.SingleReadResponse.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSIECLocalPortSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Enums\Gurux.DLMS.Objects.Enums.MBusEncryptionKeyStatus.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.SetCommandType.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSIp6Setup.pas"/>
+        <DCCReference Include="..\Development\Enums\Gurux.DLMS.Enums.DateTimeExtraInfo.pas"/>
+        <DCCReference Include="..\Development\GXXmlReader.pas"/>
+        <DCCReference Include="..\Development\GXXmlWriter.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSUtilityTables.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSLlcSscsSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcApplicationsIdentification.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacCounters.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacFunctionalParameters.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacNetworkAdministrationData.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcPhysicalLayerCounters.pas"/>
+        <DCCReference Include="..\Development\Objects\Enums\Gurux.DLMS.Objects.Enums.MacCapabilities.pas"/>
+        <DCCReference Include="..\Development\Objects\Enums\Gurux.DLMS.Objects.Enums.MacState.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXMacAvailableSwitch.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXMacDirectTable.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXMacMulticastEntry.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXMacPhyCommunication.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSSchedule.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXScheduleEntry.pas"/>
+        <DCCReference Include="..\Development\Objects\Enums\Gurux.DLMS.Objects.Enums.Weekdays.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXBitString.pas"/>
+        <DCCReference Include="..\Development\Enums\Gurux.DLMS.Enums.ExceptionStateError.pas"/>
+        <DCCReference Include="..\Development\Enums\Gurux.DLMS.Enums.ExceptionServiceError.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSExceptionResponse.pas"/>
+        <DCCReference Include="..\Development\Objects\Gurux.DLMS.Objects.GXDLMSIecTwistedPairSetup.pas"/>
+        <DCCReference Include="..\Development\Objects\Enums\Gurux.DLMS.Objects.Enums.IecTwistedPairSetupMode.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSAccessItem.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSServer.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXDLMSLongTransaction.pas"/>
+        <DCCReference Include="..\Development\Gurux.DLMS.GXServerReply.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -117,11 +325,14 @@
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Delphi.Personality.12</Borland.Personality>
-        <Borland.ProjectType/>
+        <Borland.ProjectType>Package</Borland.ProjectType>
         <BorlandProject>
             <Delphi.Personality>
+                <Source>
+                    <Source Name="MainSource">Gurux.DLMS.Simulator.dpk</Source>
+                </Source>
                 <VersionInfo>
-                    <VersionInfo Name="IncludeVerInfo">False</VersionInfo>
+                    <VersionInfo Name="IncludeVerInfo">True</VersionInfo>
                     <VersionInfo Name="AutoIncBuild">False</VersionInfo>
                     <VersionInfo Name="MajorVer">1</VersionInfo>
                     <VersionInfo Name="MinorVer">0</VersionInfo>
@@ -170,27 +381,25 @@
                     <VersionInfoKeys Name="largeHeap"/>
                     <VersionInfoKeys Name="theme"/>
                 </VersionInfoKeys>
-                <Source>
-                    <Source Name="MainSource">Gurux.DLMS.Client.Example.Delphi.dpr</Source>
-                </Source>
                 <Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k270.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp270.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k260.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp260.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="3">
-                <DeployFile LocalName="$(BDS)\Redist\osx64\libcgsqlite3.dylib" Class="DependencyModule">
-                    <Platform Name="OSX64">
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="$(BDS)\Redist\osx32\libcgunwind.1.0.dylib" Class="DependencyModule">
                     <Platform Name="OSX32">
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libcgunwind.1.0.dylib" Class="DependencyModule">
-                    <Platform Name="iOSSimulator">
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\Gurux.DLMS.Simulator.bpl" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>Gurux_DLMS_Simulator.bpl</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="$(BDS)\Redist\osx64\libcgsqlite3.dylib" Class="DependencyModule">
+                    <Platform Name="OSX64">
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -199,13 +408,18 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="$(BDS)\Redist\osx32\libcgsqlite3.dylib" Class="DependencyModule">
-                    <Platform Name="OSX32">
+                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libcgunwind.1.0.dylib" Class="DependencyModule">
+                    <Platform Name="iOSSimulator">
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
                 <DeployFile LocalName="$(BDS)\Redist\iossimulator\libpcre.dylib" Class="DependencyModule">
                     <Platform Name="iOSSimulator">
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="$(BDS)\Redist\osx32\libcgsqlite3.dylib" Class="DependencyModule">
+                    <Platform Name="OSX32">
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -222,17 +436,9 @@
                         <RemoteDir>classes</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>classes</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
                 </DeployClass>
                 <DeployClass Name="AndroidFileProvider">
                     <Platform Name="Android">
-                        <RemoteDir>res\xml</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
                         <RemoteDir>res\xml</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
@@ -248,23 +454,9 @@
                         <RemoteDir>library\lib\armeabi</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>library\lib\armeabi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="AndroidLibnativeArmeabiv7aFile">
-                    <Platform Name="Android64">
-                        <RemoteDir>library\lib\armeabi-v7a</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
                 </DeployClass>
                 <DeployClass Name="AndroidLibnativeMipsFile">
                     <Platform Name="Android">
-                        <RemoteDir>library\lib\mips</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
                         <RemoteDir>library\lib\mips</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
@@ -274,23 +466,9 @@
                         <RemoteDir>library\lib\armeabi-v7a</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>library\lib\arm64-v8a</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="AndroidServiceOutput_Android32">
-                    <Platform Name="Android64">
-                        <RemoteDir>library\lib\armeabi-v7a</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
                 </DeployClass>
                 <DeployClass Name="AndroidSplashImageDef">
                     <Platform Name="Android">
-                        <RemoteDir>res\drawable</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
                         <RemoteDir>res\drawable</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
@@ -300,37 +478,15 @@
                         <RemoteDir>res\values</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\values</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
                 </DeployClass>
                 <DeployClass Name="AndroidSplashStylesV21">
                     <Platform Name="Android">
                         <RemoteDir>res\values-v21</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\values-v21</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="Android_Colors">
-                    <Platform Name="Android">
-                        <RemoteDir>res\values</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\values</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
                 </DeployClass>
                 <DeployClass Name="Android_DefaultAppIcon">
                     <Platform Name="Android">
-                        <RemoteDir>res\drawable</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
                         <RemoteDir>res\drawable</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
@@ -340,27 +496,9 @@
                         <RemoteDir>res\drawable-xxhdpi</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\drawable-xxhdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="Android_LauncherIcon192">
-                    <Platform Name="Android">
-                        <RemoteDir>res\drawable-xxxhdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\drawable-xxxhdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
                 </DeployClass>
                 <DeployClass Name="Android_LauncherIcon36">
                     <Platform Name="Android">
-                        <RemoteDir>res\drawable-ldpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
                         <RemoteDir>res\drawable-ldpi</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
@@ -370,17 +508,9 @@
                         <RemoteDir>res\drawable-mdpi</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\drawable-mdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
                 </DeployClass>
                 <DeployClass Name="Android_LauncherIcon72">
                     <Platform Name="Android">
-                        <RemoteDir>res\drawable-hdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
                         <RemoteDir>res\drawable-hdpi</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
@@ -390,67 +520,9 @@
                         <RemoteDir>res\drawable-xhdpi</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\drawable-xhdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="Android_NotificationIcon24">
-                    <Platform Name="Android">
-                        <RemoteDir>res\drawable-mdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\drawable-mdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="Android_NotificationIcon36">
-                    <Platform Name="Android">
-                        <RemoteDir>res\drawable-hdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\drawable-hdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="Android_NotificationIcon48">
-                    <Platform Name="Android">
-                        <RemoteDir>res\drawable-xhdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\drawable-xhdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="Android_NotificationIcon72">
-                    <Platform Name="Android">
-                        <RemoteDir>res\drawable-xxhdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\drawable-xxhdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="Android_NotificationIcon96">
-                    <Platform Name="Android">
-                        <RemoteDir>res\drawable-xxxhdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\drawable-xxxhdpi</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
                 </DeployClass>
                 <DeployClass Name="Android_SplashImage426">
                     <Platform Name="Android">
-                        <RemoteDir>res\drawable-small</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
                         <RemoteDir>res\drawable-small</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
@@ -460,17 +532,9 @@
                         <RemoteDir>res\drawable-normal</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\drawable-normal</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
                 </DeployClass>
                 <DeployClass Name="Android_SplashImage640">
                     <Platform Name="Android">
-                        <RemoteDir>res\drawable-large</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
                         <RemoteDir>res\drawable-large</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
@@ -478,20 +542,6 @@
                 <DeployClass Name="Android_SplashImage960">
                     <Platform Name="Android">
                         <RemoteDir>res\drawable-xlarge</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\drawable-xlarge</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="Android_Strings">
-                    <Platform Name="Android">
-                        <RemoteDir>res\values</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>res\values</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
@@ -563,9 +613,6 @@
                     <Platform Name="Android">
                         <Operation>0</Operation>
                     </Platform>
-                    <Platform Name="Android64">
-                        <Operation>0</Operation>
-                    </Platform>
                     <Platform Name="iOSDevice32">
                         <Operation>0</Operation>
                     </Platform>
@@ -583,32 +630,6 @@
                     </Platform>
                     <Platform Name="Win32">
                         <Operation>0</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iOS_AppStore1024">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPad_AppIcon152">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPad_AppIcon167">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
                 <DeployClass Name="iPad_Launch1024">
@@ -644,16 +665,6 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <DeployClass Name="iPad_Launch2x">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\LaunchScreenImage.imageset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\LaunchScreenImage.imageset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
                 <DeployClass Name="iPad_Launch768">
                     <Platform Name="iOSDevice32">
                         <Operation>1</Operation>
@@ -665,76 +676,6 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <DeployClass Name="iPad_LaunchDark2x">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\LaunchScreenImage.imageset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\LaunchScreenImage.imageset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPad_Notification40">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPad_Setting58">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPad_SpotLight80">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPhone_AppIcon120">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPhone_AppIcon180">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPhone_Launch2x">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\LaunchScreenImage.imageset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\LaunchScreenImage.imageset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
                 <DeployClass Name="iPhone_Launch320">
                     <Platform Name="iOSDevice32">
                         <Operation>1</Operation>
@@ -743,16 +684,6 @@
                         <Operation>1</Operation>
                     </Platform>
                     <Platform Name="iOSSimulator">
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPhone_Launch3x">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\LaunchScreenImage.imageset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\LaunchScreenImage.imageset</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
@@ -778,91 +709,8 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <DeployClass Name="iPhone_LaunchDark2x">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\LaunchScreenImage.imageset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\LaunchScreenImage.imageset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPhone_LaunchDark3x">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\LaunchScreenImage.imageset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\LaunchScreenImage.imageset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPhone_Notification40">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPhone_Notification60">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPhone_Setting58">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPhone_Setting87">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPhone_Spotlight120">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="iPhone_Spotlight80">
-                    <Platform Name="iOSDevice64">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <RemoteDir>..\$(PROJECTNAME).launchscreen\Assets\AppIcon.appiconset</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
-                </DeployClass>
                 <DeployClass Name="ProjectAndroidManifest">
                     <Platform Name="Android">
-                        <Operation>1</Operation>
-                    </Platform>
-                    <Platform Name="Android64">
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
@@ -879,7 +727,6 @@
                 <DeployClass Name="ProjectiOSDeviceResourceRules"/>
                 <DeployClass Name="ProjectiOSEntitlements"/>
                 <DeployClass Name="ProjectiOSInfoPList"/>
-                <DeployClass Name="ProjectiOSLaunchScreen"/>
                 <DeployClass Name="ProjectiOSResource">
                     <Platform Name="iOSDevice32">
                         <Operation>1</Operation>
@@ -909,10 +756,6 @@
                         <RemoteDir>library\lib\armeabi-v7a</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
-                    <Platform Name="Android64">
-                        <RemoteDir>library\lib\arm64-v8a</RemoteDir>
-                        <Operation>1</Operation>
-                    </Platform>
                     <Platform Name="iOSDevice32">
                         <Operation>1</Operation>
                     </Platform>
@@ -933,12 +776,6 @@
                     </Platform>
                     <Platform Name="Win32">
                         <Operation>0</Operation>
-                    </Platform>
-                </DeployClass>
-                <DeployClass Name="ProjectOutput_Android32">
-                    <Platform Name="Android64">
-                        <RemoteDir>library\lib\armeabi-v7a</RemoteDir>
-                        <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
                 <DeployClass Name="ProjectUWPManifest">
@@ -978,13 +815,13 @@
                 <ProjectRoot Platform="Android" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="OSX64" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
-                <ProjectRoot Platform="Android64" Name="$(PROJECTNAME)"/>
             </Deployment>
             <Platforms>
                 <Platform value="Win32">True</Platform>
-                <Platform value="Win64">False</Platform>
             </Platforms>
-            <ModelSupport>False</ModelSupport>
+            <UnitTesting>
+                <TestProjectName>C:\Projects\GXCom\Protocols\GuruxDLMS\Test\Gurux.dproj</TestProjectName>
+            </UnitTesting>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>
     </ProjectExtensions>

@@ -72,11 +72,19 @@ var
   invocationCounter: string;
   AutoIncreaseInvokeID: boolean;
   outputFile: string;
+  GbtWindowSize: BYTE;
+  WindowSize: Integer;
+  MaxInfo: Integer;
+  ManufacturerId: String;
 begin
   Security := TSecurity.None;
   Host := '';
+  ManufacturerId := '';
   Port := 0;
   p := Nil;
+  GbtWindowSize := 1;
+  WindowSize := 1;
+  MaxInfo := 128;
   ClientAddress := 16;
   UseLogicalNameReferencing := true;
   ServerAddress := 1;
@@ -92,7 +100,7 @@ begin
 {$ENDIF}
 {$ENDIF}
   try
-    parameters := TGXCommon.GetParameters('h:p:c:s:r:i:It:a:p:wP:g:C:n:v:o:l:');
+    parameters := TGXCommon.GetParameters('h:p:c:s:r:i:It:a:p:wP:g:C:n:v:o:l:W:w:f:L:');
     for it in parameters do
     begin
       case it.Tag of
@@ -208,9 +216,14 @@ begin
             serverAddress := TGXDLMSClient.GetServerAddress(serverAddress, StrToInt(it.Value))
           else
             serverAddress := StrToInt(it.Value);
-      'l':
-            serverAddress := TGXDLMSClient.GetServerAddress(StrToInt(it.Value), serverAddress);
+      'l': serverAddress := TGXDLMSClient.GetServerAddress(StrToInt(it.Value), serverAddress);
       'n': serverAddress := TGXDLMSClient.GetServerAddressFromSerialNumber(StrToInt(it.Value), 1);
+      'W': GbtWindowSize := StrToInt(it.Value);
+      'w': WindowSize := StrToInt(it.Value);
+      'f': MaxInfo := StrToInt(it.Value);
+      'L': ManufacturerId := it.Value;
+
+
       '?':
         case it.Tag of
         'c': raise EArgumentException.Create('Missing mandatory client option.');
@@ -246,7 +259,8 @@ begin
     try
       p := TGXProgram.Create(UseLogicalNameReferencing, ClientAddress,
         ServerAddress, Authentication, Password, InterfaceType, Host, Port, trace, security,
-        invocationCounter, AutoIncreaseInvokeID);
+        invocationCounter, AutoIncreaseInvokeID, GbtWindowSize,WindowSize,
+        MaxInfo, ManufacturerId);
       if readObjects = '' Then
         p.ReadAll(outputFile)
       Else
