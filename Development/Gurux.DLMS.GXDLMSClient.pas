@@ -2059,8 +2059,8 @@ begin
   if password[pos] <> $30 Then
   begin
     Result[pos] := Result[pos] + (password[pos] - $30);
-    //Convert to upper case.
-    if Result[pos] > $39 Then
+    //Convert to upper case letter.
+    if (Result[pos] > $39) and (Result[pos] < $41) Then
     begin
       Result[pos] := Result[pos] + 7;
     end;
