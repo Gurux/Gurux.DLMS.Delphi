@@ -78,7 +78,7 @@ type
   // Is GBT streaming in use.
   FStreaming: Boolean;
   //GBT Window size.
-  FWindowSize: BYTE;
+  FGbtWindowSize: BYTE;
   //GBT block number.
   FBlockNumber: BYTE;
   //GBT block number ACK.
@@ -94,11 +94,11 @@ type
   Gateway: TGXDLMSGateway;
 
   // Constructor.
-  // <param name="more">Is more data available.</param>
-  // <param name="cmd"> Received command.</param>
-  // <param name="buff">Received data.</param>
-  // <param name="complete">Is frame complete.</param>
-  // <param name="error">Received error ID.</param>
+  // more: Is more data available.
+  // cmd:  Received command.
+  // buff: Received data.
+  // complete: Is frame complete.
+  // error: Received error ID.
   constructor Create(AMore: TRequestTypes; ACommand: TCommand; buff: TGXByteBuffer; AComplete: Boolean; error: Byte);overload;
 
   // Constructor.
@@ -162,7 +162,7 @@ type
   //Is GBT streaming in use.
   property Streaming: Boolean read FStreaming write FStreaming;
   //GBT Window size.
-  property WindowSize : Byte read FWindowSize write FWindowSize;
+  property GbtWindowSize : Byte read FGbtWindowSize write FGbtWindowSize;
   //GBT block number.
   property BlockNumber : Byte read FBlockNumber write FBlockNumber;
   //GBT block number ACK.
@@ -172,6 +172,9 @@ type
   property ClientAddress : Integer read FClientAddress write FClientAddress;
   //Server address of the notification message.
   property ServerAddress : Integer read FServerAddress write FServerAddress;
+
+  // Is GBT or HDLC streaming used.
+  function IsStreaming: Boolean;
 end;
 
 implementation
@@ -219,7 +222,7 @@ begin
   FCipherIndex := 0;
   FTime := 0;
   FStreaming := False;
-  FWindowSize := 0;
+  FGbtWindowSize := 0;
   FXml := Nil;
 end;
 
@@ -247,4 +250,14 @@ begin
   Result:= TGXCommon.GetDescription(FError);
 end;
 
+/// <summary>
+/// Is GBT or HDLC streaming used.
+/// </summary>
+/// <returns></returns>
+function TGXReplyData.IsStreaming: Boolean;
+begin
+    Result := (((Integer(MoreData) and Integer(TRequestTypes.rtFrame)) = 0) and
+        FStreaming and ((BlockNumberAck * GbtWindowSize) + 1 > BlockNumber)) or
+        (((Integer(MoreData) and Integer(TRequestTypes.rtFrame)) = Integer(TRequestTypes.rtFrame)) and FHdlcStreaming);
+end;
 end.

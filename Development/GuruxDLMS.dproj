@@ -338,6 +338,11 @@
         <DCCReference Include="Enums\Gurux.DLMS.Enums.ApplicationContextName.pas"/>
         <DCCReference Include="Enums\Gurux.DLMS.Enums.AccessMode3.pas"/>
         <DCCReference Include="Enums\Gurux.DLMS.Enums.MethodAccessMode3.pas"/>
+        <RcItem Include="OBISCodes.txt">
+            <ContainerId>ResourceItem</ContainerId>
+            <ResourceType>Text</ResourceType>
+            <ResourceId>OBIS_CODES</ResourceId>
+        </RcItem>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -419,7 +424,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\GuruxDLMS.bpl" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\21.0\Bpl\GuruxDLMS.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>GuruxDLMS.bpl</RemoteName>
                         <Overwrite>true</Overwrite>

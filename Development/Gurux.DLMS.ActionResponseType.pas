@@ -39,12 +39,12 @@ type
   TActionResponseType = (
     // Normal action.
     Normal = 1,
-    // Action with first block.
-    WithFirstBlock = 2,
+    // Action with block.
+    WithBlock = 2,
     // Action with list.
     WithList = 3,
     // Action with next block.
-    WithBlock = 4
+    NextBlock = 4
   );
 
 implementation

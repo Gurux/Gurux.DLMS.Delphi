@@ -202,6 +202,8 @@ type
 
   public
   class function ReceiverReady(settings: TGXDLMSSettings; t: TRequestTypes): TBytes;static;
+
+  class function ReceiverReady2(settings: TGXDLMSSettings; data: TGXReplyData): TBytes;static;
   // Check LLC bytes.
   class function GetLLCBytes(server: Boolean; data: TGXByteBuffer) : Boolean;static;
   // Handle push and get data from block and/or update error status.
@@ -216,7 +218,10 @@ uses HDLCInfo,
 Gurux.DLMS.ConnectionState,
 Gurux.DLMS.GXDLMSTranslator,
 TranslatorStandardTags,
-TranslatorSimpleTags;
+TranslatorSimpleTags,
+Gurux.DLMS.SetRequestType,
+Gurux.DLMS.ActionRequestType,
+Gurux.DLMS.ActionResponseType;
 
 {$AUTOBOX ON}
 {$HINTS OFF}
@@ -260,66 +265,90 @@ end;
 // Generates an acknowledgment message, with which the server is informed to send next packets.
 class function TGXDLMS.ReceiverReady(settings: TGXDLMSSettings; t : TRequestTypes): TBytes;
 var
+  data: TGXReplyData;
+begin
+  data := TGXReplyData.Create;
+  try
+    data.MoreData := t;
+    data.GbtWindowSize := settings.GbtWindowSize;
+    data.BlockNumberAck := settings.BlockNumberAck;
+    data.BlockNumber := settings.BlockIndex;
+    Result := ReceiverReady2(settings, data);
+  finally
+    FreeAndNil(data);
+  end;
+end;
+
+class function TGXDLMS.ReceiverReady2(settings: TGXDLMSSettings; data: TGXReplyData): TBytes;
+var
   p: TObject;
   bb : TGXByteBuffer;
   cmd : TCommand;
+  id: BYTE;
 begin
-  if t = TRequestTypes.rtNone then
+  if data.MoreData = TRequestTypes.rtNone then
       raise EArgumentException.Create('Invalid receiverReady RequestTypes parameter.');
 
   // Get next frame.
-  if (Integer(t) and Integer(TRequestTypes.rtFrame)) <> 0 then
+  if (Integer(data.MoreData) and Integer(TRequestTypes.rtFrame)) <> 0 then
   begin
-    Result := getHdlcFrame(settings, settings.ReceiverReady(), Nil);
+   id := settings.ReceiverReady();
+    if settings.InterfaceType = TInterfaceType.PlcHdlc Then
+      Result := GetMacHdlcFrame(settings, id, 0, Nil)
+    else
+      Result := GetHdlcFrame(settings, id, Nil);
     Exit;
   end;
-  if settings.UseLogicalNameReferencing Then
+  cmd := settings.Command;
+  if data.MoreData = TRequestTypes.rtGBT Then
   begin
-    if settings.isServer Then
-      cmd := TCommand.GetResponse
-    else
-      cmd := TCommand.GetRequest;
+    p := TGXDLMSLNParameters.Create(settings, 0, TCommand.GeneralBlockTransfer,
+      0, Nil, Nil, $ff, TCommand.None);
+    try
+      (p as TGXDLMSLNParameters).WindowSize := data.GbtWindowSize;
+      (p as TGXDLMSLNParameters).BlockNumberAck := data.BlockNumber;
+      (p as TGXDLMSLNParameters).BlockIndex := settings.BlockIndex;
+      Result := TGXDLMS.GetLnMessages(p as TGXDLMSLNParameters)[0];
+    finally
+      p.Free;
+    end;
   end
   else
   begin
-    if settings.isServer Then
-      cmd := TCommand.ReadResponse
-    else
-      cmd := TCommand.ReadRequest;
-  end;
-  // Get next block.
-  bb := TGXByteBuffer.Create(6);
-  try
-    if settings.UseLogicalNameReferencing Then
-      bb.SetUInt32(settings.BlockIndex)
-    else
-      bb.SetUInt16(settings.BlockIndex);
+    // Get next block.
+    bb := TGXByteBuffer.Create(4);
+    try
+      if settings.UseLogicalNameReferencing Then
+        bb.SetUInt32(settings.BlockIndex)
+      else
+        bb.SetUInt16(settings.BlockIndex);
 
-    settings.IncreaseBlockIndex();
-    if settings.UseLogicalNameReferencing Then
-    begin
-      p := TGXDLMSLNParameters.Create(settings, 0, cmd,
-        Byte(TGetCommandType.ctNextDataBlock), bb, Nil, $ff, TCommand.None);
-      try
-        Result := GetLnMessages(p as TGXDLMSLNParameters)[0];
-      finally
-        p.Free;
+      settings.IncreaseBlockIndex();
+      if settings.UseLogicalNameReferencing Then
+      begin
+        p := TGXDLMSLNParameters.Create(settings, 0, cmd,
+          Byte(TGetCommandType.ctNextDataBlock), bb, Nil, $ff, TCommand.None);
+        try
+          Result := GetLnMessages(p as TGXDLMSLNParameters)[0];
+        finally
+          p.Free;
+        end;
+      end
+      else
+      begin
+        p := TGXDLMSSNParameters.Create(settings, cmd, 1,
+          Byte(TVariableAccessSpecification.BlockNumberAccess), bb, Nil);
+        try
+          Result := GetSnMessages(p as TGXDLMSSNParameters)[0];
+        finally
+          p.Free;
+        end;
       end;
-    end
-    else
-    begin
-      p := TGXDLMSSNParameters.Create(settings, cmd, 1,
-        Byte(TVariableAccessSpecification.BlockNumberAccess), bb, Nil);
-      try
-        Result := GetSnMessages(p as TGXDLMSSNParameters)[0];
-      finally
-        p.Free;
-      end;
+    finally
+      FreeAndNil(bb);
     end;
-  finally
-    FreeAndNil(bb);
   end;
-end;
+ end;
 
 // Reserved for internal use.
 class procedure TGXDLMS.CheckInit(settings: TGXDLMSSettings);
@@ -482,7 +511,7 @@ begin
         end;
         multipleBlocks(p, reply, ciphering);
       end
-      else if (p.Command <> TCommand.ReleaseRequest) Then
+      else if (p.Command <> TCommand.ReleaseRequest) and (p.Command <> TCommand.ExceptionResponse) Then
       begin
         // Get request size can be bigger than PDU size.
         if (p.Command <> TCommand.GetRequest) and (p.Data <> Nil) and (p.Data.Size <> 0) Then
@@ -494,14 +523,53 @@ begin
           if p.MultipleBlocks and
             (Integer(p.Settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer) = 0) Then
           begin
-            if p.RequestType = 1 Then
-              p.RequestType := 2
-            else if p.RequestType = 2 Then
-              p.RequestType := 3;
+            if p.RequestType = BYTE(TSetRequestType.stNormal) Then
+              p.RequestType := BYTE(TSetRequestType.stFirstDataBlock)
+            else if p.RequestType = BYTE(TSetRequestType.stFirstDataBlock) Then
+              p.RequestType := BYTE(TSetRequestType.stWithDataBlock);
           end;
-        end;
+        end
+       //Change Request type if action request and multiple blocks is needed.
+        else if p.Command = TCommand.MethodRequest Then
+        begin
+         if p.MultipleBlocks and
+            (Integer(p.Settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer) = 0) Then
+          begin
+              if p.RequestType = BYTE(TActionRequestType.arNormal) Then
+              begin
+                  //Remove Method Invocation Parameters tag.
+                  p.AttributeDescriptor.Size := p.AttributeDescriptor.Size - 1;
+                  p.RequestType := BYTE(TActionRequestType.arWithFirstBlock);
+              end
+              else if p.RequestType = BYTE(TActionRequestType.arWithFirstBlock) Then
+              begin
+                  p.RequestType := BYTE(TActionRequestType.arWithBlock);
+              end;
+          end;
+        end
+        //Change Request type if action request and multiple blocks is needed.
+        else if p.Command = TCommand.MethodResponse Then
+        begin
+            if p.MultipleBlocks and
+            (Integer(p.Settings.NegotiatedConformance) and Integer(TConformance.cfGeneralBlockTransfer) = 0) Then
+            begin
+                //There is no status fiel in action resonse.
+                p.Status := $FF;
+                if p.RequestType = BYTE(TActionResponseType.Normal) Then
+                begin
+                    //Remove Method Invocation Parameters tag.
+                    p.Data.Position := p.Data.Position + 2;
+                    p.RequestType := BYTE(TActionResponseType.WithBlock);
+                end
+                else if (p.RequestType = BYTE(TActionResponseType.WithBlock)) and (p.Data.Available = 0) Then
+                begin
+                    //If server asks next part of PDU.
+                    p.RequestType := BYTE(TActionResponseType.NextBlock);
+                end;
+            end;
+        end
         // Change request type If get response and multiple blocks is needed.
-        if p.Command = TCommand.GetResponse Then
+        else if p.Command = TCommand.GetResponse Then
           if (p.MultipleBlocks) and (Integer(TConformance.cfGeneralBlockTransfer) = 0) Then
             if p.RequestType = 1 Then
               p.RequestType := 2;
@@ -2581,41 +2649,41 @@ class procedure TGXDLMS.HandleGbt(
     settings : TGXDLMSSettings;
     data: TGXReplyData);
 var
-  ch: Byte;
+  windowSize, ch: Byte;
   bn, bna: WORD;
   len, index: Integer;
 begin
     index := data.Data.Position - 1;
-    data.WindowSize := settings.GBTWindowSize;
+    data.GbtWindowSize := settings.GBTWindowSize;
     //BlockControl
     ch := data.Data.GetUInt8();
     // Is streaming active.
     data.Streaming := (ch and $40) <> 0;
     //GBT Window size.
-    data.WindowSize := (ch and $3F);
+    windowSize := (ch and $3F);
     //Block number.
     bn := data.Data.GetUInt16();
     //Block number acknowledged.
     bna := data.Data.GetUInt16();
-
+    if data.Xml = Nil Then
+    begin
+        // Remove existing data when first block is received.
+        if bn = 1 Then
+        begin
+            index := 0;
+        end
+        else if (bna <> settings.BlockIndex - 1) Then
+        begin
+            // If this block is already received.
+            data.Data.Size := index;
+            data.Command := TCommand.None;
+            Exit;
+        end;
+    end;
     //Block number.
     data.BlockNumber := bn;
     //Block number acknowledged.
     data.BlockNumberAck := bna;
-    if data.Xml <> Nil Then
-    begin
-      // Remove existing data when first block is received.
-      if bn = 1 Then
-        index := 0
-      else if bna <> settings.BlockIndex - 1 Then
-      begin
-        // If this block is already received.
-        data.Data.Size := index;
-        data.Command := TCommand.None;
-        Exit;
-      end;
-    end;
-
     settings.BlockNumberAck := data.BlockNumber;
     data.Command := TCommand.None;
     len := TGXCommon.GetObjectCount(data.Data);
@@ -3179,7 +3247,7 @@ begin
       end
     end;
   end;
-  if Not isLast then
+  if (Not isLast) or ((data.MoreData = TRequestTypes.rtGBT) and (reply.Available() <> 0)) then
   begin
     Result := GetData(settings, reply, data, notify);
   end;

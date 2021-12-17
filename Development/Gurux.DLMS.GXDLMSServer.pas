@@ -193,94 +193,84 @@ var
   len: Integer;
   igonoreAck: BOOLEAN;
 begin
-    if FTransaction <> Nil Then
+  blockNumber := 0;
+  blockNumberAck := 0;
+  if Not sr.IsStreaming Then
+  begin
+      //BlockControl
+      bc := data.GetUInt8();
+      //Block number.
+      blockNumber := data.GetUInt16();
+      //Block number acknowledged.
+      blockNumberAck := data.GetUInt16();
+      len := TGXCommon.GetObjectCount(data);
+      if len > data.Available Then
+      begin
+          FReplyData.SetArray(TGXDLMSServer.GenerateConfirmedServiceError(TConfirmedServiceError.InitiateError,
+          TServiceError.Service, BYTE(TService.Unsupported)));
+      end;
+  end;
+  if FTransaction <> Nil Then
+  begin
+    if (FTransaction.command = TCommand.GetRequest) or (FTransaction.command = TCommand.MethodResponse) Then
     begin
-        if FTransaction.command = TCommand.GetRequest Then
-        begin
-            // Get request for next data block
-            if sr.Count = 0 Then
-            begin
-                FSettings.BlockNumberAck := FSettings.BlockNumberAck + 1;
-                sr.Count := FSettings.GBTWindowSize;
-            end;
-            TGXDLMSLNCommandHandler.GetRequestNextDataBlock(FSettings, Self, 0, data, FReplyData, Nil, true, cipheredCommand);
-            if sr.Count <> 0 Then
-            begin
-                sr.Count := sr.Count - 1;
-            end;
-            if FTransaction = Nil Then
-            begin
-                sr.Count := 0;
-            end;
-        end
-        else
-        begin
-            //BlockControl
-            bc := data.GetUInt8();
-            //Block number.
-            blockNumber := data.GetUInt16();
-            //Block number acknowledged.
-            blockNumberAck := data.GetUInt16();
-            len := TGXCommon.GetObjectCount(data);
-            if len > data.Size - data.Position Then
-            begin
-                FReplyData.SetArray(GenerateConfirmedServiceError(TConfirmedServiceError.InitiateError,
-                TServiceError.Service, BYTE(TService.Unsupported)));
-            end
-            else
-            begin
-                FTransaction.data.SetArray(data);
-                //Send ACK.
-                igonoreAck := ((bc and $40) <> 0) and ((blockNumberAck * WindowSize) + 1 > blockNumber);
-                windowSize := FSettings.GBTWindowSize;
-                bn := FSettings.BlockIndex;
-                if (bc and $80) <> 0 Then
-                begin
-                  HandleCommand(FTransaction.command, FTransaction.data, sr, cipheredCommand);
-                  FTransaction := Nil;
-                  igonoreAck := false;
-                  windowSize := 1;
-                end;
-                if igonoreAck Then
-                begin
-                    Result := False;
-                    Exit;
-                end;
-                FReplyData.SetUInt8(BYTE(TCommand.GeneralBlockTransfer));
-                FReplyData.SetUInt8($80 + windowSize);
-                FSettings.BlockIndex := FSettings.BlockIndex + 1;
-                FReplyData.SetUInt16(bn);
-                FReplyData.SetUInt16(blockNumber);
-                FReplyData.SetUInt8(0);
-            end;
-        end;
+      // Get request for next data block
+      if sr.Count = 0 Then
+      begin
+          FSettings.BlockNumberAck := FSettings.BlockNumberAck + 1;
+          sr.Count := (bc and $3F);
+      end;
+      TGXDLMSLNCommandHandler.GetRequestNextDataBlock(FSettings, Self, 0, data, FReplyData, Nil, true, cipheredCommand);
+      if sr.Count <> 0 Then
+      begin
+          sr.Count := sr.Count - 1;
+      end;
+      if FTransaction = Nil Then
+      begin
+          sr.Count := 0;
+      end;
+      //Save server GBT window size to settings because sr is lost.
+      if FSettings.IsServer Then
+        FSettings.Count := sr.Count;
+
     end
     else
     begin
-        //BlockControl
-        bc := data.GetUInt8();
-        //Block number.
-        blockNumber := data.GetUInt16();
-        //Block number acknowledged.
-        blockNumberAck := data.GetUInt16();
-        len := TGXCommon.GetObjectCount(data);
-        if len > data.Size - data.Position Then
-        begin
-            FReplyData.SetArray(GenerateConfirmedServiceError(TConfirmedServiceError.InitiateError,
-               TServiceError.Service, BYTE(TService.Unsupported)));
-        end
-        else
-        begin
-            FTransaction := TGXDLMSLongTransaction.Create(Nil, TCommand(data.GetUInt8()), data);
-            FReplyData.SetUInt8(BYTE(TCommand.GeneralBlockTransfer));
-            FReplyData.SetUInt8($80 + FSettings.GBTWindowSize);
-            FReplyData.SetUInt16(blockNumber);
-            blockNumberAck := blockNumberAck + 1;
-            FReplyData.SetUInt16(blockNumberAck);
-            FReplyData.SetUInt8(0);
-        end;
+      FTransaction.data.SetArray(data);
+      //Send ACK.
+      igonoreAck := ((bc and $40) <> 0) and ((blockNumberAck * WindowSize) + 1 > blockNumber);
+      windowSize := FSettings.GBTWindowSize;
+      bn := FSettings.BlockIndex;
+      if (bc and $80) <> 0 Then
+      begin
+        HandleCommand(FTransaction.command, FTransaction.data, sr, cipheredCommand);
+        FreeAndNil(FTransaction);
+        igonoreAck := false;
+        windowSize := 1;
+      end;
+      if igonoreAck Then
+      begin
+          Result := False;
+          Exit;
+      end;
+      FReplyData.SetUInt8(BYTE(TCommand.GeneralBlockTransfer));
+      FReplyData.SetUInt8($80 + windowSize);
+      FSettings.BlockIndex := FSettings.BlockIndex + 1;
+      FReplyData.SetUInt16(bn);
+      FReplyData.SetUInt16(blockNumber);
+      FReplyData.SetUInt8(0);
     end;
-    Result := True;
+  end
+  else
+  begin
+    FTransaction := TGXDLMSLongTransaction.Create(Nil, TCommand(data.GetUInt8()), data);
+    FReplyData.SetUInt8(BYTE(TCommand.GeneralBlockTransfer));
+    FReplyData.SetUInt8($80 + FSettings.GBTWindowSize);
+    FReplyData.SetUInt16(blockNumber);
+    FReplyData.SetUInt16(1 + blockNumberAck);
+    FReplyData.SetUInt8(0);
+  end;
+  Result := True;
 end;
 
 function TGXDLMSServer.ReportExceptionResponse(ex: TGXDLMSExceptionResponse): TBytes;

@@ -200,7 +200,7 @@ end;
     //DLMS settings.
     FSettings: TGXDLMSSettings;
     //GBT Window size.
-    FWindowSize: BYTE;
+    FGbtWindowSize: BYTE;
   public
     // Target COSEM object.
     property Target: TGXDLMSObject read FTarget write FTarget;
@@ -234,7 +234,7 @@ end;
     property Settings: TGXDLMSSettings read FSettings;
 
     //GBT window size.
-    property WindowSize: BYTE read FWindowSize write FWindowSize;
+    property GbtWindowSize: BYTE read FGbtWindowSize write FGbtWindowSize;
 
   // Constructor.
   constructor Create(settings: TGXDLMSSettings; target: TGXDLMSObject; index: Integer; selector: Integer; parameters: TValue);overload;

@@ -186,8 +186,9 @@ begin
   list.Add((WORD(TCommand.MethodRequest) shl 8 ) or WORD(TActionRequestType.arWithList), 'ActionRequestWithList');
   TGXDLMSTranslator.AddTag(list, WORD(TCommand.MethodResponse), 'ActionResponse');
   list.Add((WORD(TCommand.MethodResponse) shl 8 ) or WORD(TActionRequestType.arNormal), 'ActionResponseNormal');
-  list.Add((WORD(TCommand.MethodResponse) shl 8 ) or WORD(TActionRequestType.arWithFirstBlock), 'ActionResponseWithFirstBlock');
+  list.Add((WORD(TCommand.MethodResponse) shl 8 ) or WORD(TActionRequestType.arWithFirstBlock), 'ActionResponseWithPBlock');
   list.Add((WORD(TCommand.MethodResponse) shl 8 ) or WORD(TActionRequestType.arWithList), 'ActionResponseWithList');
+  list.Add((WORD(TCommand.MethodResponse) shl 8 ) or WORD(TActionRequestType.arNextBlock), 'ActionResponseNextBlock');
   list.Add(WORD(TCommand.DataNotification), 'DataNotification');
   list.Add(WORD(TCommand.GetResponse), 'GetResponse');
   list.Add((WORD(TCommand.GetResponse) shl 8 ) or WORD(TGetCommandType.ctNormal), 'GetResponseNormal');

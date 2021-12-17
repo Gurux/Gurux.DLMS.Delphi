@@ -168,6 +168,9 @@ begin
   WriteLn(' -w \t HDLC Window size. Default is 1');
   WriteLn(' -f \t HDLC Frame size. Default is 128');
   WriteLn(' -L \t Manufacturer ID (Flag ID) is used to use manufacturer depending functionality. -L LGZ');
+  WriteLn(' -W \t General Block Transfer window size.');
+  WriteLn(' -w \t HDLC Window size. Default is 1');
+  WriteLn(' -f \t HDLC Frame size. Default is 128');
   WriteLn('Example:');
   WriteLn('Read LG device using TCP/IP connection.');
   WriteLn('GuruxDlmsSample -r SN -c 16 -s 1 -h [Meter IP Address] -p [Meter Port No]');
@@ -272,6 +275,7 @@ begin
       ReadByAccess(accessList);
     Exit;
   end;
+  list := Nil;
   try
     if Integer(Client.NegotiatedConformance) and Integer(TConformance.cfMultipleReferences) <> 0 Then
     begin
@@ -957,7 +961,7 @@ var
   Result: TGXByteBuffer;
   notify: TGXReplyData;
 begin
-  if (data = nil) then
+  if (data = nil) and Not reply.IsStreaming() then
       Exit;
   stream := Nil;
   notify := TGXReplyData.Create();
@@ -1035,14 +1039,17 @@ begin
   ReadDLMSPacket(data, reply);
   while (reply.IsMoreData) do
   begin
-      data := Client.ReceiverReady(reply.MoreData);
-      ReadDLMSPacket(data, reply);
-      if FTrace > TTraceLevel.tlInfo then
-        //If data block is read.
-        if (Integer(reply.MoreData) and Integer(TRequestTypes.rtFrame)) = 0 Then
-          writeln('+')
-        else
-          writeln('-');
+    if Not reply.IsStreaming Then
+      data := Client.ReceiverReady(reply.MoreData)
+    else
+      data := Nil;
+    ReadDLMSPacket(data, reply);
+    if FTrace > TTraceLevel.tlInfo then
+      //If data block is read.
+      if (Integer(reply.MoreData) and Integer(TRequestTypes.rtFrame)) = 0 Then
+        writeln('+')
+      else
+        writeln('-');
   end;
 end;
 

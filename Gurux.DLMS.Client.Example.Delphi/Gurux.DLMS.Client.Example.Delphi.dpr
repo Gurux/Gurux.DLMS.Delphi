@@ -100,7 +100,7 @@ begin
 {$ENDIF}
 {$ENDIF}
   try
-    parameters := TGXCommon.GetParameters('h:p:c:s:r:i:It:a:p:wP:g:C:n:v:o:l:W:w:f:L:');
+    parameters := TGXCommon.GetParameters('h:p:c:s:r:i:It:a:p:P:g:C:n:v:o:l:W:w:f:L:');
     for it in parameters do
     begin
       case it.Tag of
