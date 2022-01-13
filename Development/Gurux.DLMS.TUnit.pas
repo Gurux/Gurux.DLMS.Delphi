@@ -167,8 +167,110 @@ TUnit =
     // NOTE The amount of energy per unit of mass of a
     // substance Joule / kilogram m2 . kg . s -2 / kg = m2 . s –2
     utJouleKilogram = 65,
+    // Pressure, gram per square centimeter.
+    utPressureGramPerSquareCentimeter = 66,
+    //Pressure, atmosphere.
+    utPressureAtmosphere = 67,
     // dBm Signal strength (e.g. of GSM radio systems)
     utSignalStrength = 70,
+    // Signal strength, dB microvolt.
+    utSignalStrengthMicroVolt = 71,
+    // Logarithmic unit that expresses the ratio between two values of a physical quantity
+    utdB = 72,
+    // Length in inches.
+    utInch = 128,
+    // Foot (Length).
+    utFoot = 129,
+    // Pound (mass).
+    utPound = 130,
+    // Fahrenheit
+    utFahrenheit = 131,
+    // Rankine
+    utRankine = 132,
+    // Square inch.
+    utSquareInch = 133,
+    // Square foot.
+    utSquareFoot = 134,
+    // Acre
+    utAcre = 135,
+    // Cubic inch.
+    utCubicInch = 136,
+    // Cubic foot.
+    utCubicFoot = 137,
+    // Acre-foot.
+    utAcreFoot = 138,
+    // Gallon (imperial).
+    utGallonImperial = 139,
+    // Gallon (US).
+    utGallonUS = 140,
+    // Pound force.
+    utPoundForce = 141,
+    // Pound force per square inch
+    utPoundForcePerSquareInch = 142,
+    // Pound per cubic foot.
+    utPoundPerCubicFoot = 143,
+    // Pound per (foot second)
+    utPoundPerFootSecond = 144,
+    // Square foot per second.
+    utSquareFootPerSecond = 145,
+    // British thermal unit.
+    utBritishThermalUnit = 146,
+    // Therm EU.
+    utThermEU = 147,
+    // Therm US.
+    utThermUS = 148,
+    // British thermal unit per pound.
+    utBritishThermalUnitPerPound = 149,
+    // British thermal unit per cubic foot.
+    utBritishThermalUnitPerCubicFoot = 150,
+    // Cubic feet.
+    utCubicFeet = 151,
+    // Foot per second.
+    utFootPerSecond = 152,
+    // Cubic foot per second.
+    utCubicFootPerSecond = 153,
+    // Cubic foot per min.
+    utCubicFootPerMin = 154,
+    // Cubic foot per hour.
+    utCubicFootPerhour = 155,
+    // Cubic foot per day
+    utCubicFootPerDay = 156,
+    // Acre foot per second.
+    utAcreFootPerSecond = 157,
+    // Acre foot per min.
+    utAcreFootPerMin = 158,
+    // Acre foot per hour.
+    utAcreFootPerHour = 159,
+    // Acre foot per day.
+    utAcreFootPerDay = 160,
+    // Imperial gallon.
+    utImperialGallon = 161,
+    // Imperial gallon per second.
+    utImperialGallonPerSecond = 162,
+    // Imperial gallon per min.
+    utImperialGallonPerMin = 163,
+    // Imperial gallon per hour.
+    utImperialGallonPerHour = 164,
+    // Imperial gallon per day.
+    utImperialGallonPerDay = 165,
+    // US gallon.
+    utUSGallon = 166,
+    // US gallon per second.
+    utUSGallonPerSecond = 167,
+    // US gallon per min.
+    utUSGallonPerMin = 168,
+    // US gallon per hour.
+    utUSGallonPerHour = 169,
+    // US gallon per day.
+    utUSGallonPerDay = 170,
+    // British thermal unit per second.
+    utBritishThermalUnitPerSecond = 171,
+    // British thermal unit per minute.
+    utBritishThermalUnitPerMinute = 172,
+    // British thermal unit per hour.
+    utBritishThermalUnitPerHour = 173,
+    // British thermal unit per day.
+    utBritishThermalUnitPerDay = 174,
     // Other Unit is used.
     utOtherUnit = 254,
     // No Unit is used.
