@@ -491,7 +491,7 @@ begin
           (p.Command = TCommand.AccessResponse) Then
       begin
         // Add Long-Invoke-Id-And-Priority
-        if p.Command <> TCommand.DataNotification then
+        if p.Command <> TCommand.EventNotification then
         begin
           if (p.InvokeId <> 0) Then
               reply.SetUInt32(p.InvokeId)

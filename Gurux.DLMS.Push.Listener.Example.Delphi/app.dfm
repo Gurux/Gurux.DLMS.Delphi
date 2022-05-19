@@ -1,7 +1,7 @@
 object Form3: TForm3
   Left = 0
   Top = 0
-  Caption = 'Gurux DLMS Simulator'
+  Caption = 'Gurux DLMS Push listener example'
   ClientHeight = 270
   ClientWidth = 635
   Color = clBtnFace
@@ -17,19 +17,37 @@ object Form3: TForm3
   object Output: TMemo
     Left = 0
     Top = 0
-    Width = 635
+    Width = 560
     Height = 270
     Align = alClient
     TabOrder = 0
   end
-  object ServerSocket1: TServerSocket
-    Active = False
-    Port = 0
-    ServerType = stNonBlocking
-    OnClientConnect = OnClientConnect
-    OnClientDisconnect = OnClientDisconnect
-    OnClientRead = OnReceived
-    Left = 16
-    Top = 16
+  object SendPushBtn: TButton
+    Left = 560
+    Top = 0
+    Width = 75
+    Height = 270
+    Align = alRight
+    Caption = 'Send push'
+    TabOrder = 1
+    OnClick = SendPushBtnClick
+  end
+  object IdTCPClient1: TIdTCPClient
+    ConnectTimeout = 0
+    Host = 'localhost'
+    Port = 4059
+    ReadTimeout = -1
+    Left = 592
+    Top = 40
+  end
+  object IdTCPServer1: TIdTCPServer
+    Active = True
+    Bindings = <>
+    DefaultPort = 4059
+    OnConnect = OnClientConnect
+    OnDisconnect = OnClientDisconnect
+    OnExecute = OnReceived
+    Left = 568
+    Top = 216
   end
 end

@@ -277,7 +277,10 @@ contains
   Gurux.DLMS.Enums.AcseServiceProvider in 'Enums\Gurux.DLMS.Enums.AcseServiceProvider.pas',
   Gurux.DLMS.Enums.ApplicationContextName in 'Enums\Gurux.DLMS.Enums.ApplicationContextName.pas',
   Gurux.DLMS.Enums.AccessMode3 in 'Enums\Gurux.DLMS.Enums.AccessMode3.pas',
-  Gurux.DLMS.Enums.MethodAccessMode3 in 'Enums\Gurux.DLMS.Enums.MethodAccessMode3.pas';
+  Gurux.DLMS.Enums.MethodAccessMode3 in 'Enums\Gurux.DLMS.Enums.MethodAccessMode3.pas',
+  Gurux.DLMS.AcseServiceProvider in 'Gurux.DLMS.AcseServiceProvider.pas',
+  Gurux.DLMS.GXDLMSNotify in 'Gurux.DLMS.GXDLMSNotify.pas',
+  Gurux.DLMS.GXDLMSSecureNotify in 'Gurux.DLMS.GXDLMSSecureNotify.pas';
 
 end.
 

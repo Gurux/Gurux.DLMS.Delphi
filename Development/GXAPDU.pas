@@ -184,7 +184,8 @@ end;
 
 implementation
 uses TranslatorStandardTags, TranslatorSimpleTags,
-Gurux.DLMS.Objects.GXDLMSAssociationLogicalName;
+Gurux.DLMS.Objects.GXDLMSAssociationLogicalName,
+Gurux.DLMS.AcseServiceProvider;
 
 class procedure TGXAPDU.GetAuthenticationString(settings: TGXDLMSSettings; data: TGXByteBuffer);
 var
@@ -1064,10 +1065,11 @@ begin
           //len :=
           buff.GetUInt8();
           tag := buff.GetUInt8();
+          resultComponent := TAssociationResult(tag);
           if xml <> Nil Then
           begin
             if tag <> 0 Then
-              xml.AppendComment(TGXDLMSConverter.ToString(TAssociationResult(tag)));
+              xml.AppendComment(TGXDLMSConverter.ToString(resultComponent));
             xml.AppendLine(LONGWORD(TTranslatorGeneralTags.AssociationResult), '',
                 xml.IntegerToHex(tag, 2));
             xml.AppendStartTag(LONGWORD(TTranslatorGeneralTags.ResultSourceDiagnostic));
@@ -1079,8 +1081,7 @@ begin
         //len :=
         buff.GetUInt8();
         // ACSE service user tag.
-        //tag :=
-        buff.GetUInt8();
+        tag := buff.GetUInt8();
         len := buff.GetUInt8();
         if settings.IsServer Then
         begin
@@ -1097,13 +1098,33 @@ begin
           len := buff.GetUInt8();
           if len <> 1 Then
             raise EArgumentException.Create('Invalid tag.');
-          Result := TValue.From(TSourceDiagnostic(buff.GetUInt8()));
+          if tag = $A1 Then
+          begin
+            Result := TValue.From(TSourceDiagnostic(buff.GetUInt8()));
+            if xml <> Nil Then
+            begin
+              if Result.AsType<TSourceDiagnostic>() <> TSourceDiagnostic.None Then
+                xml.AppendComment(TGXDLMSConverter.ToString(Result.AsType<TSourceDiagnostic>()));
+              xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ACSEServiceUser),
+                  '', xml.IntegerToHex(Result.AsType<Integer>(), 2));
+            end;
+          end
+          else
+          begin
+            //ACSEServiceProvicer
+            tag := buff.GetUInt8();
+            Result := TValue.From(TAcseServiceProvider(tag));
+            if xml <> Nil Then
+            begin
+              if TAcseServiceProvider(tag) <> TAcseServiceProvider.None Then
+              begin
+                xml.AppendComment(tag.ToString());
+              end;
+              xml.AppendLine(LONGWORD(TranslatorGeneralTags.ACSEServiceProvider), '', xml.IntegerToHex(tag, 2));
+            end;
+          end;
           if xml <> Nil Then
           begin
-            if Result.AsType<TSourceDiagnostic>() <> TSourceDiagnostic.None Then
-              xml.AppendComment(TGXDLMSConverter.ToString(Result.AsType<TSourceDiagnostic>()));
-            xml.AppendLine(LONGWORD(TTranslatorGeneralTags.ACSEServiceUser),
-                '', xml.IntegerToHex(Result.AsType<Integer>(), 2));
             xml.AppendEndTag(LONGWORD(TTranslatorGeneralTags.ResultSourceDiagnostic));
           end;
         end;
