@@ -34,7 +34,9 @@ unit Gurux.DLMS.GXCiphering;
 
 interface
 uses SysUtils, Gurux.DLMS.Security, GXByteBuffer, Gurux.DLMS.AesGcmParameter,
-Gurux.DLMS.GXDLMSChippering;
+Gurux.DLMS.GXDLMSChippering,
+Gurux.DLMS.SecurityPolicy,
+Gurux.DLMS.SecuritySuite;
 
 type
 TGXCiphering = class
@@ -46,6 +48,8 @@ TGXCiphering = class
   FBlockCipherKey: TBytes;
   FSourceSystemTitle: TBytes;
   FDedicatedKey: TBytes;
+  FSecurityPolicy: TSecurityPolicy;
+  FSecuritySuite: TSecuritySuite;
 
   function get_SystemTitle: TBytes;
   function get_BlockCipherKey: TBytes;
@@ -75,6 +79,11 @@ TGXCiphering = class
     property BlockCipherKey: TBytes read get_BlockCipherKey write set_BlockCipherKey;
     //Authentication Key is 16 bytes value.
     property AuthenticationKey: TBytes read get_AuthenticationKey write set_AuthenticationKey;
+
+    property SecurityPolicy: TSecurityPolicy read FSecurityPolicy write FSecurityPolicy;
+    property SecuritySuite: TSecuritySuite read FSecuritySuite write FSecuritySuite;
+
+
 
     function Encrypt(
         tag: Byte;

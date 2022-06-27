@@ -73,6 +73,7 @@ TGXDLMSLNParameters = class
   FWindowSize: Byte;
 
   FStreaming: Boolean;
+  FAccessMode: Integer;
 
   // Constructor.
   // <param name="ASettings">DLMS settings.</param>
@@ -118,6 +119,7 @@ TGXDLMSLNParameters = class
 
   property WindowSize: Byte read FWindowSize write FWindowSize;
   property Streaming: Boolean read FStreaming write FStreaming;
+  property AccessMode: Integer read FAccessMode write FAccessMode;
 
   property BlockNumberAck: WORD read FBlockNumberAck write FBlockNumberAck;
 end;

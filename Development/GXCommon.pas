@@ -1731,6 +1731,7 @@ end;
 // Reserved for internal use.
 class procedure TGXCommon.SetData(buff : TGXByteBuffer; dataType : TDataType; value : TValue);
 begin
+  value := value.AsType<TValue>();
   if ((dataType = TDataType.dtArray) or (dataType = TDataType.dtSTRUCTURE)) and value.IsType<TBytes> then
     // If byte array is added do not add type.
     buff.SetArray(value.AsType<TBytes>)

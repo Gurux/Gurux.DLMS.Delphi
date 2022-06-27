@@ -22,14 +22,13 @@ object Form3: TForm3
     Align = alClient
     TabOrder = 0
   end
-  object ServerSocket1: TServerSocket
-    Active = False
-    Port = 0
-    ServerType = stNonBlocking
-    OnClientConnect = OnClientConnect
-    OnClientDisconnect = OnClientDisconnect
-    OnClientRead = OnReceived
-    Left = 16
-    Top = 16
+  object IdTCPServer1: TIdTCPServer
+    Bindings = <>
+    DefaultPort = 4059
+    OnConnect = IdTCPServer1Connect
+    OnDisconnect = IdTCPServer1Disconnect
+    OnExecute = IdTCPServer1Execute
+    Left = 576
+    Top = 208
   end
 end

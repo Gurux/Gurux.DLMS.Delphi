@@ -143,11 +143,22 @@ type
 
     // Update short names.
     procedure UpdateShortNames(force: Boolean);
+    procedure UpdateSecuritySettings(systemTitle: TBytes);
+    function NotifyFindObject(objectType: TObjectType; sn: Integer; ln: string): TGXDLMSObject;
+    function NotifyGetAttributeAccess(arg: TValueEventArgs):TAccessMode;
+    procedure NotifyPreRead(args: TArray<TValueEventArgs>);
+    procedure NotifyPreWrite(args: TArray<TValueEventArgs>);
+    procedure NotifyPostRead(args: TArray<TValueEventArgs>);
+    procedure NotifyPostWrite(args: TArray<TValueEventArgs>);
   end;
 
 implementation
 
-uses Gurux.DLMS.Enums.ApplicationContextName, Gurux.DLMS.AssociationStatus;
+uses Gurux.DLMS.Enums.ApplicationContextName,
+Gurux.DLMS.AssociationStatus,
+Gurux.DLMS.Objects.GXDLMSSecuritySetup,
+Gurux.DLMS.SecurityPolicy,
+Gurux.DLMS.SecuritySuite;
 
 constructor TGXDLMSServer.Create();
 begin
@@ -510,9 +521,16 @@ begin
         end;
       end
       else
+      begin
+        if sr.Command <> TCommand.None Then
+            FInfo.Command := sr.Command
+        else
+          //If GBT is streaming.
           FInfo.Command := TCommand.GeneralBlockTransfer;
+      end;
     try
       sr.Reply := HandleCommand(FInfo.Command, FInfo.Data, sr, FInfo.CipheredCommand);
+      FInfo.Clear();
     except on E: Exception do
       begin
         FReceivedData.Size := 0;
@@ -911,9 +929,133 @@ function TGXDLMSServer.GetAssignedAssociation(): TGXDLMSAssociationLogicalName;
 begin
   Result := TGXDLMSAssociationLogicalName(FSettings.GetAssignedAssociation);
 end;
-procedure TGXDLMSServer.SetAssignedAssociation(AValue: TGXDLMSAssociationLogicalName);
+
+procedure TGXDLMSServer.UpdateSecuritySettings(systemTitle: TBytes);
+var
+  ln: TGXDLMSAssociationLogicalName;
+  ss: TGXDLMSSecuritySetup;
+  st: TBytes;
 begin
+    ln := TGXDLMSAssociationLogicalName(GetAssignedAssociation());
+    if ln <> Nil Then
+    begin
+        // Update security settings.
+        if (ln.SecuritySetupReference <> '') and
+           ((ln.ApplicationContextName.ContextId = TApplicationContextName.LogicalNameWithCiphering) or
+           (ln.AuthenticationMechanismName.MechanismId = TAuthentication.atHighGMAC) or
+           (ln.AuthenticationMechanismName.MechanismId = TAuthentication.atHighECDSA)) Then
+        begin
+            ss := TGXDLMSSecuritySetup(ln.ObjectList.FindByLN(TObjectType.otSecuritySetup, ln.SecuritySetupReference));
+            if ss <> Nil Then
+            begin
+                FSettings.Cipher.SecurityPolicy := ss.SecurityPolicy;
+                if ss.Guek <> Nil Then
+                begin
+                  FSettings.Cipher.BlockCipherKey := ss.Guek;
+                  //EphemeralBlockCipherKey := ss.Guek;
+                end;
+                if ss.Gbek <> Nil Then
+                begin
+                  //FSettings.Cipher.BroadcastBlockCipherKey := ss.Gbek;
+                  //EphemeralBroadcastBlockCipherKey = ss.Gbek;
+                end;
+                if ss.Gak <> Nil Then
+                begin
+                  FSettings.Cipher.AuthenticationKey := ss.Gak;
+                  //EphemeralAuthenticationKey := ss.Gak;
+                end;
+                if ss.Kek <> Nil Then
+                begin
+                 // FSettings.Kek := ss.Kek;
+                end;
+                // Update certificates for pre-established connections.
+                if systemTitle = Nil Then
+                begin
+                    st := ss.ClientSystemTitle;
+                end
+                else
+                begin
+                    st := systemTitle;
+                end;
+                if st <> Nil Then
+                begin
+                {
+                    GXx509Certificate cert = ss.ServerCertificates.FindBySystemTitle(st, KeyUsage.DigitalSignature);
+                    if (cert != null)
+                    begin
+                        Cipher.SigningKeyPair = new KeyValuePair<GXPublicKey, GXPrivateKey>(cert.PublicKey, ss.SigningKey.Value.Value);
+                    end;
+                    cert = ss.ServerCertificates.FindBySystemTitle(st, KeyUsage.KeyAgreement);
+                    if (cert != null && ss.KeyAgreementKey != null)
+                    begin
+                        Cipher.KeyAgreementKeyPair = new KeyValuePair<GXPublicKey, GXPrivateKey>(cert.PublicKey, ss.KeyAgreementKey.Value.Value);
+                    end;
+                }
+                    FSettings.SourceSystemTitle := st;
+                end;
+                FSettings.Cipher.SecuritySuite := ss.SecuritySuite;
+                FSettings.Cipher.SystemTitle := ss.ServerSystemTitle;
+                // Find Invocation counter and use it if it exists.
+                {
+                String ln = "0.0.43.1." + ss.LogicalName.Split(new char[] begin '.' end;)[4] + ".255";
+                FSettings.InvocationCounter := TGXDLMSData(Objects.FindByLN(ObjectType.Data, ln));
+                if (FSettings.InvocationCounter <> Nil) and (FSettings.InvocationCounter.Value = Nil) Then
+                begin
+                    if (FSettings.InvocationCounter.GetDataType(2) == DataType.None)
+                    begin
+                        FSettings.InvocationCounter.SetDataType(2, DataType.UInt32);
+                    end;
+                    FSettings.InvocationCounter.Value := 0;
+                end;
+                }
+            end
+            else
+            begin
+              ln.ApplicationContextName.ContextId := TApplicationContextName.LogicalName;
+            end;
+        end
+        else
+        begin
+            // Update server system title if security setup is set.
+            ss := TGXDLMSSecuritySetup(ln.ObjectList.FindByLN(TObjectType.otSecuritySetup,
+                ln.SecuritySetupReference));
+            if ss <> Nil Then
+            begin
+                FSettings.Cipher.SystemTitle := ss.ServerSystemTitle;
+            end;
+        end;
+    end;
+end;
+
+procedure TGXDLMSServer.SetAssignedAssociation(AValue: TGXDLMSAssociationLogicalName);
+var
+  ln: TGXDLMSAssociationLogicalName;
+begin
+  if GetAssignedAssociation() <> Nil Then
+  begin
+    ln := TGXDLMSAssociationLogicalName(GetAssignedAssociation());
+    ln.AssociationStatus := TAssociationStatus.NonAssociated;
+    ln.XDLMSContextInfo.CypheringInfo := Nil;
+    if (FSettings.Cipher <> Nil) then
+    begin
+      //FSettings.InvocationCounter := Nil;
+      FSettings.Cipher.SecurityPolicy := TSecurityPolicy.spNothing;
+      FSettings.EphemeralBlockCipherKey := Nil;
+      FSettings.EphemeralBroadcastBlockCipherKey := Nil;
+      FSettings.EphemeralAuthenticationKey := Nil;
+      FSettings.Cipher.SecuritySuite := TSecuritySuite.AES_GCM_128;
+      //FSettings.Cipher.Signing := TSigning.None;
+    end;
+  end;
   FSettings.SetAssignedAssociation(AValue);
+  if GetAssignedAssociation() <> Nil Then
+  begin
+    ln := TGXDLMSAssociationLogicalName(GetAssignedAssociation());
+    FSettings.ProposedConformance := ln.XDLMSContextInfo.Conformance;
+    FSettings.MaxServerPDUSize := ln.XDLMSContextInfo.MaxReceivePduSize;
+    FSettings.Authentication := ln.AuthenticationMechanismName.MechanismId;
+    UpdateSecuritySettings(Nil);
+  end;
 end;
 
 function TGXDLMSServer.GetConformance(): TConformance;
@@ -1032,4 +1174,32 @@ begin
         end;
     end;
 end;
+
+function TGXDLMSServer.NotifyFindObject(objectType: TObjectType; sn: Integer; ln: string): TGXDLMSObject;
+begin
+  Result := FindObject(objectType, sn, ln);
+end;
+
+function TGXDLMSServer.NotifyGetAttributeAccess(arg: TValueEventArgs):TAccessMode;
+begin
+  Result := GetAttributeAccess(arg);
+end;
+
+procedure TGXDLMSServer.NotifyPreWrite(args: TArray<TValueEventArgs>);
+begin
+  PreWrite(args);
+end;
+procedure TGXDLMSServer.NotifyPreRead(args: TArray<TValueEventArgs>);
+begin
+  PreRead(args);
+end;
+procedure TGXDLMSServer.NotifyPostWrite(args: TArray<TValueEventArgs>);
+begin
+  PostWrite(args);
+end;
+procedure TGXDLMSServer.NotifyPostRead(args: TArray<TValueEventArgs>);
+begin
+  PostRead(args);
+end;
+
 end.

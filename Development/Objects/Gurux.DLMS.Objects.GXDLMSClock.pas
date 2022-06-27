@@ -83,7 +83,7 @@ implementation
 
 constructor TGXDLMSClock.Create;
 begin
-  Create('', 0);
+  Create('0.0.1.0.0.255', 0);
 end;
 
 constructor TGXDLMSClock.Create(ln: string);

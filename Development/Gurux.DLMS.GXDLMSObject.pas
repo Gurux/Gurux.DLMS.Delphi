@@ -956,6 +956,7 @@ begin
         begin
           ot := TGXDLMSConverter.ValueOfObjectType(target);
           obj := TGXObjectFactory.CreateObject(WORD(ot));
+          obj.Version := 0;
           Add(obj);
           reader.Read();
         end
@@ -1243,9 +1244,9 @@ begin
   begin
     if frame = $93 Then
     begin
-        Result := Not (Not IsServer) and (frame = $93) and
+        Result := Not ((Not IsServer) and (frame = $93) and
           ((FSenderFrame = $10) or (FSenderFrame = $fe)) and
-          (FReceiverFrame = $E);
+          (FReceiverFrame = $E));
         ResetFrameSequence();
     end
     else if (frame = $73) and Not IsServer then

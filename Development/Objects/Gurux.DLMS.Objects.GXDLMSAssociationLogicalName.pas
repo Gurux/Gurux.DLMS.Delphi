@@ -541,7 +541,8 @@ begin
     Result := Integer(AssociationStatus);
   end
   else if e.Index = 9 Then
-    Result := TValue.From(TGXDLMSObject.GetLogicalName(FSecuritySetupReference))
+    if (FSecuritySetupReference <> '') then
+      Result := TValue.From(TGXDLMSObject.GetLogicalName(FSecuritySetupReference))
   else if e.Index = 10 Then
     Result := TValue.From(GetUserList(FUserList, e))
   else if e.Index = 11 Then

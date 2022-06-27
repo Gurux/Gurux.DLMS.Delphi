@@ -87,6 +87,8 @@ type
     property TimeZone: Integer read FTimeZone write FTimeZone;
 
     function ToString: string; override;
+
+    class function GetTimeZone():Integer;
   end;
 
 implementation
@@ -109,6 +111,15 @@ end;
 class function TGXDateTime.MinDateTime : TDateTime;
 begin
   Result := EncodeDate(1900, 01, 01); //01 Jan 1900 has a days value of 2.
+end;
+
+class function TGXDateTime.GetTimeZone():Integer;
+var
+  TZ: TTimeZoneInformation;
+  UTC_TIME: TDateTime;
+begin
+  GetTimeZoneInformation(TZ);
+  Result := TZ.Bias;
 end;
 
 procedure TGXDateTime.ReverseTZ;

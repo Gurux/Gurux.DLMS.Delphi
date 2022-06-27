@@ -43,6 +43,9 @@ TGXDLMSSecuritySetup = class(TGXDLMSObject)
   FSecurityPolicy: TSecurityPolicy;
   FSecuritySuite: TSecuritySuite;
   FClientSystemTitle, FServerSystemTitle : TBytes;
+  FGuek, FGbek, FGak, FKek: TBytes;
+
+  public
 
   constructor Create; overload;
   constructor Create(ln: string); overload;
@@ -56,6 +59,10 @@ TGXDLMSSecuritySetup = class(TGXDLMSObject)
 
   property ServerSystemTitle: TBytes read FServerSystemTitle write FServerSystemTitle;
 
+  property Guek: TBytes read FGuek write FGuek;
+  property Gbek: TBytes read FGbek write FGbek;
+  property Gak: TBytes read FGak write FGak;
+  property Kek: TBytes read FKek write FKek;
 
   function GetValues() : TArray<TValue>;override;
 
@@ -73,6 +80,12 @@ implementation
 constructor TGXDLMSSecuritySetup.Create;
 begin
   inherited Create(TObjectType.otSecuritySetup);
+  if Version < 2 Then
+  begin
+    Guek := TBytes.Create( $00, $01, $02, $03, $04, $05, $06, $07, $08, $09, $0A, $0B, $0C, $0D, $0E, $0F);
+    Gbek := TBytes.Create( $00, $01, $02, $03, $04, $05, $06, $07, $08, $09, $0A, $0B, $0C, $0D, $0E, $0F);
+    Gak := TBytes.Create( $D0, $D1, $D2, $D3, $D4, $D5, $D6, $D7, $D8, $D9, $DA, $DB, $DC, $DD, $DE, $DF);
+end;
 end;
 
 constructor TGXDLMSSecuritySetup.Create(ln: string);

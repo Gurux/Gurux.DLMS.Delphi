@@ -8,16 +8,17 @@ uses
   Gurux.DLMS.GXDLMSServer, Gurux.DLMS.GXDLMSTranslator,
   GXByteBuffer, Gurux.DLMS.GXReplyData,
   Gurux.DLMS.Authentication, Gurux.DLMS.InterfaceType, GXDLMSMeter,
-  Gurux.DLMS.GXServerReply;
+  Gurux.DLMS.GXServerReply, IdBaseComponent, IdComponent, IdCustomTCPServer,
+  IdTCPServer, IdContext, IdGlobal;
 
 type
   TForm3 = class(TForm)
-    ServerSocket1: TServerSocket;
     Output: TMemo;
+    IdTCPServer1: TIdTCPServer;
     procedure OnCreate(Sender: TObject);
-    procedure OnClientConnect(Sender: TObject; Socket: TCustomWinSocket);
-    procedure OnClientDisconnect(Sender: TObject; Socket: TCustomWinSocket);
-    procedure OnReceived(Sender: TObject; Socket: TCustomWinSocket);
+    procedure IdTCPServer1Connect(AContext: TIdContext);
+    procedure IdTCPServer1Disconnect(AContext: TIdContext);
+    procedure IdTCPServer1Execute(AContext: TIdContext);
   private
     { Private declarations }
     Reply: TGXByteBuffer;
@@ -33,52 +34,64 @@ implementation
 
 {$R *.dfm}
 
-procedure TForm3.OnClientConnect(Sender: TObject; Socket: TCustomWinSocket);
+procedure TForm3.IdTCPServer1Connect(AContext: TIdContext);
 begin
   Output.Lines.Add('Client connect');
 end;
 
-procedure TForm3.OnClientDisconnect(Sender: TObject; Socket: TCustomWinSocket);
+procedure TForm3.IdTCPServer1Disconnect(AContext: TIdContext);
 begin
-  Output.Lines.Add('Client disconnect');
+  if (Output <> Nil)  then
+  begin
+    Output.Lines.Add('Client disconnect');
+  end;
   Reply.Clear();
+end;
+
+procedure TForm3.IdTCPServer1Execute(AContext: TIdContext);
+var
+  RawBytes: TIdBytes;
+  available: Longint;
+  bytes: TBytes;
+  sr: TGXServerReply;
+begin
+  try
+   if AContext.Connection.IOHandler.InputBufferIsEmpty Then
+    begin
+      AContext.Connection.IOHandler.CheckForDataOnSource(10);
+      if AContext.Connection.IOHandler.InputBufferIsEmpty then Exit;
+    end;
+    RawBytes := TIdBytes.Create();
+    AContext.Connection.IOHandler.InputBuffer.ExtractToBytes(RawBytes);
+    bytes := TBytes.Create();
+    SetLength(bytes, Length(RawBytes));
+    BytesToRaw(RawBytes, bytes[0], Length(RawBytes));
+    Output.Lines.Add('RX: ' + TGXByteBuffer.ToHexString(bytes));
+    sr := TGXServerReply.Create(bytes);
+    try
+      FMeter.HandleRequest(sr);
+      //Reply is null if we do not want to send any data to the client.
+      //This is done if client try to make connection with wrong device ID.
+      if sr.Reply <> Nil Then
+      begin
+        Output.Lines.Add('TX: ' + TGXByteBuffer.ToHexString(sr.Reply));
+        RawBytes :=RawToBytes(sr.Reply[0], Length(sr.Reply));
+        AContext.Connection.IOHandler.Write(RawBytes);
+      end;
+    finally
+      FreeAndNil(sr);
+    end;
+  finally
+  end;
 end;
 
 procedure TForm3.OnCreate(Sender: TObject);
 begin
   Reply:= TGXByteBuffer.Create();
-  ServerSocket1.Port := 4061;
-  ServerSocket1.Active := true;
+  IdTCPServer1.DefaultPort := 4061;
+  IdTCPServer1.Active := true;
   FMeter := TGXDLMSMeter.Create;
-  Output.Lines.Add('Meter created to port: ' + IntToStr(ServerSocket1.Port));
-end;
-
-procedure TForm3.OnReceived(Sender: TObject; Socket: TCustomWinSocket);
-var
-  available: Longint;
-  bytes: TBytes;
-  data: TGXReplyData;
-  t: TGXDLMSTranslator;
-  sr: TGXServerReply;
-begin
-   t := Nil;
-  try
-    available:= Socket.ReceiveLength;
-    bytes := TBytes.Create();
-    SetLength(bytes, available);
-    Socket.ReceiveBuf(bytes[0], available);
-    Output.Lines.Add(TGXByteBuffer.ToHexString(bytes));
-    sr := TGXServerReply.Create(bytes);
-    try
-      FMeter.HandleRequest(sr);
-    finally
-      FreeAndNil(sr);
-    end;
-
-  finally
-    FreeAndNil(data);
-    FreeAndNil(t);
-  end;
+  Output.Lines.Add('Meter created to port: ' + IntToStr(IdTCPServer1.DefaultPort));
 end;
 
 end.
