@@ -39,12 +39,24 @@ GXByteBuffer, Gurux.DLMS.ErrorCode, GXDataInfo, GXCommon, Gurux.DLMS.Command,
 Gurux.DLMS.GXDLMSLNParameters, TranslatorOutputType, AccessServiceCommandType,
 Gurux.DLMS.GXReplyData, Gurux.DLMS.DataType, Gurux.DLMS.GXDateTime,
 Gurux.DLMS.GXDLMSServerNotifier,
+Gurux.DLMS.ActionRequestType,
 Gurux.DLMS.GXDLMSConnectionEventArgs;
 
 type
 
 TGXDLMSLNCommandHandler = class
 private
+  class procedure MethodRequest(
+    settings: TGXDLMSSettings;
+    tp: TActionRequestType;
+    invokeId: BYTE;
+    server: TGXDLMSServerNotifier;
+    data: TGXByteBuffer;
+    connectionInfo: TGXDLMSConnectionEventArgs;
+    replyData: TGXByteBuffer;
+    xml: TGXDLMSTranslatorStructure;
+    cipheredCommand: TCommand);
+
   class procedure AppendAttributeDescriptor(
       xml: TGXDLMSTranslatorStructure; ci:
       Integer;
@@ -149,12 +161,21 @@ public
 end;
 implementation
 uses Gurux.DLMS.GetCommandType, Gurux.DLMS.SingleReadResponse,
-Gurux.DLMS.SetRequestType, Gurux.DLMS.ActionRequestType,
-Gurux.DLMS.GXDLMSServer,
+Gurux.DLMS.SetRequestType,
 Gurux.DLMS.Objects.GXDLMSAssociationLogicalName,
 Gurux.DLMS.Objects.GXDLMSAssociationShortName,
 Gurux.DLMS.Objects.GXDLMSProfileGeneric,
 Gurux.DLMS.GXDLMS,
+Gurux.DLMS.ActionResponseType,
+Gurux.DLMS.ConnectionState,
+Gurux.DLMS.GXDLMSConfirmedServiceError,
+Gurux.DLMS.ConfirmedServiceError,
+Gurux.DLMS.ServiceError,
+Gurux.DLMS.Service,
+Gurux.DLMS.Enums.MethodAccessMode3,
+Gurux.DLMS.GXDLMSLongTransaction,
+Gurux.DLMS.AssociationStatus,
+Gurux.DLMS.Objects.GXDLMSSecuritySetup,
 Gurux.DLMS.AccessMode;
 
 class procedure TGXDLMSLNCommandHandler.AppendAttributeDescriptor(
@@ -724,6 +745,230 @@ begin
     end;
 end;
 
+class procedure TGXDLMSLNCommandHandler.MethodRequest(
+    settings: TGXDLMSSettings;
+    tp: TActionRequestType;
+    invokeId: BYTE;
+    server: TGXDLMSServerNotifier;
+    data: TGXByteBuffer;
+    connectionInfo: TGXDLMSConnectionEventArgs;
+    replyData: TGXByteBuffer;
+    xml: TGXDLMSTranslatorStructure;
+    cipheredCommand: TCommand);
+var
+  error : TErrorCode;
+  bb: TGXByteBuffer;
+  ci: TObjectType;
+  ln: TBytes;
+  id: BYTE;
+  selection: BYTE;
+  lastBlock: BYTE;
+  p: TGXDLMSLNParameters;
+  info: TGXDataInfo;
+  di: TGXDataInfo;
+  size: Integer;
+  realSize: Integer;
+  obj: TGXDLMSObject;
+  e: TValueEventArgs;
+  args: TArray<TValueEventArgs>;
+  actionReply: TBytes;
+  parameters: TValue;
+  blockNumber: UINT32;
+begin
+    error := TErrorCode.ecOk;
+    bb := TGXByteBuffer.Create();
+    // CI
+    ci := TObjectType(data.GetUInt16());
+    SetLength(ln, 6);
+    data.Get(ln);
+    // Attribute Id
+    id := data.GetUInt8();
+    parameters := Nil;
+    p := TGXDLMSLNParameters.Create(settings, invokeId, TCommand.MethodResponse,
+        Integer(TActionResponseType.Normal),
+        Nil, bb, 0, cipheredCommand);
+    if tp = TActionRequestType.arNormal Then
+    begin
+        // Get parameters.
+        selection := data.GetUInt8();
+        if xml <> Nil Then
+        begin
+            AppendMethodDescriptor(xml, Integer(ci), ln, id);
+            if selection <> 0 Then
+            begin
+                //MethodInvocationParameters
+                xml.AppendStartTag(LONGWORD(TTranslatorTags.MethodInvocationParameters));
+                di := TGXDataInfo.Create();
+                di.xml := xml;
+                TGXCommon.GetData(data, di);
+                xml.AppendEndTag(LONGWORD(TTranslatorTags.MethodInvocationParameters));
+            end;
+            Exit;
+        end;
+        if selection <> 0 Then
+        begin
+            info := TGXDataInfo.Create();
+            parameters := TGXCommon.GetData(data, info);
+        end;
+    end
+    else if tp = TActionRequestType.arWithFirstBlock Then
+    begin
+        p.requestType := BYTE(TActionResponseType.NextBlock);
+        p.status := $FF;
+        lastBlock := data.GetUInt8();
+        p.multipleBlocks := lastBlock = 0;
+        blockNumber := data.GetUInt32();
+        if (xml = Nil) and (blockNumber <> settings.BlockIndex) Then
+        begin
+            p.status := BYTE(TErrorCode.ecDataBlockNumberInvalid);
+            Exit;
+        end;
+        settings.IncreaseBlockIndex();
+        size := TGXCommon.GetObjectCount(data);
+        realSize := data.Size - data.Position;
+        if size <> realSize Then
+        begin
+            if xml = Nil Then
+            begin
+                p.status := BYTE(TErrorCode.ecDataBlockUnavailable);
+                Exit;
+            end;
+            xml.AppendComment('Invalid block size.');
+        end;
+        if xml <> Nil Then
+        begin
+            AppendMethodDescriptor(xml, Integer(ci), ln, id);
+            xml.AppendStartTag(LONGWORD(TTranslatorTags.DataBlock));
+            xml.AppendLine(LONGWORD(TTranslatorTags.LastBlock), '', xml.IntegerToHex(lastBlock, 2));
+            xml.AppendLine(LONGWORD(TTranslatorTags.BlockNumber), '', xml.IntegerToHex(blockNumber, 8));
+            xml.AppendLine(LONGWORD(TTranslatorTags.RawData), '', data.RemainingHexString(false));
+            xml.AppendEndTag(LONGWORD(TTranslatorTags.DataBlock));
+            exit;
+        end;
+    end;
+
+    obj := Nil;
+    if (ci = TObjectType.otAssociationLogicalName) and (TGXCommon.ToLogicalName(ln) = '0.0.40.0.0.255') Then
+    begin
+      obj := settings.GetAssignedAssociation();
+    end;
+    if obj = Nil Then
+    begin
+      obj := settings.Objects.FindByLN(ci, TGXCommon.ToLogicalName(ln));
+    end;
+    if ((Integer(settings.Connected) and Integer(TConnectionState.csDlms)) = 0) and
+     (cipheredCommand = TCommand.None) and ((ci <> TObjectType.otAssociationLogicalName) or (id <> 1)) Then
+    begin
+      //TODO:  replyData.SetArray(TGXDLMSServer.GenerateConfirmedServiceError(TConfirmedServiceError.InitiateError,
+      //                TServiceError.Service, BYTE(TService.Unsupported)));
+        Exit;
+    end;
+    e := Nil;
+    if obj = Nil Then
+    begin
+      obj := server.FindObject(ci, 0, TGXCommon.ToLogicalName(ln));
+    end;
+    if obj = Nil Then
+    begin
+      // Device reports a undefined object.
+      error := TErrorCode.ecUndefinedObject;
+    end
+    else
+    begin
+        if settings.GetAssignedAssociation() <> Nil Then
+        begin
+          //TODO: p.AccessMode := Integer(settings.GetAssignedAssociation().GetMethodAccess3(obj, id));
+        end;
+        e := TValueEventArgs.Create(obj, id, 0, parameters);
+        e.FSettings := settings;
+        args := TArray<TValueEventArgs>.Create(e);
+        e.InvokeId := invokeId;
+        if ((Integer(server.GetMethodAccess(e)) and Integer(TMethodAccessMode3.Access)) = 0) Then
+        begin
+            error := TErrorCode.ecReadWriteDenied;
+        end
+        else
+        begin
+            try
+            begin
+                if p.multipleBlocks Then
+                begin
+                  server.SetTransaction(TGXDLMSLongTransaction.Create(args, TCommand.MethodRequest, data));
+                end
+                //Check transaction so invoke is not called multiple times.
+                //This might happen when all data can't fit to one PDU.
+                else if server.GetTransaction() = Nil Then
+                begin
+                    p.requestType := BYTE(TActionResponseType.Normal);
+                    server.PreAction(args);
+                    if e.Handled Then
+                    begin
+                      actionReply := e.Value.AsType<TBytes>();
+                    end
+                    else
+                    begin
+                      actionReply := obj.Invoke(e);
+                      server.PostAction(args);
+                    end;
+                    //Set default action reply if not given.
+                    if (actionReply <> Nil) and (e.Error = TErrorCode.ecOk) Then
+                    begin
+                      //Add return parameters
+                      bb.SetUInt8(1);
+                      //Add parameters error code.
+                      bb.SetUInt8(0);
+                      TGXCommon.SetData(bb, TGXDLMSConverter.GetDLMSDataType(TValue.From(actionReply)), TValue.From(actionReply));
+                    end
+                    else
+                    begin
+                      error := e.Error;
+                      //Add return parameters
+                      bb.SetUInt8(0);
+                    end;
+                end;
+            end;
+            except
+             on E: Exception do
+             begin
+              error := TErrorCode.ecReadWriteDenied;
+              //Add return parameters
+              bb.SetUInt8(0);
+            end;
+        end;
+        p.InvokeId := e.InvokeId;
+    end;
+    if error <> TErrorCode.ecOk Then
+    begin
+        p.status := BYTE(error);
+    end;
+    TGXDLMS.GetLNPdu(p, replyData);
+    //If all reply data doesn't fit to one PDU.
+    if (server.GetTransaction() = Nil) and (p.data.Available <> 0) Then
+    begin
+      server.SetTransaction(TGXDLMSLongTransaction.Create(args, TCommand.MethodResponse, p.data));
+    end;
+    //If High level authentication fails.
+    if (error = TErrorCode.ecOk) and (obj is TGXDLMSAssociationLogicalName) and (id = 1) Then
+    begin
+        if TGXDLMSAssociationLogicalName(obj).AssociationStatus = TAssociationStatus.Associated Then
+        begin
+          server.Connected(connectionInfo);
+          Settings.Connected := TConnectionState(Integer(Settings.Connected) or Integer(TConnectionState.csDlms));
+        end
+        else
+        begin
+          server.InvalidConnection(connectionInfo);
+          settings.Connected := TConnectionState(Integer(Settings.Connected) and not Integer(TConnectionState.csDlms));
+        end;
+    end;
+    //Start to use new keys.
+    if (e <> Nil) and (error = TErrorcode.ecOk) and (obj is TGXDLMSSecuritySetup) and (id = 2) Then
+    begin
+      //TODO: TGXDLMSSecuritySetup(obj).ApplyKeys(settings, e);
+    end;
+end;
+end;
+
 // Handle action request.
 class procedure TGXDLMSLNCommandHandler.HandleMethodRequest(
     settings: TGXDLMSSettings;
@@ -745,13 +990,6 @@ begin
   // Get invoke ID and priority.
   invokeId := data.GetUInt8();
   settings.UpdateInvokeId(invokeId);
-  // CI
-  ci := data.GetUInt16();
-  SetLength(ln, 6);
-  data.Get(ln);
-  // Attribute ID
-  id := data.GetUInt8();
-  selection := data.GetUInt8();
   if xml <> Nil Then
   begin
       xml.AppendStartTag(LONGWORD(TCommand.MethodRequest));
@@ -778,6 +1016,7 @@ begin
       end;
       xml.AppendEndTag(LONGWORD(TCommand.MethodRequest));
   end;
+  MethodRequest(settings, TActionRequestType(tp), invokeID, server, data, connectionInfo, replyData, xml, cipheredCommand);
 end;
 
 class procedure TGXDLMSLNCommandHandler.HandleAccessRequest(

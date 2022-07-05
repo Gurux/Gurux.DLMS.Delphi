@@ -88,6 +88,17 @@ begin
   ln.XDLMSContextInfo.Conformance := TConformance(Integer(TConformance.cfGet) or Integer(TConformance.cfMultipleReferences) or
   Integer(TConformance.cfSet) or Integer(TConformance.cfSelectiveAccess));
   Items.Add(ln);
+   //Add GMAC High authentication.
+  ln := TGXDLMSAssociationLogicalName.Create('0.0.40.0.3.255');
+  ln.ClientSAP := 1;
+  ln.XDLMSContextInfo.MaxSendPduSize := 1024;
+  ln.XDLMSContextInfo.MaxReceivePduSize := 1024;
+  ln.AuthenticationMechanismName.MechanismId := TAuthentication.atHighGMAC;
+  // Only get, set, multiple references and parameterized access services
+  // are allowed. https://www.gurux.fi/Gurux.DLMS.Conformance
+  ln.XDLMSContextInfo.Conformance := TConformance(Integer(TConformance.cfGet) or Integer(TConformance.cfMultipleReferences) or
+  Integer(TConformance.cfSet) or Integer(TConformance.cfSelectiveAccess));
+  Items.Add(ln);
 
   //Add Logical device Name
   ldn := TGXDLMSData.Create('0.0.42.0.0.255');

@@ -78,6 +78,8 @@ TGXDLMSAssociationLogicalName = class(TGXDLMSObject)
   destructor Destroy; override;
 
   private
+  function ReplyToHlsAuthentication(e: TValueEventArgs): TBytes;
+
   function GetObjects() : TBytes;
   procedure GetAccessRights(item : TGXDLMSObject; data : TGXByteBuffer);
 
@@ -197,7 +199,10 @@ end;
 
 implementation
 
-uses GXObjectFactory, Gurux.DLMS.Enums.ApplicationContextName;
+uses GXObjectFactory,
+Gurux.DLMS.Enums.ApplicationContextName,
+Gurux.DLMS.GXSecure,
+Gurux.DLMS.ErrorCode;
 
 constructor TGXDLMSAssociationLogicalName.Create;
 begin
@@ -724,9 +729,101 @@ begin
     raise Exception.Create('SetValue failed. Invalid attribute index.');
 end;
 
+function TGXDLMSAssociationLogicalName.ReplyToHlsAuthentication(e: TValueEventArgs): TBytes;
+var
+  ic: UInt16;
+  secret: TBytes;
+  equals: Boolean;
+  clientChallenge: TBytes;
+  serverChallenge: TBytes;
+  bb: TGXByteBuffer;
+begin
+    ic := 0;
+    equals := False;
+    clientChallenge := e.Parameters.AsType<TBytes>();
+    if e.FSettings.Authentication = TAuthentication.atHighGMAC Then
+    begin
+        secret := e.FSettings.SourceSystemTitle;
+        bb := TGXByteBuffer.Create(clientChallenge);
+        try
+          bb.GetUInt8();
+          ic := bb.GetUInt32();
+        finally
+          FreeAndNil(bb);
+        end;
+    end
+    else if e.FSettings.Authentication = TAuthentication.atHighSHA256 Then
+    begin
+        bb := TGXByteBuffer.Create(clientChallenge);
+        try
+          bb.SetArray(Secret);
+          bb.SetArray(e.FSettings.SourceSystemTitle);
+          bb.SetArray(e.FSettings.Cipher.SystemTitle);
+          bb.SetArray(e.FSettings.StoCChallenge);
+          bb.SetArray(e.FSettings.CtoSChallenge);
+          secret := bb.ToArray();
+        finally
+          FreeAndNil(bb);
+        end;
+    end
+    else
+    begin
+        secret := Secret;
+    end;
+    if e.FSettings.Authentication <> TAuthentication.atHighECDSA Then
+    begin
+        serverChallenge := TGXSecure.Secure(e.FSettings, e.FSettings.Cipher, ic, e.FSettings.StoCChallenge, secret);
+        equals := (serverChallenge <> Nil) and (clientChallenge <> Nil) and
+        (Length(serverChallenge) = Length(clientChallenge)) and
+        CompareMem(@serverChallenge[0], @clientChallenge[0], Length(serverChallenge));
+    end;
+    if equals Then
+    begin
+        if e.FSettings.Authentication = TAuthentication.atHighGMAC Then
+        begin
+            secret := e.FSettings.Cipher.SystemTitle;
+            ic := e.FSettings.Cipher.InvocationCounter;
+            e.FSettings.Cipher.InvocationCounter := e.FSettings.Cipher.InvocationCounter + 1;
+        end
+        else
+        begin
+            secret := Secret;
+        end;
+        FAssociationStatus := TAssociationStatus.Associated;
+        if (e.FSettings.Authentication = TAuthentication.atHighSHA256) or
+            (e.FSettings.Authentication = TAuthentication.atHighECDSA) Then
+        begin
+            bb := TGXByteBuffer.Create();
+            try
+              if e.FSettings.Authentication = TAuthentication.atHighSHA256 Then
+              begin
+                  bb.SetArray(Secret);
+              end;
+              bb.SetArray(e.FSettings.Cipher.SystemTitle);
+              bb.SetArray(e.FSettings.SourceSystemTitle);
+              bb.SetArray(e.FSettings.CtoSChallenge);
+              bb.SetArray(e.FSettings.StoCChallenge);
+              secret := bb.ToArray();
+            finally
+              FreeAndNil(bb);
+            end;
+        end;
+        Result := TGXSecure.Secure(e.FSettings, e.FSettings.Cipher, ic, e.FSettings.CtoSChallenge, secret);
+    end
+    else //If the password does not match.
+    begin
+      FAssociationStatus := TAssociationStatus.NonAssociated;
+      e.Error := TErrorCode.ecReadWriteDenied;
+      Result := Nil;
+    end;
+end;
+
 function TGXDLMSAssociationLogicalName.Invoke(e: TValueEventArgs): TBytes;
 begin
-  raise Exception.Create('Invoke failed. Invalid attribute index.');
+  if e.FIndex = 1 then
+    Result := ReplyToHlsAuthentication(e)
+  else
+    raise Exception.Create('Invoke failed. Invalid attribute index.');
 end;
 
 class function TGXDLMSAssociationLogicalName.GetAttributeAccess(target: TGXDLMSObject; attributeIndex: Integer): Integer;

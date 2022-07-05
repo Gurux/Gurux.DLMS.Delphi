@@ -40,6 +40,7 @@ Gurux.DLMS.MethodAccessMode,
 Gurux.DLMS.Authentication,
 Gurux.DLMS.SourceDiagnostic,
 Gurux.DLMS.GXDLMSConnectionEventArgs,
+Gurux.DLMS.GXDLMSLongTransaction,
 Gurux.DLMS.GXDLMSObject;
 
 type
@@ -136,6 +137,9 @@ type
     /// </summary>
     /// <param name="args">Handled action requests.</param>
     procedure PostAction(args: TArray<TValueEventArgs>);Virtual;Abstract;
+
+    function GetTransaction(): TGXDLMSLongTransaction;Virtual;Abstract;
+    procedure SetTransaction(AValue: TGXDLMSLongTransaction);Virtual;Abstract;
 end;
 
 implementation

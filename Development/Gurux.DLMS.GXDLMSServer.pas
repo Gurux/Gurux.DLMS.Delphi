@@ -89,8 +89,6 @@ type
     function AddPduToFrame(cmd: TCommand;frame: BYTE; data: TGXByteBuffer): TBytes;
     function ReportExceptionResponse(ex: TGXDLMSExceptionResponse): TBytes;
     function ReportError(cmd: TCommand; error: TErrorCode):TBytes;
-    // Generate confirmed service error.
-    class function GenerateConfirmedServiceError(service: TConfirmedServiceError; error: TServiceError; code: BYTE): TBytes;
     // Handle received command.
     function HandleCommand(cmd: TCommand; data: TGXByteBuffer; sr: TGXServerReply; cipheredCommand: TCommand): TBytes;
     // Generates disconnect request.
@@ -113,11 +111,16 @@ type
     FReceivedData : TGXByteBuffer;
     // Reply data.
     FReplyData: TGXByteBuffer;
-    FTransaction: TGXDLMSLongTransaction;
     FDataReceived: TDateTime;
     FInitialized: Boolean;
+    FTransaction: TGXDLMSLongTransaction;
+
+    function GetTransaction(): TGXDLMSLongTransaction;override;
+
+    procedure SetTransaction(AValue: TGXDLMSLongTransaction);override;
 
   public
+
     // HDLC settings.
     Hdlc: TGXDLMSHdlcSetup;
 
@@ -144,12 +147,9 @@ type
     // Update short names.
     procedure UpdateShortNames(force: Boolean);
     procedure UpdateSecuritySettings(systemTitle: TBytes);
-    function NotifyFindObject(objectType: TObjectType; sn: Integer; ln: string): TGXDLMSObject;
-    function NotifyGetAttributeAccess(arg: TValueEventArgs):TAccessMode;
-    procedure NotifyPreRead(args: TArray<TValueEventArgs>);
-    procedure NotifyPreWrite(args: TArray<TValueEventArgs>);
-    procedure NotifyPostRead(args: TArray<TValueEventArgs>);
-    procedure NotifyPostWrite(args: TArray<TValueEventArgs>);
+
+    // Generate confirmed service error.
+    class function GenerateConfirmedServiceError(service: TConfirmedServiceError; error: TServiceError; code: BYTE): TBytes;
   end;
 
 implementation
@@ -179,6 +179,7 @@ begin
     Reset(false);
     if AType = TInterfaceType.Plc Then
       FSettings.MaxServerPDUSize := 134;
+    FSettings.Cipher := TGXCiphering.Create(TEncoding.ASCII.GetBytes('ABCDEFGH'));
 end;
 
 function TGXDLMSServer.AddPduToFrame(cmd: TCommand;frame: BYTE; data: TGXByteBuffer): TBytes;
@@ -1175,31 +1176,14 @@ begin
     end;
 end;
 
-function TGXDLMSServer.NotifyFindObject(objectType: TObjectType; sn: Integer; ln: string): TGXDLMSObject;
+function TGXDLMSServer.GetTransaction(): TGXDLMSLongTransaction;
 begin
-  Result := FindObject(objectType, sn, ln);
+   Result := FTransaction;
 end;
 
-function TGXDLMSServer.NotifyGetAttributeAccess(arg: TValueEventArgs):TAccessMode;
+procedure TGXDLMSServer.SetTransaction(AValue: TGXDLMSLongTransaction);
 begin
-  Result := GetAttributeAccess(arg);
-end;
-
-procedure TGXDLMSServer.NotifyPreWrite(args: TArray<TValueEventArgs>);
-begin
-  PreWrite(args);
-end;
-procedure TGXDLMSServer.NotifyPreRead(args: TArray<TValueEventArgs>);
-begin
-  PreRead(args);
-end;
-procedure TGXDLMSServer.NotifyPostWrite(args: TArray<TValueEventArgs>);
-begin
-  PostWrite(args);
-end;
-procedure TGXDLMSServer.NotifyPostRead(args: TArray<TValueEventArgs>);
-begin
-  PostRead(args);
+  FTransaction := AValue;
 end;
 
 end.
