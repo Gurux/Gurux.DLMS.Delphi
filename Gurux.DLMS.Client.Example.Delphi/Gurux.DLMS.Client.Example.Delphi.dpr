@@ -43,7 +43,7 @@ GXCommon,
 System.Generics.Collections,
 GXCmdParameter,
 Gurux.DLMS.TraceLevel, ActiveX, Gurux.DLMS.GXDLMSObject, Gurux.DLMS.ObjectType,
-Gurux.DLMS.Security, Gurux.DLMS.GXDLMSClient;
+Gurux.DLMS.Security, Gurux.DLMS.SecuritySuite, Gurux.DLMS.GXDLMSClient;
 
 var
   p : TGXProgram;
@@ -69,6 +69,7 @@ var
   tmp: TArray<String>;
   obj: TGXDLMSObject;
   Security: TSecurity;
+  SecuritySuite: TSecuritySuite;
   invocationCounter: string;
   AutoIncreaseInvokeID: boolean;
   outputFile: string;
@@ -78,6 +79,7 @@ var
   ManufacturerId: String;
 begin
   Security := TSecurity.None;
+  SecuritySuite := TSecuritySuite.Suite0;
   Host := '';
   ManufacturerId := '';
   Port := 0;
@@ -100,7 +102,7 @@ begin
 {$ENDIF}
 {$ENDIF}
   try
-    parameters := TGXCommon.GetParameters('h:p:c:s:r:i:It:a:p:P:g:C:n:v:o:l:W:w:f:L:');
+    parameters := TGXCommon.GetParameters('h:p:c:s:r:i:It:a:p:P:g:C:n:v:o:l:W:w:f:L:V:');
     for it in parameters do
     begin
       case it.Tag of
@@ -209,6 +211,13 @@ begin
           Security := TSecurity.AuthenticationEncryption
         else
           raise Exception.Create('Invalid Ciphering option. (None, Authentication, Encryption, AuthenticationEncryption)');
+        'V':
+        if it.Value = 'Suite0' Then
+          SecuritySuite := TSecuritySuite.Suite0
+        else if it.Value = 'Suite1' Then
+           SecuritySuite := TSecuritySuite.Suite1
+        else
+          raise Exception.Create('Invalid security suite option. (Suite0, Suite1)');
       'c':
           clientAddress := StrToInt(it.Value);
       's':
@@ -259,6 +268,7 @@ begin
     try
       p := TGXProgram.Create(UseLogicalNameReferencing, ClientAddress,
         ServerAddress, Authentication, Password, InterfaceType, Host, Port, trace, security,
+        SecuritySuite,
         invocationCounter, AutoIncreaseInvokeID, GbtWindowSize,WindowSize,
         MaxInfo, ManufacturerId);
       if readObjects = '' Then

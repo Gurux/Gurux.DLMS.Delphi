@@ -127,7 +127,8 @@ begin
       else if settings.Authentication = TAuthentication.atHighGMAC Then
       begin
         //SC is always Security.Authentication.
-        p := TAesGcmParameter.Create(0, TSecurity.Authentication, ic,
+        p := TAesGcmParameter.Create(0, TSecurity.Authentication,
+            cipher.SecuritySuite, ic,
             secret, cipher.BlockCipherKey, cipher.AuthenticationKey);
         try
           p.&Type := TCountType.Tag;

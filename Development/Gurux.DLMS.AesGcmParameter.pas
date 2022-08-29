@@ -33,13 +33,18 @@
 unit Gurux.DLMS.AesGcmParameter;
 
 interface
-uses SysUtils, GXByteBuffer, Gurux.DLMS.Security, Gurux.DLMS.CountType,
+uses SysUtils,
+GXByteBuffer,
+Gurux.DLMS.Security,
+Gurux.DLMS.SecuritySuite,
+Gurux.DLMS.CountType,
 Gurux.DLMS.GXDLMSTranslatorStructure;
 
 type
   TAesGcmParameter = class
     FTag: Byte;
     FSecurity: TSecurity;
+    FSecuritySuite: TSecuritySuite;
     FInvocationCounter: LongWord;
     FSystemTitle: TBytes;
     FBlockCipherKey: TBytes;
@@ -55,6 +60,7 @@ type
     xml: TGXDLMSTranslatorStructure;
     property Tag: Byte read FTag write FTag;
     property Security: TSecurity read FSecurity write FSecurity;
+    property SecuritySuite: TSecuritySuite read FSecuritySuite write FSecuritySuite;
     property InvocationCounter: LongWord read FInvocationCounter write FInvocationCounter;
     property SystemTitle: TBytes read FSystemTitle write FSystemTitle;
     property BlockCipherKey: TBytes read FBlockCipherKey write FBlockCipherKey;
@@ -77,6 +83,7 @@ type
   constructor Create(
       tag: Byte;
       Security: TSecurity;
+      SecuritySuite: TSecuritySuite;
       invocationCounter: LongWord;
       systemTitle: TBytes;
       blockCipherKey: TBytes;
@@ -99,6 +106,7 @@ implementation
 constructor TAesGcmParameter.Create(
   tag: Byte;
   Security: TSecurity;
+  SecuritySuite: TSecuritySuite;
   invocationCounter: LongWord;
   systemTitle: TBytes;
   blockCipherKey: TBytes;
@@ -106,6 +114,7 @@ constructor TAesGcmParameter.Create(
 begin
   FTag := tag;
   FSecurity := security;
+  FSecuritySuite := SecuritySuite;
   FInvocationCounter := invocationCounter;
   FSystemTitle := systemTitle;
   FBlockCipherKey := blockCipherKey;
@@ -133,6 +142,8 @@ begin
   try
     sb.Append('Security: ');
     sb.Append(Integer(FSecurity));
+    sb.Append(' SecuritySuite: ');
+    sb.Append(Integer(FSecuritySuite));
     sb.Append(' Invocation Counter: ');
     sb.Append(FInvocationCounter);
     sb.Append(' SystemTitle: ');

@@ -197,8 +197,8 @@ var
 begin
   if Security <> TSecurity.None Then
   begin
-    p := TAesGcmParameter.Create(tag, FSecurity, FInvocationCounter,
-                                                title, FBlockCipherKey, FAuthenticationKey);
+    p := TAesGcmParameter.Create(tag, FSecurity, FSecuritySuite,
+        FInvocationCounter, title, FBlockCipherKey, FAuthenticationKey);
     try
       Result := TGXDLMSChippering.EncryptAesGcm(p, data);
     finally

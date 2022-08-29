@@ -62,6 +62,7 @@ uses System.Generics.Collections, DateUtils, Classes, System.SysUtils, Rtti,
   Gurux.DLMS.TraceLevel,
   Gurux.DLMS.Conformance,
   Gurux.DLMS.Security,
+  Gurux.DLMS.SecuritySuite,
   Gurux.DLMS.Objects.GXDLMSData,
   Gurux.DLMS.AccessServiceCommandType,
   Gurux.DLMS.GXDLMSAccessItem;
@@ -100,6 +101,7 @@ TGXProgram = class
     APort: Integer;
     ATrace: TTraceLevel;
     ASecurity: TSecurity;
+    ASecuritySuite: TSecuritySuite;
     AInvocationCounter: string;
     AAutoIncreaseInvokeID: Boolean;
     GbtWindowSize: BYTE;
@@ -161,6 +163,7 @@ begin
   WriteLn(' -t [Error, Warning, Info, Verbose] Trace messages.');
   WriteLn(' -g "0.0.1.0.0.255:1; 0.0.1.0.0.255:2" Get selected object(s) with given attribute index.');
   WriteLn(' -C \t Security Level. (None, Authentication, Encrypted, AuthenticationEncryption)');
+  WriteLn('-V \t Security Suite version. (Default: Suite0). (Suite0, Suite1 or Suite2)');
   WriteLn(' -v \t Invocation counter data object Logical Name. Ex. 0.0.43.1.0.255');
   WriteLn(' -I \t Auto increase invoke ID');
   WriteLn(' -o \t Cache association view to make reading faster. Ex. -o C:\device.xml');
@@ -195,6 +198,7 @@ constructor TGXProgram.Create(AUseLogicalNameReferencing : Boolean;
     APort: Integer;
     ATrace: TTraceLevel;
     ASecurity: TSecurity;
+    ASecuritySuite: TSecuritySuite;
     AInvocationCounter: string;
     AAutoIncreaseInvokeID: Boolean;
     GbtWindowSize: BYTE;
@@ -217,6 +221,7 @@ begin
   Client := TGXDLMSSecureClient.Create(AUseLogicalNameReferencing, AClientAddress, AServerAddress,
             AAuthentication, APassword, AIntefaceType);
   Client.Ciphering.Security := ASecurity;
+  Client.Ciphering.SecuritySuite := ASecuritySuite;
   Client.AutoIncreaseInvokeID := AAutoIncreaseInvokeID;
   Client.GbtWindowSize := GbtWindowSize;
   Client.HdlcSettings.WindowSizeTX := WindowSize;

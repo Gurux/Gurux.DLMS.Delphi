@@ -48,7 +48,7 @@ strict private
   public
     class function EncryptAesGcm(param: TAesGcmParameter; plainText: TBytes): TBytes;static;
   strict private
-    class function GetAuthenticatedData(security: TSecurity; AuthenticationKey: TBytes;
+    class function GetAuthenticatedData(param: TAesGcmParameter;
       plainText: TBytes): TBytes;static;
   public
     class function DecryptAesGcm(p: TAesGcmParameter; data: TGXByteBuffer) :TBytes;static;
@@ -82,7 +82,7 @@ begin
   data := TGXByteBuffer.Create();
   try
     if (param.&Type = TCountType.Packet) then
-      data.SetUInt8((Byte(param.Security)));
+      data.SetUInt8(Byte(param.Security) or Byte(param.SecuritySuite));
 
     SetLength(tmp, 4);
     tmp[0] := ((param.InvocationCounter shr 24) and $FF);
@@ -95,7 +95,7 @@ begin
     // WriteLn('Encrypted data:' + TGXByteBuffer.ToHexString(plainText));
   {$ENDIF}
 
-    aad := GetAuthenticatedData(param.Security, param.AuthenticationKey, plainText);
+    aad := GetAuthenticatedData(param, plainText);
     gcm := TGXDLMSChipperingStream.Create(param.Security, True, param.BlockCipherKey, aad, GetNonse(param.InvocationCounter,
           param.SystemTitle), nil);
     try
@@ -160,18 +160,18 @@ begin
 
 end;
 
-class function TGXDLMSChippering.GetAuthenticatedData(security: TSecurity; AuthenticationKey: TBytes;
+class function TGXDLMSChippering.GetAuthenticatedData(param: TAesGcmParameter;
   plainText: TBytes): TBytes;
 var
   tmp2 : TGXByteBuffer;
   begin
   Result := nil;
-  if (security = TSecurity.Authentication) then
+  if (param.Security = TSecurity.Authentication) then
   begin
     tmp2 := TGXByteBuffer.Create();
     try
-      tmp2.Add(Byte(security));
-      tmp2.SetArray(AuthenticationKey);
+      tmp2.Add(Byte(param.Security) or Byte(param.SecuritySuite));
+      tmp2.SetArray(param.AuthenticationKey);
       tmp2.SetArray(plainText);
       Result := tmp2.ToArray;
     finally
@@ -180,18 +180,18 @@ var
     Exit;
   end
   else
-    if (security = TSecurity.Encryption) then
+    if (param.Security = TSecurity.Encryption) then
       begin
-        Result := AuthenticationKey;
+        Result := param.AuthenticationKey;
         Exit;
       end
     else
-      if (security = TSecurity.AuthenticationEncryption) then
+      if (param.Security = TSecurity.AuthenticationEncryption) then
       begin
         tmp2 := TGXByteBuffer.Create();
         try
-          tmp2.Add(Byte(security));
-          tmp2.SetArray(AuthenticationKey);
+          tmp2.Add(Byte(param.Security)or Byte(param.SecuritySuite));
+          tmp2.SetArray(param.AuthenticationKey);
           Result := tmp2.ToArray;
         finally
           FreeAndNil(tmp2);
@@ -362,7 +362,7 @@ begin
       data.Get(ciphertext);
       data.Get(tag);
   end;
-  aad := GetAuthenticatedData(p.Security, p.AuthenticationKey, ciphertext);
+  aad := GetAuthenticatedData(p, ciphertext);
   iv := GetNonse(p.InvocationCounter, p.SystemTitle);
   gcm := TGXDLMSChipperingStream.Create(p.Security, true, p.BlockCipherKey, aad, iv, tag);
   try

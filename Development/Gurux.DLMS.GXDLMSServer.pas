@@ -1044,7 +1044,7 @@ begin
       FSettings.EphemeralBlockCipherKey := Nil;
       FSettings.EphemeralBroadcastBlockCipherKey := Nil;
       FSettings.EphemeralAuthenticationKey := Nil;
-      FSettings.Cipher.SecuritySuite := TSecuritySuite.AES_GCM_128;
+      FSettings.Cipher.SecuritySuite := TSecuritySuite.Suite0;
       //FSettings.Cipher.Signing := TSigning.None;
     end;
   end;

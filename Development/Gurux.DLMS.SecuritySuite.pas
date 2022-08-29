@@ -39,10 +39,10 @@ type
 //Security suite Specifies authentication, encryption and key wrapping algorithm.
 TSecuritySuite =
 (
-    /// <summary>
-    /// AES-GCM-128 for authenticated encryption and AES-128 for key wrapping.
-    /// </summary>
-    AES_GCM_128
+    // Security suite zero is used.
+    Suite0 = 0,
+    // Security Suite one is used.
+    Suite1 = 1
 );
 
 implementation
