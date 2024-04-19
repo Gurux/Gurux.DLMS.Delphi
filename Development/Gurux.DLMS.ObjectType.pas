@@ -109,16 +109,35 @@ TObjectType =
   //To determine the IP 6 settings, use the Ip6Setup object.
   otIp6Setup = 48,
 
-  //When a certain occasion should cause a certain action, use an object of
-  //type Event, which the client system can enable. When enabled, and when the
-  //specified occasion occures, the event is sent the soonest possible.
-  //Information of the time of the occasion, the acknowledgement of the event,
-  //and its response time is included.
-  otEvent = 100,
+  // NTP Setup is used for time synchronisation.
+  otNtpSetup = 100,
 
-  //ExtendedRegister stores a value, and understands the type of the value.
-  //Refer to an object of this type by its logical name, using the OBIS
-  //identification code.
+  // Configure a ZigBee PRO device with information necessary
+  // to create or join the network.
+  otZigBeeSasStartup = 101,
+
+  // Configure the behaviour of a ZigBee PRO device on
+  // joining or loss of connection to the network.
+  otZigBeeSasJoin = 102,
+
+  //Configure the fragmentation feature of ZigBee PRO transport layer.
+  otZigBeeSasApsFragmentation = 103,
+
+  otZigBeeNetworkControl = 104,
+
+  otDataProtection = 30,
+
+  otAccount = 111,
+
+  otCredit = 112,
+
+  otCharge = 113,
+
+  otTokenGateway = 115,
+
+  // ExtendedRegister stores a value, and understands the type of the value.
+  // Refer to an object of this type by its logical name, using the OBIS
+  // identification code.
   otExtendedRegister = 4,
 
   //To determine the GPRS settings, use GprsSetup object.
@@ -242,16 +261,6 @@ TObjectType =
   //of the OBIS code.
   otRegisterTable = 61,
 
-  //To create a table of setpoints within the logical device, and to connect
-  //any / all entries to an analogue control point of the physical device, use
-  //RemoteAnalogueControl.
-  otRemoteAnalogueControl = 102,
-
-  //To create an array of switches within the logical device, and to connect
-  //any / all entries to a digital relay, to switch on or off any equipment
-  // = that is connected to the physical device, use RemoteDigitalControl.
-  otRemoteDigitalControl = 101,
-
   //SapAssigment stores information of assignment of the logical devices to
   //their SAP  = Service Access Points.
   otSapAssignment = 17,
@@ -289,14 +298,6 @@ TObjectType =
   //To determine Internet TCP/UDP protocol settings, use the TcpUdpSetup object.
   otTcpUdpSetup = 41,
 
-  //Use Tunnel, when you need to transfer data of a source by DLMS. All different
-  //kinds of sources need to implement a corresponding Tunnel to match the
-  //attributes, such as source, destination, QoS  = Quality od Service, message
-  //length, and EOM  = End of Message. Though source and destination addresses
-  //come from lower layers, the message should include information of the source
-  //and destination, too.
-  otTunnel = 103,
-
   //In an object of type UtilityTables each "Table"  = ANSI C12.19:1997 table data
   //is represented as an instance, and identified by its logical name.
   otUtilityTables = 26,
@@ -315,6 +316,15 @@ TObjectType =
   // S-FSK MAC Counters.
   otSFSKMacCounters = 53,
 
+  // IEC 61334-4-32 LLC setup
+  otIec61334_4_32LlcSetup = 55,
+
+  // S-FSK Reporting system list.
+  otSFSKReportingSystemList = 56,
+
+  // Arbitrator.
+  otArbitrator = 68,
+
   // G3-PLC MAC layer counters
   otG3PlcMacLayerCounters = 90,
 
@@ -324,13 +334,29 @@ TObjectType =
   // G3-PLC 6LoWPAN.
   otG3Plc6LoWPan = 92,
 
-  otAccount = 111,
+  // Function control.
+  otFunctionControl = 122,
 
-  otCredit = 112,
+  // Communication port protection.
+  otCommunicationPortProtection = 124,
 
-  otCharge = 113,
+  // LTE monitoring.
+  otLteMonitoring = 151,
 
-  otTokenGateway = 115,
+  // CoAP setup.
+  otCoAPSetup = 152,
+
+  // CoAP diagnostic.
+  otCoAPDiagnostic = 153,
+
+  // G3-PLC Hybrid RF MAC layer counters.
+  otG3PlcHybridRfMacLayerCounters = 160,
+
+  // G3-PLC Hybrid RF MAC setup.
+  otG3PlcHybridRfMacSetup = 161,
+
+  // G3-PLC Hybrid 6LoWPAN adaptation layer setup.
+  otG3PlcHybrid6LoWPANAdaptationLayerSetup = 162,
 
   otCompactData = 62,
 

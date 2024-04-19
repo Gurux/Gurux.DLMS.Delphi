@@ -31,7 +31,9 @@ package GuruxDLMS;
 requires
   rtl,
   IndySystem,
-  xmlrtl;
+  xmlrtl,
+  IndyProtocols,
+  IndyCore;
 
 contains
   Gurux.DLMS.AccessMode in 'Gurux.DLMS.AccessMode.pas',
@@ -280,7 +282,14 @@ contains
   Gurux.DLMS.Enums.MethodAccessMode3 in 'Enums\Gurux.DLMS.Enums.MethodAccessMode3.pas',
   Gurux.DLMS.AcseServiceProvider in 'Gurux.DLMS.AcseServiceProvider.pas',
   Gurux.DLMS.GXDLMSNotify in 'Gurux.DLMS.GXDLMSNotify.pas',
-  Gurux.DLMS.GXDLMSSecureNotify in 'Gurux.DLMS.GXDLMSSecureNotify.pas';
+  Gurux.DLMS.GXDLMSSecureNotify in 'Gurux.DLMS.GXDLMSSecureNotify.pas',
+  Gurux.DLMS.Objects.GXDLMSCoAPDiagnostic in 'Objects\Gurux.DLMS.Objects.GXDLMSCoAPDiagnostic.pas',
+  Gurux.DLMS.Objects.GXCoapMessagesCounter in 'Objects\Gurux.DLMS.Objects.GXCoapMessagesCounter.pas',
+  Gurux.DLMS.Objects.GXCoapRequestResponseCounter in 'Objects\Gurux.DLMS.Objects.GXCoapRequestResponseCounter.pas',
+  Gurux.DLMS.Objects.GXCoapBtCounter in 'Objects\Gurux.DLMS.Objects.GXCoapBtCounter.pas',
+  Gurux.DLMS.Objects.GXCoapCaptureTime in 'Objects\Gurux.DLMS.Objects.GXCoapCaptureTime.pas',
+  Gurux.DLMS.Objects.GXDLMSCoAPSetup in 'Objects\Gurux.DLMS.Objects.GXDLMSCoAPSetup.pas',
+  Gurux.DLMS.Objects.Enums.TransportMode in 'Objects\Enums\Gurux.DLMS.Objects.Enums.TransportMode.pas';
 
 end.
 

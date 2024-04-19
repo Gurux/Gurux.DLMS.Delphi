@@ -320,7 +320,12 @@ begin
   else if e.Index = 6 Then
     FNumberOfRetries := e.Value.AsInteger
   else if e.Index = 7 Then
-    FRepetitionDelay := e.Value.AsInteger
+  begin
+    if Version < 2 then
+    begin
+      FRepetitionDelay := e.Value.AsInteger;
+    end;
+  end
   else
     raise Exception.Create('SetValue failed. Invalid attribute index.');
 end;

@@ -43,7 +43,8 @@ GXCommon,
 System.Generics.Collections,
 GXCmdParameter,
 Gurux.DLMS.TraceLevel, ActiveX, Gurux.DLMS.GXDLMSObject, Gurux.DLMS.ObjectType,
-Gurux.DLMS.Security, Gurux.DLMS.SecuritySuite, Gurux.DLMS.GXDLMSClient;
+Gurux.DLMS.Security, Gurux.DLMS.SecuritySuite, Gurux.DLMS.GXDLMSClient,
+GXByteBuffer;
 
 var
   p : TGXProgram;
@@ -77,6 +78,9 @@ var
   WindowSize: Integer;
   MaxInfo: Integer;
   ManufacturerId: String;
+  SystemTitle : TBytes;
+  AuthenticationKey : TBytes;
+  BlockCipherKey : TBytes;
 begin
   Security := TSecurity.None;
   SecuritySuite := TSecuritySuite.Suite0;
@@ -102,7 +106,7 @@ begin
 {$ENDIF}
 {$ENDIF}
   try
-    parameters := TGXCommon.GetParameters('h:p:c:s:r:i:It:a:p:P:g:C:n:v:o:l:W:w:f:L:V:');
+    parameters := TGXCommon.GetParameters('h:p:c:s:r:i:It:a:p:P:g:C:n:v:o:l:W:w:f:L:V:T:A:B:');
     for it in parameters do
     begin
       case it.Tag of
@@ -194,7 +198,7 @@ begin
           Authentication := TAuthentication.atHighMd5
         else if it.Value = 'HighSha1' Then
           Authentication := TAuthentication.atHighSha1
-        else if it.Value = 'HighGmac' Then
+        else if CompareText(it.Value, 'HighGmac') = 0 Then
           Authentication := TAuthentication.atHighGmac
         else if it.Value = 'HighSha256' Then
           Authentication := TAuthentication.atHighSha256
@@ -218,6 +222,9 @@ begin
            SecuritySuite := TSecuritySuite.Suite1
         else
           raise Exception.Create('Invalid security suite option. (Suite0, Suite1)');
+      'T': SystemTitle := TGXByteBuffer.HexToBytes(it.Value);
+      'A': AuthenticationKey := TGXByteBuffer.HexToBytes(it.Value);
+      'B': BlockCipherKey := TGXByteBuffer.HexToBytes(it.Value);
       'c':
           clientAddress := StrToInt(it.Value);
       's':
@@ -270,7 +277,7 @@ begin
         ServerAddress, Authentication, Password, InterfaceType, Host, Port, trace, security,
         SecuritySuite,
         invocationCounter, AutoIncreaseInvokeID, GbtWindowSize,WindowSize,
-        MaxInfo, ManufacturerId);
+        MaxInfo, ManufacturerId, SystemTitle, AuthenticationKey, BlockCipherKey);
       if readObjects = '' Then
         p.ReadAll(outputFile)
       Else

@@ -107,7 +107,10 @@ TGXProgram = class
     GbtWindowSize: BYTE;
     WindowSize: Integer;
     MaxInfo: Integer;
-    ManufacturerId: string);
+    ManufacturerId: string;
+    SystemTitle : TBytes;
+    AuthenticationKey : TBytes;
+    BlockCipherKey : TBytes);
 
   procedure UpdateFrameCounter();
   procedure InitializeConnection();
@@ -204,7 +207,10 @@ constructor TGXProgram.Create(AUseLogicalNameReferencing : Boolean;
     GbtWindowSize: BYTE;
     WindowSize: Integer;
     MaxInfo: Integer;
-    ManufacturerId: string);
+    ManufacturerId: string;
+    SystemTitle : TBytes;
+    AuthenticationKey : TBytes;
+    BlockCipherKey : TBytes);
 begin
   FInvocationCounter := AInvocationCounter;
   WaitTime := 5000;
@@ -222,6 +228,13 @@ begin
             AAuthentication, APassword, AIntefaceType);
   Client.Ciphering.Security := ASecurity;
   Client.Ciphering.SecuritySuite := ASecuritySuite;
+  if SystemTitle <> Nil then
+    Client.Ciphering.SystemTitle := SystemTitle;
+  if AuthenticationKey <> Nil then
+    Client.Ciphering.AuthenticationKey := AuthenticationKey;
+ if BlockCipherKey <> Nil then
+    Client.Ciphering.BlockCipherKey := BlockCipherKey;
+
   Client.AutoIncreaseInvokeID := AAutoIncreaseInvokeID;
   Client.GbtWindowSize := GbtWindowSize;
   Client.HdlcSettings.WindowSizeTX := WindowSize;

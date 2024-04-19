@@ -92,7 +92,9 @@ Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacCounters,
 Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcMacNetworkAdministrationData,
 Gurux.DLMS.Objects.GXDLMSPrimeNbOfdmPlcApplicationsIdentification,
 Gurux.DLMS.Objects.GXDLMSSchedule,
-Gurux.DLMS.Objects.GXDLMSIecTwistedPairSetup;
+Gurux.DLMS.Objects.GXDLMSIecTwistedPairSetup,
+Gurux.DLMS.Objects.GXDLMSCoAPDiagnostic,
+Gurux.DLMS.Objects.GXDLMSCoAPSetup;
 
 // Reserved for internal use.
 class function TGXObjectFactory.CreateObject(tp : WORD) : TGXDLMSObject;
@@ -120,8 +122,6 @@ begin
      Result := TGXDLMSSecuritySetup.Create();
   TObjectType.otMacAddressSetup :
      Result := TGXDLMSMacAddressSetup.Create();
-  TObjectType.otEVENT :
-      Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otExtendedRegister :
       Result := TGXDLMSExtendedRegister.Create();
   TObjectType.otGprsSetup :
@@ -162,10 +162,6 @@ begin
       Result := TGXDLMSRegisterMonitor.Create();
   TObjectType.otRegisterTable :
       Result := TGXDLMSObject.Create(TObjectType(tp));
-  TObjectType.otRemoteAnalogueControl :
-      Result := TGXDLMSObject.Create(TObjectType(tp));
-  TObjectType.otRemoteDigitalControl :
-      Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otSapAssignment :
       Result := TGXDLMSSapAssignment.Create();
   TObjectType.otSchedule :
@@ -180,8 +176,6 @@ begin
     Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otTcpUdpSetup:
     Result := TGXDLMSTcpUdpSetup.Create();
-  TObjectType.otTunnel :
-    Result := TGXDLMSObject.Create(TObjectType(tp));
   TObjectType.otUtilityTables :
     Result := TGXDLMSUtilityTables.Create();
    TObjectType.otMBusMasterPortSetup :
@@ -200,8 +194,6 @@ begin
     Result := TGXDLMSTokenGateway.Create();
   TObjectType.otParameterMonitor :
     Result := TGXDLMSParameterMonitor.Create();
-  //TODO: TObjectType.otCompactData :
-  //TODO:   Result := TGXDLMSCompactData.Create();
   TObjectType.otLlcSscsSetup:
     Result := TGXDLMSLlcSscsSetup.Create();
   TObjectType.otPrimeNbOfdmPlcPhysicalLayerCounters:
@@ -216,6 +208,10 @@ begin
     Result := TGXDLMSPrimeNbOfdmPlcMacNetworkAdministrationData.Create();
   TObjectType.otPrimeNbOfdmPlcApplicationsIdentification:
     Result := TGXDLMSPrimeNbOfdmPlcApplicationsIdentification.Create();
+  TObjectType.otCoAPDiagnostic:
+    Result := TGXDLMSCoAPDiagnostic.Create();
+  TObjectType.otCoAPSetup:
+    Result := TGXDLMSCoAPSetup.Create();
   else
     Result := TGXDLMSObject.Create(TObjectType(tp));
   end;

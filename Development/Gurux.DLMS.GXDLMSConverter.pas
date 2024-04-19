@@ -235,7 +235,7 @@ begin
     otData: Result := 'GXDLMSData';
     otDemandRegister: Result := 'GXDLMSDemandRegister';
     otMacAddressSetup: Result := 'GXDLMSMacAddressSetup';
-    otEvent: Result := 'GXDLMSEvent';
+    otNtpSetup: Result := 'GXDLMSNtpSetup';
     otExtendedRegister: Result := 'GXDLMSExtendedRegister';
     otGprsSetup: Result := 'GXDLMSGprsSetup';
     otIecHdlcSetup: Result := 'GXDLMSIecHdlcSetup';
@@ -260,8 +260,8 @@ begin
     otWirelessModeQchannel: Result := 'GXDLMSWirelessModeQchannel';
     otMBusMasterPortSetup: Result := 'GXDLMSMBusMasterPortSetup';
     otRegisterTable: Result := 'GXDLMSRegisterTable';
-    otRemoteAnalogueControl: Result := 'GXDLMSRemoteAnalogueControl';
-    otRemoteDigitalControl: Result := 'GXDLMSRemoteDigitalControl';
+    otZigBeeSasJoin: Result := 'GXDLMSZigBeeSasJoin';
+    otZigBeeSasStartup: Result := 'GXDLMSZigBeeSasStartup';
     otSapAssignment: Result := 'GXDLMSSapAssignment';
     otImageTransfer: Result := 'GXDLMSImageTransfer';
     otSchedule: Result := 'GXDLMSSchedule';
@@ -271,7 +271,7 @@ begin
     otStatusMapping: Result := 'GXDLMSStatusMapping';
     otSecuritySetup: Result := 'GXDLMSSecuritySetup';
     otTcpUdpSetup: Result := 'GXDLMSTcpUdpSetup';
-    otTunnel: Result := 'GXDLMSTunnel';
+    otZigBeeSasApsFragmentation: Result := 'GXDLMSZigBeeSasApsFragmentation';
     otUtilityTables: Result := 'GXDLMSUtilityTables';
     otAccount: Result := 'GXDLMSAccount';
     otCredit: Result := 'GXDLMSCredit';
