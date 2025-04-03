@@ -49,6 +49,8 @@ public
 
 implementation
 
+uses Winapi.Security.Cryptography, Winapi.CommonTypes, Winapi.WinRT;
+
 // Chipher text.
 class function TGXSecure.Secure(settings: TGXDLMSSettings; cipher: TGXCiphering; ic: LongWord; data: TBytes; secret: TBytes) : TBytes;
 var
@@ -56,9 +58,60 @@ var
   p: TAesGcmParameter;
   tmp: TBytes;
   len, pos: Integer;
+  aes: Core_ISymmetricKeyAlgorithmProvider;
+  keyMaterial, iv: IBuffer;
+  Key: Core_ICryptographicKey;
+  tmp2: HSTRING;
+  tmp3: PCWSTR;
+  tmp4: Cardinal;
 begin
     if settings.Authentication = TAuthentication.atHigh Then
     begin
+      len := Length(data);
+      s := TGXByteBuffer.Create();
+      try
+        r := TGXByteBuffer.Create();
+        try
+          if len Mod 16 <> 0 Then
+            len := len + (16 - (Length(data) Mod 16));
+
+          if Length(secret) > Length(data) Then
+          begin
+            len := Length(secret);
+            if len Mod 16 <> 0 Then
+              len := len + (16 - (Length(secret) Mod 16));
+          end;
+          s.SetArray(secret);
+          s.Zero(s.Size, len - s.Size);
+
+          r.SetArray(data);
+          r.Zero(r.Size, len - r.Size);
+          aes := TCore_SymmetricKeyAlgorithmProvider.OpenAlgorithm(TCore_SymmetricAlgorithmNames.AesCbc);
+ //         Result := s.ToArray();
+         {
+          keyMaterial := TCryptographicBuffer.CreateFromByteArray(s.Size, @Result[0]);
+          key := aes.CreateSymmetricKey(keyMaterial);
+          //Set IV to zero.
+          SetLength(Result, 0);
+          SetLength(Result, 16);
+          iv := TCryptographicBuffer.CreateFromByteArray(16, @Result[0]);
+          keyMaterial := TCore_CryptographicEngine.Encrypt(key, keyMaterial, iv);
+          }
+          //There is an issue with TCryptographicBuffer.CopyToByteArray implementation.
+          //Must use EncodeToHexString for now.
+//          tmp2 := TCryptographicBuffer.EncodeToHexString(keyMaterial);
+//          tmp3 := WindowsGetStringRawBuffer(tmp2, @tmp4);
+//          r.Clear();
+//          r.SetHexString(tmp3);
+//          Result := r.ToArray;
+          SetLength(Result, 16);
+        finally
+          FreeAndNil(r);
+        end;
+      finally
+       FreeAndNil(s);
+      end;
+    {
       len := Length(data);
       s := TGXByteBuffer.Create();
       try
@@ -88,6 +141,7 @@ begin
       finally
        FreeAndNil(s);
       end;
+      }
       Exit;
     end;
     // Get server Challenge.
@@ -133,7 +187,7 @@ begin
         try
           p.&Type := TCountType.Tag;
           challenge.Clear();
-          challenge.SetUInt8(Byte(TSecurity.Authentication));
+          challenge.SetUInt8(Byte(TSecurity.Authentication) or BYTE(cipher.SecuritySuite));
           challenge.SetUInt32(p.InvocationCounter);
           challenge.SetArray(TGXDLMSChippering.EncryptAesGcm(p, tmp));
           Result := challenge.ToArray();

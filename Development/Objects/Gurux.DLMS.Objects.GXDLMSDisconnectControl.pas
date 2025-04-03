@@ -95,6 +95,7 @@ end;
 constructor TGXDLMSDisconnectControl.Create(ln: string; sn: System.UInt16);
 begin
   inherited Create(TObjectType.otDisconnectControl, ln, 0);
+  Version := 1;
 end;
 
 function TGXDLMSDisconnectControl.RemoteDisconnect(client: IGXDLMSClient) : TArray<TBytes>;

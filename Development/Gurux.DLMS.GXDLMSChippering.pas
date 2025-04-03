@@ -56,7 +56,9 @@ strict private
   end;
 
 implementation
-uses Gurux.DLMS.DataType, Gurux.DLMS.GXDateTime;
+uses Gurux.DLMS.DataType,
+Gurux.DLMS.GXDateTime,
+Gurux.DLMS.SecuritySuite;
 
 class function TGXDLMSChippering.GetNonse(FrameCounter: UInt32; systemTitle: TBytes): TBytes;
 type
@@ -331,7 +333,9 @@ begin
   end;
   //len :=
   TGXCommon.GetObjectCount(data);
-  p.Security := TSecurity(data.GetUInt8());
+  len := data.GetUInt8();
+  p.SecuritySuite := TSecuritySuite(len and $3);
+  p.Security := TSecurity(len and $30);
   p.InvocationCounter := data.GetUInt32();
 
   SetLength(tag, 12);
@@ -368,17 +372,16 @@ begin
   try
     gcm.Write(ciphertext);
     ciphertext := gcm.FlushFinalBlock();
+    if p.Security <> TSecurity.Encryption Then
+    begin
+        // Check tag.
+        if Not TGXDLMSChipperingStream.TagsEquals(tag, gcm.GetTag()) Then
+        begin
+            raise TGXDLMSException.Create('Decrypt failed. Invalid tag.');
+        end;
+    end;
   finally
     FreeAndNil(gcm);
-  end;
-  if p.Security = TSecurity.AuthenticationEncryption Then
-  begin
-      // Check tag.
-      EncryptAesGcm(p, ciphertext);
-      if Not TGXDLMSChipperingStream.TagsEquals(tag, p.CountTag) Then
-      begin
-          //    throw new GXDLMSException("Decrypt failed. Invalid tag.");
-      end;
   end;
   Result := ciphertext;
 end;
